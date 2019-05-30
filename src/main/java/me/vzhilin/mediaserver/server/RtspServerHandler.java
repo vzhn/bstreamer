@@ -10,6 +10,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
+import me.vzhilin.mediaserver.DataChunk;
 import me.vzhilin.mediaserver.media.MediaPacket;
 import me.vzhilin.mediaserver.media.MediaStream;
 import org.bridj.Pointer;
@@ -76,7 +77,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
         }
     }
 
-    private void send(ChannelHandlerContext ctx, List<MediaPacket> next) {
+    private void send(ChannelHandlerContext ctx, List<DataChunk> next) {
         next.forEach(ctx::writeAndFlush);
     }
 

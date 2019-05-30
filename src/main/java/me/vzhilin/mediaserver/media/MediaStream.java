@@ -1,6 +1,8 @@
 package me.vzhilin.mediaserver.media;
 
 import io.netty.buffer.Unpooled;
+import me.vzhilin.mediaserver.DataChunk;
+import me.vzhilin.mediaserver.MediaPacketEncoder;
 import org.bridj.Pointer;
 import org.ffmpeg.avcodec.AVPacket;
 import org.ffmpeg.avformat.AVFormatContext;
@@ -8,6 +10,7 @@ import org.ffmpeg.avformat.AVInputFormat;
 import org.ffmpeg.avformat.AVStream;
 import org.ffmpeg.avformat.AvformatLibrary;
 
+import javax.xml.crypto.Data;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +25,10 @@ public class MediaStream implements Closeable {
     private final Pointer<AVPacket> pktPtr;
     private final AVStream videoStream;
     private final Pointer<Pointer<AVFormatContext>> pAvfmtCtx;
+    private final MediaPacketEncoder encoder;
 
     public MediaStream() {
+        this.encoder = new MediaPacketEncoder();
         pktPtr = Pointer.allocate(AVPacket.class);
 
         pAvfmtCtx = Pointer.allocatePointer(AVFormatContext.class);
@@ -37,7 +42,7 @@ public class MediaStream implements Closeable {
         videoStream = ifmtCtx.get().streams().get().get();
     }
 
-    public List<MediaPacket> next() {
+    public List<DataChunk> next() {
         int ret = avformat.av_read_frame(ifmtCtx, pktPtr);
         if (ret < 0) {
             return null;
@@ -54,7 +59,7 @@ public class MediaStream implements Closeable {
         av_packet_unref(pktPtr);
 
         int offset = 0;
-        List<MediaPacket> ls = new ArrayList<>();
+        List<DataChunk> ls = new ArrayList<>();
         while (offset < data.length) {
 
             int avccLen = ((data[offset] & 0xff) << 24) +
@@ -62,7 +67,7 @@ public class MediaStream implements Closeable {
                     ((data[offset + 2] & 0xff) << 8) +
                     (data[offset + 3] & 0xff);
 
-            ls.add(new MediaPacket(pts, dts, isKey, Unpooled.wrappedBuffer(data, offset + 4, avccLen)));
+            ls.add(encoder.encode(new MediaPacket(pts, dts, isKey, Unpooled.wrappedBuffer(data, offset + 4, avccLen))));
             offset += (avccLen + 4);
         }
 
