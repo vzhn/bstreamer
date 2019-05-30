@@ -53,7 +53,6 @@ public class MediaStream implements Closeable {
         byte[] data = avpacket.data().getBytes(sz);
         av_packet_unref(pktPtr);
 
-
         int offset = 0;
         List<MediaPacket> ls = new ArrayList<>();
         while (offset < data.length) {
