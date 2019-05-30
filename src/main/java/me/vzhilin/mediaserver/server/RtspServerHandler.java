@@ -4,14 +4,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
 import me.vzhilin.mediaserver.DataChunk;
-import me.vzhilin.mediaserver.media.MediaPacket;
 import me.vzhilin.mediaserver.media.MediaStream;
 import org.bridj.Pointer;
 import org.ffmpeg.avcodec.AVCodecParameters;
@@ -23,7 +21,6 @@ import org.ffmpeg.avutil.AVDictionary;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import static org.ffmpeg.avformat.AvformatLibrary.*;
 

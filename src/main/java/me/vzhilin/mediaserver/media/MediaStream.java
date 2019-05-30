@@ -10,7 +10,6 @@ import org.ffmpeg.avformat.AVInputFormat;
 import org.ffmpeg.avformat.AVStream;
 import org.ffmpeg.avformat.AvformatLibrary;
 
-import javax.xml.crypto.Data;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,8 +25,10 @@ public class MediaStream implements Closeable {
     private final AVStream videoStream;
     private final Pointer<Pointer<AVFormatContext>> pAvfmtCtx;
     private final MediaPacketEncoder encoder;
+    private final int pos;
 
     public MediaStream() {
+        this.pos = 0;
         this.encoder = new MediaPacketEncoder();
         pktPtr = Pointer.allocate(AVPacket.class);
 
@@ -77,5 +78,23 @@ public class MediaStream implements Closeable {
     @Override
     public void close()  {
         avformat_close_input(pAvfmtCtx);
+    }
+
+    public class Cursor {
+        private final MediaStream stream;
+        private int pos = 0;
+
+        public Cursor(MediaStream stream) {
+            this.stream = stream;
+        }
+
+        public List<DataChunk> next() {
+            List<DataChunk> data = stream.next();
+            if (data != null) {
+                ++pos;
+            }
+
+            return data;
+        }
     }
 }
