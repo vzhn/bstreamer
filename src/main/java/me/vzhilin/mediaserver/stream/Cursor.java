@@ -16,7 +16,7 @@ public class Cursor<T> {
     public T next() {
         T v = head.getValue();
 
-        Node cur = head;
+        Node<T> cur = head;
         if (!head.hasNext()) {
             Node<T> next = stream.allocNode();
             head = head.setNext(next);

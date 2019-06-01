@@ -10,7 +10,7 @@ public class Stream<T> {
     }
 
     public Node<T> allocNode() {
-        return head = new Node<T>(factory.next(), nsubs);
+        return head = new Node<>(factory.next(), nsubs);
     }
 
     public void freeNode(Node<T> node) {

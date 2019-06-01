@@ -2,23 +2,25 @@ package me.vzhilin.mediaserver;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import me.vzhilin.mediaserver.media.MediaPacket;
+
+import java.util.List;
 
 public class MediaPacketEncoder {
     private final int MTU = 1500;
     private int seqNo = 0;
 
-    public DataChunk writeFuA(MediaPacket next, int sz) {
+    public void writeFuA(List<InterleavedFrame> rtpPackets, boolean isKey, long pts, ByteBuf payload) {
+        int sz = payload.readableBytes();
         // FU-A
         // 18 =  4 (interleaved header) +
         //      12 (RTP header)
         //       1 (FU header)
         //       1 (FU indicator)
-        ByteBuf header = PooledByteBufAllocator.DEFAULT.buffer();
+//        ByteBuf header = PooledByteBufAllocator.DEFAULT.buffer();
 
         int numberOfPackets = (sz - 2) / (MTU - 18) + 1;
 
-        byte firstByte = next.getPayload().readByte();
+        byte firstByte = payload.readByte();
         int fuIndicator = firstByte & 0xff;
         fuIndicator &= 0b11100000;
         fuIndicator += 28;
@@ -40,30 +42,32 @@ public class MediaPacketEncoder {
             fuHeader |= (r & 1) << 5;
 
             int dataLen = Math.min(MTU - 18, sz - offset);
+            ByteBuf header = PooledByteBufAllocator.DEFAULT.buffer(dataLen + 12 + 2 + 4);
 
             writeInterleavedHeader(header, dataLen + 12 + 2);
-            writeRtpHeader(header, next);
+            writeRtpHeader(header, isKey, pts);
 
             header.writeByte(fuIndicator);
             header.writeByte(fuHeader);
-            header.writeBytes(next.getPayload(), dataLen);
+            header.writeBytes(payload, dataLen);
 
             offset += dataLen;
             ++seqNo;
-        }
 
-        return new DataChunk(header);
+            rtpPackets.add(new InterleavedFrame(header));
+        }
     }
 
-    private DataChunk writeNalu(MediaPacket next, int sz) {
-        ByteBuf header = PooledByteBufAllocator.DEFAULT.buffer();
+    private void writeNalu(List<InterleavedFrame> rtpPackets, boolean isKey, long pts, ByteBuf payload) {
+
         // interleaved header
-        writeInterleavedHeader(header, sz + 12);
+        ByteBuf bb = PooledByteBufAllocator.DEFAULT.buffer(payload.readableBytes() + 12 + 4);
+        writeInterleavedHeader(bb, payload.readableBytes() + 12);
 
         // RTP header
-        writeRtpHeader(header, next);
-        header.writeBytes(next.getPayload());
-        return new DataChunk(header);
+        writeRtpHeader(bb, isKey, pts);
+        bb.writeBytes(payload);
+        rtpPackets.add(new InterleavedFrame(bb));
     }
 
     private void writeInterleavedHeader(ByteBuf header, int dataLen) {
@@ -73,22 +77,22 @@ public class MediaPacketEncoder {
         header.writeShort(dataLen);
     }
 
-    private void writeRtpHeader(ByteBuf header, MediaPacket next) {
+    private void writeRtpHeader(ByteBuf header, boolean isKey, long pts) {
         final int version = 2;
         final int payloadType = 98;
         header.writeByte((version & 0x03) << 6);
-        header.writeByte(((next.isKey() ? 1 : 0) << 7) | payloadType);
+        header.writeByte(((isKey ? 1 : 0) << 7) | payloadType);
         header.writeShort(seqNo++);
-        header.writeInt((int) (next.getPts() * 90));
+        header.writeInt((int) (pts * 90));
         header.writeInt(0);
     }
 
-    public DataChunk encode(MediaPacket packet) {
-        int sz = packet.size();
+    public void encode(List<InterleavedFrame> rtpPackets, boolean isKey, long pts, long dts, ByteBuf payload) {
+        int sz = payload.readableBytes();
         if (sz + 16 > MTU) {
-            return writeFuA(packet, sz);
+            writeFuA(rtpPackets, isKey, pts, payload);
         } else {
-            return writeNalu(packet, sz);
+            writeNalu(rtpPackets, isKey, pts, payload);
         }
     }
 }

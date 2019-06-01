@@ -9,8 +9,12 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
-import me.vzhilin.mediaserver.DataChunk;
+import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.media.MediaStream;
+import me.vzhilin.mediaserver.stream.Cursor;
+import me.vzhilin.mediaserver.stream.Node;
+import me.vzhilin.mediaserver.stream.Stream;
+import me.vzhilin.mediaserver.stream.impl.CircularBuffer;
 import org.bridj.Pointer;
 import org.ffmpeg.avcodec.AVCodecParameters;
 import org.ffmpeg.avformat.AVFormatContext;
@@ -19,14 +23,28 @@ import org.ffmpeg.avformat.AVStream;
 import org.ffmpeg.avutil.AVDictionary;
 
 import java.util.Base64;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.ffmpeg.avformat.AvformatLibrary.*;
+import static org.ffmpeg.avformat.AvformatLibrary.avformat_find_stream_info;
+import static org.ffmpeg.avformat.AvformatLibrary.avformat_open_input;
 
 public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
-    private MediaStream stream;
+    private Stream<InterleavedFrame> stream;
     private int seqNo = 0;
+    private Cursor<InterleavedFrame> cursor;
+
+    public RtspServerHandler() {
+        stream = new Stream<InterleavedFrame>(new CircularBuffer(MediaStream.readAllPackets())) {
+            private int seqNo = 0;
+            @Override
+            public Node<InterleavedFrame> allocNode() {
+                Node<InterleavedFrame> node = super.allocNode();
+                InterleavedFrame chunk = node.getValue();
+                chunk.setSeqNo(seqNo++);
+                return node;
+            }
+        };
+    }
 
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof FullHttpRequest) {
@@ -54,6 +72,8 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
+
+                    cursor = stream.cursor();
                     break;
                 default:
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
@@ -63,19 +83,18 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
             ctx.writeAndFlush(response);
 
             if (method.name().equals("PLAY")) {
-                this.stream = new MediaStream();
                 ctx.executor().scheduleAtFixedRate(new Runnable() {
                     @Override
                     public void run() {
-                        send(ctx, stream.next());
+                        send(ctx, cursor.next());
                     }
                 }, 100, 40, TimeUnit.MILLISECONDS);
             }
         }
     }
 
-    private void send(ChannelHandlerContext ctx, List<DataChunk> next) {
-        next.forEach(ctx::writeAndFlush);
+    private void send(ChannelHandlerContext ctx, InterleavedFrame next) {
+        ctx.writeAndFlush(next);
     }
 
     @Override
