@@ -26,7 +26,7 @@ public class Stream<T> {
             head.inc();
         }
 
-        return new Cursor<T>(head, this);
+        return new Cursor<>(head, this);
     }
 
     public void closeCursor(Node<T> head) {

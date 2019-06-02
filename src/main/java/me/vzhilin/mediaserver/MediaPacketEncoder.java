@@ -51,7 +51,7 @@ public class MediaPacketEncoder {
             header.writeBytes(payload, dataLen);
 
             offset += dataLen;
-            rtpPackets.add(new InterleavedFrame(header));
+            rtpPackets.add(new InterleavedFrame(pts, header));
         }
     }
 
@@ -64,7 +64,7 @@ public class MediaPacketEncoder {
         // RTP header
         writeRtpHeader(bb, isKey, pts);
         bb.writeBytes(payload);
-        rtpPackets.add(new InterleavedFrame(bb));
+        rtpPackets.add(new InterleavedFrame(pts, bb));
     }
 
     private void writeInterleavedHeader(ByteBuf header, int dataLen) {

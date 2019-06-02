@@ -4,16 +4,16 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
+import io.netty.util.concurrent.ScheduledFuture;
 import me.vzhilin.mediaserver.InterleavedFrame;
-import me.vzhilin.mediaserver.media.MediaStream;
 import me.vzhilin.mediaserver.stream.Cursor;
-import me.vzhilin.mediaserver.stream.Node;
 import me.vzhilin.mediaserver.stream.Stream;
-import me.vzhilin.mediaserver.stream.impl.CircularBuffer;
 import org.bridj.Pointer;
 import org.ffmpeg.avcodec.AVCodecParameters;
 import org.ffmpeg.avformat.AVFormatContext;
@@ -31,22 +31,13 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
     private Stream<InterleavedFrame> stream;
     private Cursor<InterleavedFrame> cursor;
 
-    public RtspServerHandler() {
-        stream = new Stream<InterleavedFrame>(new CircularBuffer(MediaStream.readAllPackets())) {
-            private int seqNo = 0;
-            @Override
-            public Node<InterleavedFrame> allocNode() {
-                Node<InterleavedFrame> node = super.allocNode();
-                InterleavedFrame frame = node.getValue();
-                frame.setSeqNo(seqNo++);
-                return node;
-            }
-        };
-    }
+    private long overflow;
+    private long ptsStart;
+    private long timeStart;
+    private ScheduledFuture<?> scheduledFuture;
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
+    public RtspServerHandler(Stream<InterleavedFrame> stream) {
+        this.stream = stream;
     }
 
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -60,85 +51,73 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     response.headers().set(RtspHeaderNames.PUBLIC, "DESCRIBE, SETUP, TEARDOWN, PLAY, PAUSE");
+                    ctx.writeAndFlush(response);
                     break;
                 case "DESCRIBE":
                     response = description("simpsons_video.mkv");
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
+                    ctx.writeAndFlush(response);
                     break;
                 case "SETUP":
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     response.headers().set(RtspHeaderNames.SESSION, "1234");
                     response.headers().set(RtspHeaderNames.TRANSPORT, "RTP/AVP/TCP;unicast;interleaved=0-1");
+                    ctx.writeAndFlush(response);
                     break;
                 case "PLAY":
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
+                    ctx.writeAndFlush(response);
 
                     cursor = stream.cursor();
+                    InterleavedFrame firstFrame = cursor.next();
+                    timeStart = System.currentTimeMillis();
+                    ptsStart = firstFrame.getPtsMillis();
+                    ctx.writeAndFlush(firstFrame);
+
+                    send(ctx);
+
                     break;
                 default:
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
-            }
-
-            ctx.writeAndFlush(response);
-
-
-
-            if (method.name().equals("PLAY")) {
-                ctx.pipeline().remove("http_request");
-                ctx.pipeline().remove("http_response");
-                ctx.pipeline().remove("http_aggregator");
-
-                ctx.executor().scheduleAtFixedRate(new Runnable() {
-                    @Override
-                    public void run() {
-                        Channel channel = ctx.channel();
-                        if (channel.isWritable()) {
-                            while (channel.isWritable()) {
-                                send(ctx, cursor.next());
-                            }
-
-                            channel.flush();
-                        }
-
-                    }
-                }, 100, 40, TimeUnit.MILLISECONDS);
+                    ctx.writeAndFlush(response);
             }
         }
     }
 
-    private void send(ChannelHandlerContext ctx, InterleavedFrame next) {
-        ctx.write(next, ctx.voidPromise());
+    private void send(ChannelHandlerContext ctx) {
+        long now = System.currentTimeMillis();
+        InterleavedFrame next = null;
+        Channel channel = ctx.channel();
+
+        while (channel.isWritable()) {
+            next = cursor.next();
+            ctx.write(next, ctx.voidPromise());
+        }
+
+        ctx.flush();
+        long delay = (next.getPtsMillis() - ptsStart) - (now - timeStart);
+        System.err.println(delay);
+
+        ctx.executor().schedule(() -> send(ctx), delay, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(true);
+        }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         cause.printStackTrace();
         ctx.close();
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) {
-    }
-
-    @Override
-    public void channelWritabilityChanged(ChannelHandlerContext ctx) {
-        Channel channel = ctx.channel();
-//        System.err.println("channelWritabilityChanged! " + ctx.channel().isWritable());
-        if (channel.isWritable()) {
-            while (channel.isWritable()) {
-                send(ctx, cursor.next());
-            }
-
-            channel.flush();
-        }
-//        MediaPacket pkt = stream.next();
-//        if (pkt != null) {
-//            send(ctx, pkt);
-//        }
     }
 
     FullHttpResponse description(String name) {
