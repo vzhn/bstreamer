@@ -4,8 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
@@ -30,7 +29,6 @@ import static org.ffmpeg.avformat.AvformatLibrary.avformat_open_input;
 
 public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
     private Stream<InterleavedFrame> stream;
-    private int seqNo = 0;
     private Cursor<InterleavedFrame> cursor;
 
     public RtspServerHandler() {
@@ -39,11 +37,16 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
             @Override
             public Node<InterleavedFrame> allocNode() {
                 Node<InterleavedFrame> node = super.allocNode();
-                InterleavedFrame chunk = node.getValue();
-                chunk.setSeqNo(seqNo++);
+                InterleavedFrame frame = node.getValue();
+                frame.setSeqNo(seqNo++);
                 return node;
             }
         };
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
     }
 
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -82,11 +85,25 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
 
             ctx.writeAndFlush(response);
 
+
+
             if (method.name().equals("PLAY")) {
+                ctx.pipeline().remove("http_request");
+                ctx.pipeline().remove("http_response");
+                ctx.pipeline().remove("http_aggregator");
+
                 ctx.executor().scheduleAtFixedRate(new Runnable() {
                     @Override
                     public void run() {
-                        send(ctx, cursor.next());
+                        Channel channel = ctx.channel();
+                        if (channel.isWritable()) {
+                            while (channel.isWritable()) {
+                                send(ctx, cursor.next());
+                            }
+
+                            channel.flush();
+                        }
+
                     }
                 }, 100, 40, TimeUnit.MILLISECONDS);
             }
@@ -94,7 +111,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     private void send(ChannelHandlerContext ctx, InterleavedFrame next) {
-        ctx.writeAndFlush(next);
+        ctx.write(next, ctx.voidPromise());
     }
 
     @Override
@@ -109,6 +126,15 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     public void channelWritabilityChanged(ChannelHandlerContext ctx) {
+        Channel channel = ctx.channel();
+//        System.err.println("channelWritabilityChanged! " + ctx.channel().isWritable());
+        if (channel.isWritable()) {
+            while (channel.isWritable()) {
+                send(ctx, cursor.next());
+            }
+
+            channel.flush();
+        }
 //        MediaPacket pkt = stream.next();
 //        if (pkt != null) {
 //            send(ctx, pkt);

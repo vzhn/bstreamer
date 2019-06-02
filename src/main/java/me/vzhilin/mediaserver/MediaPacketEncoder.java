@@ -6,9 +6,8 @@ import io.netty.buffer.PooledByteBufAllocator;
 import java.util.List;
 
 public class MediaPacketEncoder {
-    private final int MTU = 1500;
+    private final int MTU = 64000;
     private int seqNo = 0;
-
     public void writeFuA(List<InterleavedFrame> rtpPackets, boolean isKey, long pts, ByteBuf payload) {
         int sz = payload.readableBytes();
         // FU-A
@@ -52,8 +51,6 @@ public class MediaPacketEncoder {
             header.writeBytes(payload, dataLen);
 
             offset += dataLen;
-            ++seqNo;
-
             rtpPackets.add(new InterleavedFrame(header));
         }
     }
