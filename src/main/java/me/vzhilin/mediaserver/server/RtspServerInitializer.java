@@ -1,6 +1,7 @@
 package me.vzhilin.mediaserver.server;
 
 import io.netty.channel.*;
+import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
@@ -12,39 +13,37 @@ import me.vzhilin.mediaserver.stream.Node;
 import me.vzhilin.mediaserver.stream.Stream;
 import me.vzhilin.mediaserver.stream.impl.CircularBuffer;
 
+import java.util.List;
+
 public class RtspServerInitializer extends ChannelInitializer<SocketChannel> {
-    private final TypeParameterMatcher matcher = TypeParameterMatcher.get(InterleavedFrame.class);
-    private final Stream<InterleavedFrame> stream;
+    private final List<InterleavedFrame> packets;
+//    private final ChannelGroup channels;
 
     public RtspServerInitializer() {
-        stream = new Stream<InterleavedFrame>(new CircularBuffer(MediaStream.readAllPackets())) {
-            private int seqNo = 0;
-            @Override
-            public Node<InterleavedFrame> allocNode() {
-                Node<InterleavedFrame> node = super.allocNode();
-                InterleavedFrame frame = node.getValue();
-                frame.setSeqNo(seqNo++);
-                return node;
-            }
-        };
+        packets = MediaStream.readAllPackets();
     }
 
     @Override
     public void initChannel(SocketChannel channel) {
         ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast(new ChannelOutboundHandlerAdapter() {
-            @Override
-            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-                if (matcher.match(msg)) {
-                    ctx.write(((InterleavedFrame) msg).getPayload().retainedSlice(), promise);
-                } else {
-                    ctx.write(msg, promise);
-                }
-            }
-        });
+        pipeline.addLast(new MyChannelOutboundHandlerAdapter());
         pipeline.addLast("http_request", new HttpRequestDecoder());
-        pipeline.addLast("http_aggregator", new HttpObjectAggregator(16 * 1024));
+        pipeline.addLast("http_aggregator", new HttpObjectAggregator(1 * 1024));
         pipeline.addLast("http_response", new HttpResponseEncoder());
-        pipeline.addLast(new RtspServerHandler(stream));
+        pipeline.addLast(new RtspServerHandler(packets));
+
+//        channels.add(channel);
+    }
+
+    private final static class MyChannelOutboundHandlerAdapter extends ChannelOutboundHandlerAdapter {
+        private final TypeParameterMatcher matcher = TypeParameterMatcher.get(InterleavedFrame.class);
+        @Override
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+            if (matcher.match(msg)) {
+                ctx.write(((InterleavedFrame) msg).getPayload().retainedDuplicate(), promise);
+            } else {
+                ctx.write(msg, promise);
+            }
+        }
     }
 }

@@ -11,15 +11,34 @@ public class RtspServer {
     public void start() {
         ServerBootstrap bootstrap = new ServerBootstrap();
 
-        bootstrap.group(new EpollEventLoopGroup(1), new EpollEventLoopGroup(1))
+        EpollEventLoopGroup bossGroup = new EpollEventLoopGroup(1);
+        EpollEventLoopGroup workerGroup = new EpollEventLoopGroup(1);
+
+//        final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+
+        bootstrap.group(bossGroup, workerGroup)
                 .channel(EpollServerSocketChannel.class)
                 .childHandler(new RtspServerInitializer())
-                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(64 * 1024, 256 * 1024))
+                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(1 * 1024 * 1024, 4 * 1024 * 1024))
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
-                .childOption(ChannelOption.SO_SNDBUF, 256 * 1024);
+                .childOption(ChannelOption.SO_SNDBUF, 16 * 1024);
 
         try {
             ChannelFuture future = bootstrap.bind(5000).sync();
+
+//            workerGroup.scheduleWithFixedDelay(new Runnable() {
+//                TickEvent tick = new TickEvent();
+//                @Override
+//                public void run() {
+//                    channels.forEach(new Consumer<Channel>() {
+//                        @Override
+//                        public void accept(Channel channel) {
+//                            channel.pipeline().fireUserEventTriggered(tick);
+//                        }
+//                    });
+//                }
+//            }, 40, 40, TimeUnit.MILLISECONDS);
+
             future.channel().closeFuture().sync();
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
