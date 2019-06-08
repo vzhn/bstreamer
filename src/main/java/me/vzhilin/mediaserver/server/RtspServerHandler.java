@@ -19,6 +19,7 @@ import org.ffmpeg.avformat.AVStream;
 import org.ffmpeg.avutil.AVDictionary;
 
 import java.util.Base64;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -78,7 +79,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 ptsStart = firstFrame.getPtsMillis();
                 ctx.writeAndFlush(firstFrame);
 
-                send(ctx);
+                sendMaximum(ctx, ctx.channel());
 
 //                    ctx.pipeline().remove("http_request");
 //                    ctx.pipeline().remove("http_aggregator");
@@ -97,7 +98,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         super.userEventTriggered(ctx, evt);
 
         if (evt instanceof TickEvent) {
-            send(ctx);
+            sendMaximum(ctx, ctx.channel());
         }
     }
 
@@ -131,7 +132,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
 //        delay = Math.max(delay, 40);
 //        System.err.println(delay);
-        ctx.executor().schedule(task, delay, TimeUnit.MILLISECONDS);
+//        ctx.executor().schedule(task, delay, TimeUnit.MILLISECONDS);
     }
 
     private void sendMaximum(ChannelHandlerContext ctx, Channel channel) {
@@ -144,6 +145,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             ctx.write(next, ctx.voidPromise());
         }
 
+//        System.err.println("write! " + new Date());
         ctx.flush();
     }
 
@@ -151,9 +153,9 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
         super.channelWritabilityChanged(ctx);
 
-//        if (ctx.channel().isWritable()) {
-//            send(ctx);
-//        }
+        if (ctx.channel().isWritable()) {
+            sendMaximum(ctx, ctx.channel());
+        }
     }
 
     @Override
