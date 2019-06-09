@@ -7,9 +7,10 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspMethods;
 import io.netty.handler.codec.rtsp.RtspVersions;
+import io.netty.util.AttributeKey;
 
 public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
-    private final ClientStatistics statistics;
+    private ConnectionStatistics statistics;
 
     private enum State {
         SETUP,
@@ -17,13 +18,15 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
     }
 
     public ClientHandler(ClientStatistics statistics) {
-        this.statistics = statistics;
     }
 
     private State state;
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
+
+        statistics =
+            ctx.channel().attr(AttributeKey.<ConnectionStatistics>valueOf("stat")).get();
 
         state = State.SETUP;
 
@@ -37,7 +40,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
         if (msg instanceof HttpResponse) {
             HttpResponse response = (HttpResponse) msg;
 
@@ -60,7 +63,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
                         @Override
                         protected void channelRead0(ChannelHandlerContext ctx, InterleavedPacket msg)  {
                             ByteBuf payload = msg.getPayload();
-                            statistics.touch(payload.readableBytes());
+                            statistics.onRead(payload.readableBytes());
                             payload.release();
                         }
                     });

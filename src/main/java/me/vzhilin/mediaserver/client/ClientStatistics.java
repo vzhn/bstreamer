@@ -1,8 +1,8 @@
 package me.vzhilin.mediaserver.client;
 
 public class ClientStatistics {
-    long ts = System.currentTimeMillis();
-    long total = 0;
+    private long ts = System.currentTimeMillis();
+    private long total = 0;
 
     public synchronized void touch(long size) {
         total += size;
@@ -10,10 +10,14 @@ public class ClientStatistics {
         long now = System.currentTimeMillis();
         long delta = now - ts;
         if (delta > 1000) {
-            System.err.println(1e-6 * total / delta * 1000f);
+            System.err.println(8 * 1e-6 * total / delta * 1000f);
 
             total = 0;
             ts = now;
         }
+    }
+
+    public long getTotal() {
+        return total;
     }
 }
