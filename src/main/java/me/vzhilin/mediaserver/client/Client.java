@@ -12,24 +12,21 @@ import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.util.AttributeKey;
 import org.apache.log4j.BasicConfigurator;
 
-import java.util.HashSet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Client {
-    private HashSet<ConnectionStatistics> stats;
-
-    public static void main(String... argv) throws InterruptedException {
+    public static void main(String... argv) {
         Client client = new Client();
         client.start();
     }
 
-    public void start() throws InterruptedException {
-        stats = new HashSet<>();
-
+    public void start() {
         BasicConfigurator.configure();
         Bootstrap bootstrap = new Bootstrap();
 
         EpollEventLoopGroup workerGroup = new EpollEventLoopGroup(4);
-        ClientStatistics statistics = new ClientStatistics();
 
         Bootstrap b = bootstrap
             .group(workerGroup)
@@ -43,20 +40,35 @@ public class Client {
 
                     pipeline.addLast(rtspInterleavedDecoder);
                     pipeline.addLast(new HttpClientCodec());
-                    pipeline.addLast(new ClientHandler(statistics));
+                    pipeline.addLast(new ClientHandler());
                 }
             });
 
+        TotalStatistics ss = new TotalStatistics();
+        ss.onStart();
 
         for (int i = 0; i < 1000; i++) {
-            ConnectionStatistics stat = new ConnectionStatistics();
-            stats.add(stat);
-
+            ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             ChannelFuture future = btstrp.connect("localhost", 5000);
 
             bindListener(btstrp, future, stat);
         }
+
+        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+        exec.schedule(
+            new Runnable() {
+                @Override
+                public void run() {
+                    workerGroup.shutdownGracefully().syncUninterruptibly();
+                    ss.onShutdown();
+
+                    System.err.println(ss);
+                    System.err.println(ss.getSize());
+                }
+            }
+        , 100, TimeUnit.SECONDS);
+        exec.shutdown();
     }
 
     private void bindListener(Bootstrap b, ChannelFuture connectFuture, ConnectionStatistics stat) {
@@ -76,17 +88,13 @@ public class Client {
             public void operationComplete(ChannelFuture future) {
                 stat.onDisconnected();
 
-                ChannelFuture connectFuture = b.connect("localhost", 5000);
-                connectFuture.addListener(connectListener);
-                connectFuture.channel().closeFuture().addListener(this);
+                if (!future.channel().eventLoop().isShuttingDown()) {
+                    ChannelFuture connectFuture = b.connect("localhost", 5000);
+                    connectFuture.addListener(connectListener);
+                    connectFuture.channel().closeFuture().addListener(this);
+                }
             }
         };
         connectFuture.channel().closeFuture().addListener(closeListener);
-    }
-
-    private void printStat() {
-        for (ConnectionStatistics stat: stats) {
-            System.out.println(stat.getTotal());
-        }
     }
 }

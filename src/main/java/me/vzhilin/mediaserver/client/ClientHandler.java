@@ -17,7 +17,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
         PLAY,
     }
 
-    public ClientHandler(ClientStatistics statistics) {
+    public ClientHandler() {
     }
 
     private State state;
