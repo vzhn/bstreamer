@@ -3,7 +3,6 @@ package me.vzhilin.mediaserver.server;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -11,6 +10,8 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
 import me.vzhilin.mediaserver.InterleavedFrame;
+import me.vzhilin.mediaserver.util.AVCCExtradataParser;
+import me.vzhilin.mediaserver.util.RtspUriParser;
 import org.bridj.Pointer;
 import org.ffmpeg.avcodec.AVCodecParameters;
 import org.ffmpeg.avformat.AVFormatContext;
@@ -19,29 +20,18 @@ import org.ffmpeg.avformat.AVStream;
 import org.ffmpeg.avutil.AVDictionary;
 
 import java.util.Base64;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.ffmpeg.avformat.AvformatLibrary.avformat_find_stream_info;
-import static org.ffmpeg.avformat.AvformatLibrary.avformat_open_input;
+import static org.ffmpeg.avformat.AvformatLibrary.*;
 
 public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final List<InterleavedFrame> packets;
-    private final Runnable task;
-    private Iterator<InterleavedFrame> stream;
-
-    private long overflow;
-    private long ptsStart;
-    private long timeStart;
-    private ChannelHandlerContext ctx;
+    private Strategy strategy;
 
     public RtspServerHandler(List<InterleavedFrame> packets) {
         this.packets = packets;
-        this.stream = packets.iterator();
-
-        this.task = () -> send(ctx);
     }
 
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
@@ -57,7 +47,8 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 ctx.writeAndFlush(response);
                 break;
             case "DESCRIBE":
-                response = description("simpsons_video.mkv");
+                RtspUriParser uri = new RtspUriParser(msg.uri());
+                response = description(uri);
                 response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                 ctx.writeAndFlush(response);
                 break;
@@ -74,17 +65,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
                 ctx.writeAndFlush(response);
 
-                InterleavedFrame firstFrame = stream.next();
-                timeStart = System.currentTimeMillis();
-                ptsStart = firstFrame.getPtsMillis();
-                ctx.writeAndFlush(firstFrame);
-
-                sendMaximum(ctx, ctx.channel());
-
-//                    ctx.pipeline().remove("http_request");
-//                    ctx.pipeline().remove("http_aggregator");
-//                    ctx.pipeline().remove("http_response");
-
+                strategy.play();
                 break;
             default:
                 response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
@@ -103,65 +84,27 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     }
 
     private void send(ChannelHandlerContext ctx) {
-        Channel channel = ctx.channel();
 
-//        sendMaximum(ctx, channel);
-
-
-        long delay;
-        InterleavedFrame next = null;
-        while (channel.isWritable()) {
-
-
-            if (!stream.hasNext()) {
-                stream = packets.iterator();
-
-                timeStart = System.currentTimeMillis();
-                next = stream.next();
-                ptsStart = next.getPtsMillis();
-            } else {
-                next = stream.next();
-            }
-
-            ctx.write(next);
-        }
-
-        ctx.flush();
-        long now = System.currentTimeMillis();
-        delay = (next.getPtsMillis() - ptsStart) - (now - timeStart);
-
-//        delay = Math.max(delay, 40);
-//        System.err.println(delay);
-//        ctx.executor().schedule(task, delay, TimeUnit.MILLISECONDS);
     }
 
     private void sendMaximum(ChannelHandlerContext ctx, Channel channel) {
-        InterleavedFrame next;
-        while (channel.isWritable()) {
-            if (!stream.hasNext()) {
-                stream = packets.iterator();
-            }
-            next = stream.next();
-            ctx.write(next, ctx.voidPromise());
-        }
+//        InterleavedFrame next;
+//        while (channel.isWritable()) {
+//            if (!stream.hasNext()) {
+//                stream = packets.iterator();
+//            }
+//            next = stream.next();
+//            ctx.write(next, ctx.voidPromise());
+//        }
 
 //        System.err.println("write! " + new Date());
         ctx.flush();
     }
 
     @Override
-    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
-        super.channelWritabilityChanged(ctx);
-
-        if (ctx.channel().isWritable()) {
-            sendMaximum(ctx, ctx.channel());
-        }
-    }
-
-    @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
-        this.ctx = ctx;
+        this.strategy = new Strategy(ctx, packets);
     }
 
     @Override
@@ -171,21 +114,50 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-//        cause.printStackTrace();
         ctx.close();
     }
 
-    FullHttpResponse description(String name) {
-        Pointer<Pointer<AVFormatContext>> pAvfmtCtx = Pointer.allocatePointer(AVFormatContext.class);
-        Pointer<Byte> namePtr = Pointer.pointerToCString("/home/vzhilin/misc/video_samples/simpsons_video.mkv");
+    FullHttpResponse description(RtspUriParser uri) {
+        String filename = uri.getPathItems().get(0);
 
-        Pointer<AVInputFormat> fmt = (Pointer<AVInputFormat>) Pointer.NULL;
-        Pointer<Pointer<AVDictionary> > options = (Pointer<Pointer<AVDictionary>>) Pointer.NULL;
+        AVCCExtradataParser avccExtradata = getExtradata(filename);
+        byte[] sps = avccExtradata.getSps();
+        String spsBase64 = Base64.getEncoder().encodeToString(sps);
+        String ppsBase64 = Base64.getEncoder().encodeToString(avccExtradata.getPps());
+
+        String profileLevelId = String.format("%02x%02x%02x", sps[0], sps[1], sps[2]);
+
+        String sdpMessage = "v=0\r\n" +
+                "o=RTSP 50539017935697 1 IN IP4 0.0.0.0\r\n" +
+                "s=1234\r\n" +
+                "a=control:*\r\n" +
+                "m=video 0 RTP/AVP 98\r\n" +
+                "a=fmtp:98 sprop-parameter-sets=" +
+                spsBase64 + "," + ppsBase64 + ";profile-level-id=" + profileLevelId
+                + ";packetization-mode=1\r\n"
+                + "a=rtpmap:98 H264/90000\r\n"
+                + "a=control:TrackID=0\r\n";
+
+        ByteBuf payload = ByteBufUtil.writeAscii(PooledByteBufAllocator.DEFAULT, sdpMessage);
+        DefaultFullHttpResponse response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK, payload);
+        response.headers().add(HttpHeaderNames.CONTENT_LENGTH, payload.readableBytes());
+        response.headers().add(HttpHeaderNames.CONTENT_BASE, uri.getUri());
+        response.headers().add(HttpHeaderNames.CONTENT_TYPE, "application/sdp");
+
+        return response;
+    }
+
+    private AVCCExtradataParser getExtradata(String filename) {
+        Pointer<Pointer<AVFormatContext>> pAvfmtCtx = Pointer.allocatePointer(AVFormatContext.class);
+        Pointer<Byte> namePtr = Pointer.pointerToCString("/home/vzhilin/misc/video_samples/" + filename);
+
+        Pointer<AVInputFormat> fmt = null;
+        Pointer<Pointer<AVDictionary>> options = null;
 
         avformat_open_input(pAvfmtCtx, namePtr, fmt, options);
         Pointer<AVFormatContext> ifmtCtx = pAvfmtCtx.get();
 
-        avformat_find_stream_info(ifmtCtx, (Pointer<Pointer<AVDictionary>>) Pointer.NULL);
+        avformat_find_stream_info(ifmtCtx, null);
         int ns = ifmtCtx.get().nb_streams();
         Pointer<AVStream> avstream = ifmtCtx.get().streams().get(0);
         AVStream avStream = avstream.get();
@@ -193,79 +165,75 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         AVCodecParameters codecpar = cp.get();
 
         byte[] extradata = codecpar.extradata().getBytes(codecpar.extradata_size());
-        AVCCExtradata avccExtradata = new AVCCExtradata(extradata);
-        byte[] sps = avccExtradata.getSps();
-        String spsBase64 = Base64.getEncoder().encodeToString(sps);
-        String ppsBase64 = Base64.getEncoder().encodeToString(avccExtradata.getPps());
 
-        String profileLevelId = String.format("%02x%02x%02x", sps[0], sps[1], sps[2]);
+        avformat_close_input(pAvfmtCtx);
+        namePtr.release();
+        pAvfmtCtx.release();
 
-        StringBuilder sdpMessage = new StringBuilder();
-        sdpMessage.append(
-            "v=0\r\n" +
-            "o=RTSP 50539017935697 1 IN IP4 0.0.0.0\r\n"+
-            "s=1234\r\n"+
-            "a=control:*\r\n"+
-            "m=video 0 RTP/AVP 98\r\n"+
-            "a=fmtp:98 sprop-parameter-sets="
-        );
-
-        sdpMessage.append(spsBase64 + "," + ppsBase64 +  ";profile-level-id=" + profileLevelId
-                + ";packetization-mode=1\r\n"
-                +  "a=rtpmap:98 H264/90000\r\n"
-                +  "a=control:TrackID=0\r\n");
-
-        ByteBuf payload = ByteBufUtil.writeAscii(PooledByteBufAllocator.DEFAULT, sdpMessage.toString());
-        DefaultFullHttpResponse response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK, payload);
-        response.headers().add(HttpHeaderNames.CONTENT_LENGTH, payload.readableBytes());
-        response.headers().add(HttpHeaderNames.CONTENT_BASE, "rtsp://localhost:5000/simpsons_video.mkv");
-        response.headers().add(HttpHeaderNames.CONTENT_TYPE, "application/sdp");
-
-        return response;
+        return new AVCCExtradataParser(extradata);
     }
 
-    private final static class AVCCExtradata {
-        private final byte[] sps;
-        private final byte[] pps;
+    private final static class Strategy {
+        private final ChannelHandlerContext ctx;
+        private final List<InterleavedFrame> packets;
 
-        public AVCCExtradata(byte[] extradata) {
-            ByteBuf is = Unpooled.wrappedBuffer(extradata);
-            int v = is.readByte();
+        private Iterator<InterleavedFrame> stream;
+        private long timeStart;
+        private long ptsStart;
 
-            int profile = is.readByte();
-            int compatibility = is.readByte();
-            int level = is.readByte();
+        private InterleavedFrame prevPkt;
 
-            int naluLengthMinusOne = (is.readByte() & 0xff) & 0b11;
-            if (naluLengthMinusOne != 3) {
-                throw new RuntimeException("not supported: naluLengthMinusOne != 3");
-            }
-
-            int spsNumber = is.readByte() & 0b11111;
-            if (spsNumber != 1) {
-                throw new RuntimeException("not supported: spsNumber != 1");
-            }
-
-            int spsLen = ((is.readByte() & 0xff) << 8) + is.readByte() & 0xff;
-            sps = new byte[spsLen];
-            is.readBytes(sps);
-
-            int numPps = is.readByte() & 0xff;
-            if (numPps != 1) {
-                throw new RuntimeException();
-            }
-
-            int ppsLen = ((is.readByte() & 0xff) << 8) + is.readByte() & 0xff;
-            pps = new byte[ppsLen];
-            is.readBytes(pps);
+        public Strategy(ChannelHandlerContext ctx, List<InterleavedFrame> packets) {
+            this.ctx = ctx;
+            this.packets = packets;
         }
 
-        public byte[] getSps() {
-            return sps;
+        void play() {
+            this.stream = packets.iterator();
+            InterleavedFrame firstFrame = stream.next();
+            timeStart = System.currentTimeMillis();
+            ptsStart = firstFrame.getPtsMillis();
+            ctx.writeAndFlush(firstFrame);
+
+            send();
         }
 
-        public byte[] getPps() {
-            return pps;
+        void send() {
+            long now = System.currentTimeMillis();
+
+            if (prevPkt != null) {
+                long pd = (prevPkt.getPtsMillis() - ptsStart) - (now - timeStart);
+                if (pd < 0) {
+                    System.err.println("late! " + pd);
+                    timeStart += -pd;
+                }
+            }
+
+            InterleavedFrame next = null;
+            do {
+                if (stream.hasNext()) {
+                    next = stream.next();
+                    prevPkt = next;
+                    ctx.write(next);
+                } else {
+                    ctx.close();
+                    break;
+                }
+            } while (pktTime(next.getPtsMillis()) - now < 500);
+            long delay = (next.getPtsMillis() - ptsStart) - (now - timeStart);
+
+
+            ctx.executor().schedule(this::send, delay - 100, TimeUnit.MILLISECONDS);
+            ctx.flush();
+        }
+
+        void stop() {
+
+        }
+
+
+        private long pktTime(long pktPts) {
+            return timeStart + pktPts;
         }
     }
 }
