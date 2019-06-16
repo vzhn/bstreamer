@@ -1,17 +1,17 @@
 package me.vzhilin.mediaserver.media;
 
 public class RtpPacket {
-    private final Packet pkt;
+    private final MediaPacket pkt;
     private final long rtpTimestamp;
     private final long rtpSeqNo;
 
-    public RtpPacket(Packet pkt, long rtpTimestamp, long rtpSeqNo) {
+    public RtpPacket(MediaPacket pkt, long rtpTimestamp, long rtpSeqNo) {
         this.pkt = pkt;
         this.rtpTimestamp = rtpTimestamp;
         this.rtpSeqNo = rtpSeqNo;
     }
 
-    public Packet getPkt() {
+    public MediaPacket getPkt() {
         return pkt;
     }
 

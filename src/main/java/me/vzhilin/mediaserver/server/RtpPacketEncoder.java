@@ -24,7 +24,7 @@ class RtpPacketEncoder extends ChannelOutboundHandlerAdapter {
     }
 
     public void writeFuA(ChannelHandlerContext ctx, RtpPacket rtp, ChannelPromise promise) {
-        Packet pkt = rtp.getPkt();
+        MediaPacket pkt = rtp.getPkt();
         ByteBuf payload = pkt.getPayload().duplicate();
 
         int sz = payload.readableBytes();
@@ -72,7 +72,7 @@ class RtpPacketEncoder extends ChannelOutboundHandlerAdapter {
     }
 
     private void writeNalu(ChannelHandlerContext ctx, RtpPacket rtp, ChannelPromise promise) {
-        Packet pkt = rtp.getPkt();
+        MediaPacket pkt = rtp.getPkt();
         ByteBuf payload = pkt.getPayload().retainedDuplicate();
 
         // interleaved header
@@ -103,7 +103,7 @@ class RtpPacketEncoder extends ChannelOutboundHandlerAdapter {
     }
 
     public void encode(ChannelHandlerContext ctx, RtpPacket rtp, ChannelPromise promise) {
-        Packet pkt = rtp.getPkt();
+        MediaPacket pkt = rtp.getPkt();
         int sz = pkt.getPayload().readableBytes();
         if (sz + 16 > MTU) {
             writeFuA(ctx, rtp, promise);

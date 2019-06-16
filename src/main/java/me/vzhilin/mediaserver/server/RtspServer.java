@@ -6,7 +6,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
-import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegister;
+import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;
 import me.vzhilin.mediaserver.server.strategy.seq.SequencedStrategyFactory;
 import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
 
@@ -17,7 +17,7 @@ public class RtspServer {
         EpollEventLoopGroup bossGroup = new EpollEventLoopGroup(1);
         EpollEventLoopGroup workerGroup = new EpollEventLoopGroup(1);
 
-        StreamingStrategyFactoryRegister register = new StreamingStrategyFactoryRegister();
+        StreamingStrategyFactoryRegistry register = new StreamingStrategyFactoryRegistry();
         register.addFactory("sync", new SyncStrategyFactory(workerGroup));
         register.addFactory("seq", new SequencedStrategyFactory());
 
@@ -25,7 +25,7 @@ public class RtspServer {
 
         bootstrap.group(bossGroup, workerGroup)
                 .channel(EpollServerSocketChannel.class)
-                .childHandler(new RtspServerInitializer())
+                .childHandler(new RtspServerInitializer(register))
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(64 * 1024, 1024 * 1024))
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.SO_SNDBUF, 256 * 1024);

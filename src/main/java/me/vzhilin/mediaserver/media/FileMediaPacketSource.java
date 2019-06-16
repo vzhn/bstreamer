@@ -14,27 +14,23 @@ import org.ffmpeg.avutil.AVRational;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import static org.ffmpeg.avcodec.AvcodecLibrary.AV_PKT_FLAG_KEY;
 import static org.ffmpeg.avcodec.AvcodecLibrary.av_packet_unref;
 import static org.ffmpeg.avformat.AvformatLibrary.*;
 
 public class FileMediaPacketSource implements MediaPacketSource {
-    private boolean hasNext;
-    private final File file;
     private Pointer<AVPacket> pktPtr;
     private Pointer<Pointer<AVFormatContext>> pAvfmtCtx;
     private Pointer<AVFormatContext> ifmtCtx;
     private boolean wasClosed;
-    private byte[] sps;
-    private byte[] pps;
-    private AVRational streamTimebase;
-    private AVRational avgFrameRate;
-    private int videoStreamId;
+    private MediaPacketSourceDescription desc;
+
+    private Queue<MediaPacket> packetBuffer = new LinkedList<>();
 
     public FileMediaPacketSource(File file) throws IOException {
-        this.file = file;
-
         if (file.exists()) {
             open(file);
         } else {
@@ -74,22 +70,26 @@ public class FileMediaPacketSource implements MediaPacketSource {
             throw new IOException("h264 stream not found");
         }
 
-        videoStreamId = avStream.index();
-        streamTimebase = avStream.time_base();
-        avgFrameRate = avStream.avg_frame_rate();
+        int videoStreamId = avStream.index();
+        AVRational streamTimebase = avStream.time_base();
+        AVRational avgFrameRate = avStream.avg_frame_rate();
 
         Pointer<AVCodecParameters> cp = avStream.codecpar();
         AVCodecParameters codecpar = cp.get();
         byte[] extradataBytes = codecpar.extradata().getBytes(codecpar.extradata_size());
 
         AVCCExtradataParser extradata = new AVCCExtradataParser(extradataBytes);
-        this.sps = extradata.getSps();
-        this.pps = extradata.getPps();
+        byte[] sps = extradata.getSps();
+        byte[] pps = extradata.getPps();
 
-        hasNext = av_read_frame(ifmtCtx, pktPtr) >= 0;
-        if (hasNext && pktPtr.get().stream_index() != videoStreamId) {
-            hasNext = nextPacket();
-        }
+        desc = new MediaPacketSourceDescription();
+        desc.setSps(sps);
+        desc.setPps(pps);
+        desc.setTimebase(streamTimebase);
+        desc.setAvgFrameRate(avgFrameRate);
+        desc.setVideoStreamId(videoStreamId);
+
+        nextAvPacket();
     }
 
     private AVStream getVideoStream() {
@@ -107,68 +107,69 @@ public class FileMediaPacketSource implements MediaPacketSource {
     }
 
     @Override
+    public MediaPacketSourceDescription getDesc() {
+        return desc;
+    }
+
+    @Override
     public boolean hasNext() {
-        return hasNext;
+        return !packetBuffer.isEmpty();
     }
 
     @Override
     public MediaPacket next() {
-        AVPacket avpacket = pktPtr.get();
-        int sz = avpacket.size();
-        boolean isKey = (avpacket.flags() & AV_PKT_FLAG_KEY) != 0;
-        long pts = avpacket.pts();
-        long dts = avpacket.dts();
-        byte[] data = avpacket.data().getBytes(sz);
+        MediaPacket pkt = packetBuffer.poll();
+        if (packetBuffer.isEmpty()) {
+            nextAvPacket();
+        }
 
-        ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer(data.length, data.length);
-        buffer.writeBytes(data);
-        MediaPacket pkt = new MediaPacket(pts, dts, isKey, buffer);
-
-        hasNext = nextPacket();
         return pkt;
     }
 
-    private boolean nextPacket() {
-        boolean eof = false;
-        while (!eof) {
+    private boolean nextAvPacket() {
+        while (true) {
             av_packet_unref(pktPtr);
             if (av_read_frame(ifmtCtx, pktPtr) < 0) {
-                eof = true;
-            } else
-            if (pktPtr.get().stream_index() == videoStreamId) {
-                break;
+                return true;
+            }
+
+            AVPacket pkt = pktPtr.get();
+            if (pkt.stream_index() == desc.getVideoStreamId()) {
+                long pts = pkt.pts();
+                long dts = pkt.dts();
+                boolean isKey = (pkt.flags() & AV_PKT_FLAG_KEY) != 0;
+
+                int sz = pkt.size();
+                byte[] data = pkt.data().getBytes(sz);
+                int offset = 0;
+                while (offset < data.length) {
+                    int avccLen = ((data[offset] & 0xff) << 24) +
+                            ((data[offset + 1] & 0xff) << 16) +
+                            ((data[offset + 2] & 0xff) << 8) +
+                            (data[offset + 3] & 0xff);
+
+                    ByteBuf payload = PooledByteBufAllocator.DEFAULT.buffer(avccLen, avccLen);
+                    payload.writeBytes(data, offset + 4, avccLen);
+
+                    packetBuffer.offer(new MediaPacket(pts, dts, isKey, payload));
+                    offset += (avccLen + 4);
+                }
+
+                return false;
             }
         }
-
-        return !eof;
     }
 
     @Override
     public void close() {
         if (!wasClosed) {
             wasClosed = true;
-            if (hasNext) {
+            if (hasNext()) {
                 av_packet_unref(pktPtr);
             }
             avformat_close_input(pAvfmtCtx);
             pAvfmtCtx.release();
             pktPtr.release();
         }
-    }
-
-    public byte[] getSps() {
-        return sps;
-    }
-
-    public byte[] getPps() {
-        return pps;
-    }
-
-    public AVRational getStreamTimebase() {
-        return streamTimebase;
-    }
-
-    public AVRational getAvgFrameRate() {
-        return avgFrameRate;
     }
 }

@@ -46,6 +46,14 @@ public class RtspUriParser {
         return uri;
     }
 
+    public String pathItem(int i) {
+        return pathItems.get(i);
+    }
+
+    public int pathItems() {
+        return pathItems.size();
+    }
+
     private final static class LineParser {
         private final char[] chars;
         private int pos;
