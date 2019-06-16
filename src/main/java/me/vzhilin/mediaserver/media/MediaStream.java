@@ -1,5 +1,7 @@
 package me.vzhilin.mediaserver.media;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.MediaPacketEncoder;
@@ -18,7 +20,7 @@ import static org.ffmpeg.avcodec.AvcodecLibrary.av_packet_unref;
 import static org.ffmpeg.avformat.AvformatLibrary.*;
 
 public class MediaStream implements Closeable {
-    public static List<InterleavedFrame> readAllPackets() {
+    public static List<Packet> readAllPackets() {
         Pointer<AVPacket> pktPtr = Pointer.allocate(AVPacket.class);
         Pointer<Pointer<AVFormatContext>> pAvfmtCtx = Pointer.allocatePointer(AVFormatContext.class);
         Pointer<Byte> name = Pointer.pointerToCString("/home/vzhilin/misc/video_samples/simpsons_video.mkv");
@@ -31,7 +33,7 @@ public class MediaStream implements Closeable {
         AVStream videoStream = ifmtCtx.get().streams().get().get();
         MediaPacketEncoder encoder = new MediaPacketEncoder();
 
-        List<InterleavedFrame> rr = new ArrayList<>();
+        List<Packet> rr = new ArrayList<>();
         while (true) {
             int ret = av_read_frame(ifmtCtx, pktPtr);
             if (ret < 0) {
@@ -56,7 +58,9 @@ public class MediaStream implements Closeable {
                         ((data[offset + 2] & 0xff) << 8) +
                         (data[offset + 3] & 0xff);
 
-                encoder.encode(rr, isKey, pts, dts, Unpooled.wrappedBuffer(data, offset + 4, avccLen));
+                ByteBuf payload = PooledByteBufAllocator.DEFAULT.buffer(avccLen, avccLen);
+                payload.writeBytes(data, offset + 4, avccLen);
+                rr.add(new Packet(pts, dts, isKey, payload));
                 offset += (avccLen + 4);
             }
         }

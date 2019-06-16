@@ -10,6 +10,8 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
 import me.vzhilin.mediaserver.InterleavedFrame;
+import me.vzhilin.mediaserver.media.Packet;
+import me.vzhilin.mediaserver.media.RtpPacket;
 import me.vzhilin.mediaserver.util.AVCCExtradataParser;
 import me.vzhilin.mediaserver.util.RtspUriParser;
 import org.bridj.Pointer;
@@ -27,10 +29,10 @@ import java.util.concurrent.TimeUnit;
 import static org.ffmpeg.avformat.AvformatLibrary.*;
 
 public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-    private final List<InterleavedFrame> packets;
+    private final List<Packet> packets;
     private Strategy strategy;
 
-    public RtspServerHandler(List<InterleavedFrame> packets) {
+    public RtspServerHandler(List<Packet> packets) {
         this.packets = packets;
     }
 
@@ -107,6 +109,8 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         this.strategy = new Strategy(ctx, packets);
     }
 
+
+
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
@@ -114,6 +118,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        cause.printStackTrace();
         ctx.close();
     }
 
@@ -175,53 +180,68 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     private final static class Strategy {
         private final ChannelHandlerContext ctx;
-        private final List<InterleavedFrame> packets;
+        private final List<Packet> packets;
 
-        private Iterator<InterleavedFrame> stream;
+        private Iterator<Packet> stream;
         private long timeStart;
         private long ptsStart;
 
-        private InterleavedFrame prevPkt;
+        private long rtpSeqNo;
 
-        public Strategy(ChannelHandlerContext ctx, List<InterleavedFrame> packets) {
+        private Packet prevPkt;
+
+        public Strategy(ChannelHandlerContext ctx, List<Packet> packets) {
             this.ctx = ctx;
             this.packets = packets;
         }
 
         void play() {
             this.stream = packets.iterator();
-            InterleavedFrame firstFrame = stream.next();
+            Packet firstFrame = stream.next();
             timeStart = System.currentTimeMillis();
-            ptsStart = firstFrame.getPtsMillis();
-            ctx.writeAndFlush(firstFrame);
+            ptsStart = firstFrame.getPts();
+            ctx.writeAndFlush(firstFrame, ctx.voidPromise());
 
             send();
         }
 
         void send() {
+            if (!ctx.channel().isActive()) {
+                return;
+            }
+
             long now = System.currentTimeMillis();
 
             if (prevPkt != null) {
-                long pd = (prevPkt.getPtsMillis() - ptsStart) - (now - timeStart);
+                long pd = (prevPkt.getPts() - ptsStart) - (now - timeStart);
                 if (pd < 0) {
                     System.err.println("late! " + pd);
                     timeStart += -pd;
+//                    ptsStart += -pd;
                 }
             }
 
-            InterleavedFrame next = null;
+            long sz = 0;
+            Packet next = null;
+            long delay;
             do {
-                if (stream.hasNext()) {
-                    next = stream.next();
-                    prevPkt = next;
-                    ctx.write(next);
-                } else {
-                    ctx.close();
-                    break;
-                }
-            } while (pktTime(next.getPtsMillis()) - now < 500);
-            long delay = (next.getPtsMillis() - ptsStart) - (now - timeStart);
+                if (!stream.hasNext()) {
+                    stream = packets.iterator();
 
+                    timeStart = now;
+                    ptsStart = 0;
+                }
+
+                next = stream.next();
+                prevPkt = next;
+                long rtpTimestamp = (next.getPts() - ptsStart) * 90;
+                ctx.write(new RtpPacket(next, rtpTimestamp, rtpSeqNo++), ctx.voidPromise());
+                sz += next.getPayload().readableBytes();
+                delay = (next.getPts() - ptsStart) - (now - timeStart);
+
+            } while (delay < 500);
+
+            System.err.println("delay: " + delay + " " + sz);
 
             ctx.executor().schedule(this::send, delay - 100, TimeUnit.MILLISECONDS);
             ctx.flush();
