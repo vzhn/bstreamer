@@ -6,6 +6,9 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
+import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegister;
+import me.vzhilin.mediaserver.server.strategy.seq.SequencedStrategyFactory;
+import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
 
 public class RtspServer {
     public void start() {
@@ -13,6 +16,10 @@ public class RtspServer {
 
         EpollEventLoopGroup bossGroup = new EpollEventLoopGroup(1);
         EpollEventLoopGroup workerGroup = new EpollEventLoopGroup(1);
+
+        StreamingStrategyFactoryRegister register = new StreamingStrategyFactoryRegister();
+        register.addFactory("sync", new SyncStrategyFactory(workerGroup));
+        register.addFactory("seq", new SequencedStrategyFactory());
 
 //        final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 

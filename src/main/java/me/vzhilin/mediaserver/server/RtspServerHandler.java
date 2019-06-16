@@ -170,7 +170,6 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         AVCodecParameters codecpar = cp.get();
 
         byte[] extradata = codecpar.extradata().getBytes(codecpar.extradata_size());
-
         avformat_close_input(pAvfmtCtx);
         namePtr.release();
         pAvfmtCtx.release();
