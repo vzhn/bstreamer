@@ -129,8 +129,8 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
-        ctx.close();
+//        cause.printStackTrace();
+//        ctx.close();
     }
 
     private FullHttpResponse description(RtspUriParser uri, MediaPacketSourceDescription description) {

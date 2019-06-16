@@ -11,13 +11,12 @@ import me.vzhilin.mediaserver.media.RtpPacket;
 
 class RtpPacketEncoder extends ChannelOutboundHandlerAdapter {
     private final int MTU = 64000;
-    private int seqNo = 0;
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof RtpPacket) {
             encode(ctx, (RtpPacket) msg, promise);
-            ctx.flush();
+//            ctx.flush();
         } else {
             super.write(ctx, msg, promise);
         }

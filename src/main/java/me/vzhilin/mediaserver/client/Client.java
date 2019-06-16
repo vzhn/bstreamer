@@ -47,7 +47,7 @@ public class Client {
         TotalStatistics ss = new TotalStatistics();
         ss.onStart();
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000; i++) {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             ChannelFuture future = btstrp.connect("localhost", 5000);
@@ -60,14 +60,14 @@ public class Client {
             new Runnable() {
                 @Override
                 public void run() {
-                    workerGroup.shutdownGracefully().syncUninterruptibly();
                     ss.onShutdown();
-
                     System.err.println(ss);
                     System.err.println(ss.getSize());
+
+                    workerGroup.shutdownGracefully().syncUninterruptibly();
                 }
             }
-        , 100, TimeUnit.SECONDS);
+        , 20, TimeUnit.SECONDS);
         exec.shutdown();
     }
 

@@ -2,9 +2,13 @@ package me.vzhilin.mediaserver.server.strategy.sync;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.ChannelMatcher;
+import io.netty.channel.group.ChannelMatchers;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.media.*;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
-import org.ffmpeg.avcodec.AVPacket;
 import org.ffmpeg.avutil.AVRational;
 import org.ffmpeg.avutil.AVUtil;
 
@@ -27,6 +31,7 @@ public class SyncStrategy implements StreamingStrategy {
 
     /** executor */
     private final ScheduledExecutorService scheduledExecutor;
+    private final ChannelGroup group;
 
     private ScheduledFuture<?> streamingFuture;
 
@@ -35,10 +40,12 @@ public class SyncStrategy implements StreamingStrategy {
     public SyncStrategy(String fileName, ScheduledExecutorService scheduledExecutor) {
         this.fileName = fileName;
         this.scheduledExecutor = scheduledExecutor;
+        this.group = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     }
 
     @Override
     public void attachContext(ChannelHandlerContext ctx) {
+        group.add(ctx.channel());
         ctx.channel().closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
 
         boolean wasFirst = contexts.isEmpty();
@@ -55,6 +62,8 @@ public class SyncStrategy implements StreamingStrategy {
 
     @Override
     public void detachContext(ChannelHandlerContext context) {
+        group.remove(context.channel());
+
         boolean wasLast = contexts.remove(context) && contexts.isEmpty();
         if (wasLast) {
             stopPlaying();
@@ -77,6 +86,8 @@ public class SyncStrategy implements StreamingStrategy {
         AVRational frameRate = source.getDesc().getAvgFrameRate();
         long delayNanos = (long) (1e9 / ((float) frameRate.num() / frameRate.den()));
 
+        delayNanos *= 1;
+
         MediaPacket firstPkt = source.next();
         long pts = firstPkt.getPts();
         if (pts == AVUtil.AV_NOPTS_VALUE) {
@@ -86,36 +97,54 @@ public class SyncStrategy implements StreamingStrategy {
         long firstPts = pts;
         long timeStarted = System.currentTimeMillis();
 
-        streamingFuture = scheduledExecutor.scheduleAtFixedRate(new Runnable() {
+        streamingFuture = scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
             private long rtpSeqNo = 0;
             @Override
             public void run() {
                 long now = System.currentTimeMillis();
 
+                int packets = 0;
                 while (true) {
                     if (source.hasNext()) {
                         MediaPacket pkt = source.next();
-                        sendPkt(pkt);
+                        ++packets;
+                        boolean success = sendPkt(pkt);
 
                         long delta = (pkt.getPts() - firstPts) - (now - timeStarted);
                         if (delta >= 0) {
                             break;
                         }
+
+//                        if (!success) {
+//                            break;
+//                        }
                     } else {
                         stopPlaying();
                         break;
                     }
                 }
 
+                long delta = System.currentTimeMillis() - now;
+                group.flush(ChannelMatchers.all());
+//                System.err.println(delta + " " + packets);
             }
 
-            private void sendPkt(MediaPacket pkt) {
+            private boolean sendPkt(MediaPacket pkt) {
                 long rtpTimestamp = pkt.getPts() * 90;
                 RtpPacket rtpPkt = new RtpPacket(pkt, rtpTimestamp, rtpSeqNo++);
 
-                for (ChannelHandlerContext ctx: contexts) {
-                    ctx.writeAndFlush(rtpPkt, ctx.voidPromise());
-                }
+                boolean success = false;
+
+                group.write(rtpPkt, ChannelMatchers.all(), true);
+
+//                for (ChannelHandlerContext ctx: contexts) {
+//                    if (ctx.channel().isWritable()) {
+//                        success |= true;
+//                        ctx.writeAndFlush(rtpPkt, ctx.voidPromise());
+//                    }
+//                }
+
+                return success;
             }
         }, 0, delayNanos, TimeUnit.NANOSECONDS);
     }
