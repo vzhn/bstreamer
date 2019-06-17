@@ -47,7 +47,7 @@ public class Client {
         TotalStatistics ss = new TotalStatistics();
         ss.onStart();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 8000; i++) {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             ChannelFuture future = btstrp.connect("localhost", 5000);
@@ -67,7 +67,7 @@ public class Client {
                     workerGroup.shutdownGracefully().syncUninterruptibly();
                 }
             }
-        , 20, TimeUnit.SECONDS);
+        , 50, TimeUnit.SECONDS);
         exec.shutdown();
     }
 

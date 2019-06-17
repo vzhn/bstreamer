@@ -1,13 +1,16 @@
 package me.vzhilin.mediaserver.server.strategy.sync;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.ChannelMatcher;
 import io.netty.channel.group.ChannelMatchers;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.media.*;
+import me.vzhilin.mediaserver.server.RtpEncoder;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import org.ffmpeg.avutil.AVRational;
 import org.ffmpeg.avutil.AVUtil;
@@ -98,20 +101,27 @@ public class SyncStrategy implements StreamingStrategy {
         long timeStarted = System.currentTimeMillis();
 
         streamingFuture = scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
+            private final RtpEncoder encoder = new RtpEncoder();
             private long rtpSeqNo = 0;
             @Override
             public void run() {
                 long now = System.currentTimeMillis();
 
+//                int sz = encoder.estimateSize(pkt);
+                ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
                 int packets = 0;
                 while (true) {
                     if (source.hasNext()) {
                         MediaPacket pkt = source.next();
                         ++packets;
-                        boolean success = sendPkt(pkt);
+
+
+                        encoder.encode(buffer, pkt, rtpSeqNo++, pkt.getPts() * 90);
+
+//                        boolean success = sendRtpPkt(pkt);
 
                         long delta = (pkt.getPts() - firstPts) - (now - timeStarted);
-                        if (delta >= 0) {
+                        if (delta >= 100) {
                             break;
                         }
 
@@ -125,8 +135,12 @@ public class SyncStrategy implements StreamingStrategy {
                 }
 
                 long delta = System.currentTimeMillis() - now;
-                group.flush(ChannelMatchers.all());
-//                System.err.println(delta + " " + packets);
+                if (contexts.size() > 1) {
+                    buffer.retain(contexts.size() - 1);
+                }
+
+                group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
+                System.err.println(delta + " " + packets + " " + buffer.readableBytes());
             }
 
             private boolean sendPkt(MediaPacket pkt) {
@@ -152,7 +166,7 @@ public class SyncStrategy implements StreamingStrategy {
     private void stopPlaying() {
         streamingFuture.cancel(true);
         for (ChannelHandlerContext ctx: contexts) {
-            ctx.close(ctx.voidPromise());
+            ctx.close();
         }
         try {
             source.close();

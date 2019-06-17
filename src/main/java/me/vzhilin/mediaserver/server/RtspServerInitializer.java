@@ -18,7 +18,8 @@ public class RtspServerInitializer extends ChannelInitializer<SocketChannel> {
     @Override
     public void initChannel(SocketChannel channel) {
         ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast(new RtpPacketEncoder());
+//        pipeline.addLast(new RtpPacketEncoder());
+        pipeline.addLast(new InterleavedFrameEncoder());
         pipeline.addLast("http_request", new HttpRequestDecoder());
         pipeline.addLast("http_aggregator", new HttpObjectAggregator(1024));
         pipeline.addLast("http_response", new HttpResponseEncoder());
