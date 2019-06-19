@@ -100,6 +100,11 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     }
 
+    @Override
+    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
+        super.channelWritabilityChanged(ctx);
+    }
+
     private void sendMaximum(ChannelHandlerContext ctx, Channel channel) {
 //        InterleavedFrame next;
 //        while (channel.isWritable()) {

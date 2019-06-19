@@ -2,9 +2,11 @@ package me.vzhilin.mediaserver.server.strategy.sync;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.ChannelMatcher;
 import io.netty.channel.group.ChannelMatchers;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class SyncStrategy implements StreamingStrategy {
     public static final String BASE_FOLDR = "/home/vzhilin/misc/video_samples/";
@@ -30,14 +33,14 @@ public class SyncStrategy implements StreamingStrategy {
     private final String fileName;
 
     /** client connections */
-    private final List<ChannelHandlerContext> contexts = new ArrayList<>();
+//    private final List<ChannelHandlerContext> contexts = new ArrayList<>();
 
     /** executor */
     private final ScheduledExecutorService scheduledExecutor;
     private final ChannelGroup group;
 
     private ScheduledFuture<?> streamingFuture;
-
+    private int contextCount = 0;
     private MediaPacketSource source;
 
     public SyncStrategy(String fileName, ScheduledExecutorService scheduledExecutor) {
@@ -48,11 +51,12 @@ public class SyncStrategy implements StreamingStrategy {
 
     @Override
     public void attachContext(ChannelHandlerContext ctx) {
+        boolean wasFirst = contextCount++ == 0;
         group.add(ctx.channel());
         ctx.channel().closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
 
-        boolean wasFirst = contexts.isEmpty();
-        contexts.add(ctx);
+
+//        contexts.add(ctx);
 
         if (wasFirst) {
             try {
@@ -63,11 +67,13 @@ public class SyncStrategy implements StreamingStrategy {
         }
     }
 
+
+
     @Override
     public void detachContext(ChannelHandlerContext context) {
         group.remove(context.channel());
 
-        boolean wasLast = contexts.remove(context) && contexts.isEmpty();
+        boolean wasLast = contextCount-- == 0;
         if (wasLast) {
             stopPlaying();
         }
@@ -103,75 +109,86 @@ public class SyncStrategy implements StreamingStrategy {
         streamingFuture = scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
             private final RtpEncoder encoder = new RtpEncoder();
             private long rtpSeqNo = 0;
+            private int notWritable;
+            private long prev = System.currentTimeMillis();
+            private long adjust = 0;
             @Override
             public void run() {
                 long now = System.currentTimeMillis();
+                long d = now - prev;
+                prev = now;
 
-//                int sz = encoder.estimateSize(pkt);
-                ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
-                int packets = 0;
-                while (true) {
-                    if (source.hasNext()) {
-                        MediaPacket pkt = source.next();
-                        ++packets;
+                notWritable = 0;
+                group.forEach(channel -> {
+                    if (!channel.isWritable()) {
+                        ++notWritable;
+                    }
+                });
 
-
-                        encoder.encode(buffer, pkt, rtpSeqNo++, pkt.getPts() * 90);
-
-//                        boolean success = sendRtpPkt(pkt);
-
-                        long delta = (pkt.getPts() - firstPts) - (now - timeStarted);
-                        if (delta >= 100) {
+                if (notWritable > 0) {
+                    System.err.println("overflow! " + notWritable);
+                    adjust += d;
+                } else {
+                    ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+                    int sz = 0;
+                    while (sz < 512 * 1024) {
+                        if (source.hasNext()) {
+                            MediaPacket pkt = source.next();
+                            sz += pkt.getPayload().readableBytes();
+                            encoder.encode(buffer, pkt, rtpSeqNo++, pkt.getPts() * 90);
+                            long delta = (pkt.getPts() - firstPts) - (now - timeStarted) + adjust;
+                            if (delta >= 100) {
+                                break;
+                            }
+                        } else {
+                            stopPlaying();
                             break;
                         }
-
-//                        if (!success) {
-//                            break;
-//                        }
-                    } else {
-                        stopPlaying();
-                        break;
                     }
+
+                    if (group.size() >= 1) {
+                        buffer.retain(group.size());
+                        group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
+                    }
+
+                    buffer.release();
                 }
 
-                long delta = System.currentTimeMillis() - now;
-                if (contexts.size() > 1) {
-                    buffer.retain(contexts.size() - 1);
-                }
 
-                group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
-                System.err.println(delta + " " + packets + " " + buffer.readableBytes());
-            }
-
-            private boolean sendPkt(MediaPacket pkt) {
-                long rtpTimestamp = pkt.getPts() * 90;
-                RtpPacket rtpPkt = new RtpPacket(pkt, rtpTimestamp, rtpSeqNo++);
-
-                boolean success = false;
-
-                group.write(rtpPkt, ChannelMatchers.all(), true);
-
-//                for (ChannelHandlerContext ctx: contexts) {
-//                    if (ctx.channel().isWritable()) {
-//                        success |= true;
-//                        ctx.writeAndFlush(rtpPkt, ctx.voidPromise());
-//                    }
-//                }
-
-                return success;
             }
         }, 0, delayNanos, TimeUnit.NANOSECONDS);
     }
 
     private void stopPlaying() {
         streamingFuture.cancel(true);
-        for (ChannelHandlerContext ctx: contexts) {
-            ctx.close();
-        }
+        group.close();
+//        for (ChannelHandlerContext ctx: contexts) {
+//            ctx.close();
+//        }
         try {
             source.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static class MyChannelMatcher implements ChannelMatcher {
+        private final long[] overflow;
+        private final ByteBuf buffer;
+
+        public MyChannelMatcher(long[] overflow, ByteBuf buffer) {
+            this.overflow = overflow;
+            this.buffer = buffer;
+        }
+
+        @Override
+        public boolean matches(Channel channel) {
+            boolean writable = channel.isWritable();
+            if (!writable) {
+                ++overflow[0];
+                buffer.release();
+            }
+            return writable;
         }
     }
 }

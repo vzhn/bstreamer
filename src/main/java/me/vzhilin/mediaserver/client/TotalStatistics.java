@@ -38,4 +38,45 @@ public class TotalStatistics {
         float mbps = 1e-9f * 8 * sz / deltaMillis * 1000;
         return String.format("TotalStatistics{gbps=%.2f}", mbps);
     }
+
+    public Snapshot snapshot() {
+        return new Snapshot(sz);
+    }
+
+    public final static class Snapshot {
+        private final long sz;
+        private final long timestamp;
+
+        public Snapshot(long sz) {
+            this.sz = sz;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        public Diff diff(Snapshot prev) {
+            return new Diff(sz - prev.sz, timestamp - prev.timestamp);
+        }
+    }
+
+    public final static class Diff {
+        private final long deltaSize;
+        private final long deltaTime;
+        private final float gbps;
+
+        public Diff(long deltaSize, long deltaTime) {
+            this.deltaSize = deltaSize;
+            this.deltaTime = deltaTime;
+
+            gbps = 1e-9f * 8 * deltaSize / deltaTime * 1000;
+
+        }
+
+        @Override
+        public String toString() {
+            return "Diff{" +
+                    "deltaSize=" + deltaSize +
+                    ", deltaTime=" + deltaTime +
+                    ", gbps=" + gbps +
+                    '}';
+        }
+    }
 }

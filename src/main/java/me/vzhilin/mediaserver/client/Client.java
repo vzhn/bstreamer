@@ -1,14 +1,12 @@
 package me.vzhilin.mediaserver.client;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
+import io.netty.channel.*;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
+import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import org.apache.log4j.BasicConfigurator;
 
@@ -17,6 +15,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Client {
+
+    public static final AttributeKey<ConnectionStatistics> STAT = AttributeKey.valueOf("stat");
+
     public static void main(String... argv) {
         Client client = new Client();
         client.start();
@@ -26,11 +27,13 @@ public class Client {
         BasicConfigurator.configure();
         Bootstrap bootstrap = new Bootstrap();
 
-        EpollEventLoopGroup workerGroup = new EpollEventLoopGroup(4);
+        EpollEventLoopGroup workerGroup = new EpollEventLoopGroup();
+//        workerGroup.setIoRatio(100);
 
         Bootstrap b = bootstrap
             .group(workerGroup)
             .channel(EpollSocketChannel.class)
+//            .option(ChannelOption.SO_RCVBUF, 128 * 1024)
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) {
@@ -47,15 +50,29 @@ public class Client {
         TotalStatistics ss = new TotalStatistics();
         ss.onStart();
 
-        for (int i = 0; i < 8000; i++) {
+        for (int i = 0; i < 2 * 1024; i++) {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
+            btstrp.attr(STAT, stat);
+
             ChannelFuture future = btstrp.connect("localhost", 5000);
 
-            bindListener(btstrp, future, stat);
+            bindListener(btstrp, future);
         }
 
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+        exec.scheduleAtFixedRate(new Runnable() {
+            private TotalStatistics.Snapshot prev;
+
+            @Override
+            public void run() {
+                TotalStatistics.Snapshot s = ss.snapshot();
+                if (prev != null) {
+                    System.err.println(s.diff(prev));
+                }
+                prev = s;
+            }
+        }, 1, 1, TimeUnit.SECONDS);
         exec.schedule(
             new Runnable() {
                 @Override
@@ -65,19 +82,19 @@ public class Client {
                     System.err.println(ss.getSize());
 
                     workerGroup.shutdownGracefully().syncUninterruptibly();
+                    exec.shutdownNow();
                 }
             }
-        , 50, TimeUnit.SECONDS);
-        exec.shutdown();
+        , 500, TimeUnit.SECONDS);
+//        exec.shutdown();
     }
 
-    private void bindListener(Bootstrap b, ChannelFuture connectFuture, ConnectionStatistics stat) {
+    private void bindListener(Bootstrap b, ChannelFuture connectFuture) {
         ChannelFutureListener connectListener = new ChannelFutureListener() {
 
             @Override
             public void operationComplete(ChannelFuture future) {
-                future.channel().attr(AttributeKey.valueOf("stat")).set(stat);
-
+                ConnectionStatistics stat = future.channel().attr(STAT).get();
                 stat.onConnected();
             }
         };
@@ -86,6 +103,7 @@ public class Client {
         ChannelFutureListener closeListener = new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) {
+                ConnectionStatistics stat = future.channel().attr(STAT).get();
                 stat.onDisconnected();
 
                 if (!future.channel().eventLoop().isShuttingDown()) {
