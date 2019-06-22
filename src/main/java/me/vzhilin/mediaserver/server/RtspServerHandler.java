@@ -7,7 +7,7 @@ import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
-import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.*;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactory;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;
@@ -22,9 +22,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         this.registry = registry;
     }
 
-    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
-        FullHttpRequest request = (FullHttpRequest) msg;
-
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         HttpMethod method = request.method();
         HttpResponse response;
         switch (method.name()) {
@@ -35,7 +33,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 ctx.writeAndFlush(response);
                 break;
             case "DESCRIBE": {
-                RtspUriParser uri = new RtspUriParser(msg.uri());
+                RtspUriParser uri = new RtspUriParser(request.uri());
 
                 if (uri.pathItems() < 2) {
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
@@ -45,8 +43,10 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                     String strategyName = uri.pathItem(0);
                     String fileName = uri.pathItem(1);
 
+
+                    MediaPacketSourceFactory fsf = new FileSourceFactory(fileName);
                     StreamingStrategyFactory strategyFactory = registry.get(strategyName);
-                    MediaPacketSourceDescription description = strategyFactory.describe(fileName);
+                    MediaPacketSourceDescription description = strategyFactory.describe(fsf);
                     response = description(uri, description);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
@@ -63,7 +63,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 break;
             }
             case "PLAY": {
-                RtspUriParser uri = new RtspUriParser(msg.uri());
+                RtspUriParser uri = new RtspUriParser(request.uri());
                 String strategyName = uri.pathItem(0);
                 String fileName = uri.pathItem(1);
 
@@ -74,10 +74,8 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
                 ctx.writeAndFlush(response);
 
-                StreamingStrategy strategy = strategyFactory.getStrategy(fileName);
+                StreamingStrategy strategy = strategyFactory.getStrategy(new FileSourceFactory(fileName));
                 strategy.attachContext(ctx);
-
-//                strategy.play();
                 break;
             }
             default:
@@ -85,57 +83,6 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                 ctx.writeAndFlush(response);
         }
-    }
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        super.userEventTriggered(ctx, evt);
-
-        if (evt instanceof TickEvent) {
-            sendMaximum(ctx, ctx.channel());
-        }
-    }
-
-    private void send(ChannelHandlerContext ctx) {
-
-    }
-
-    @Override
-    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
-        super.channelWritabilityChanged(ctx);
-    }
-
-    private void sendMaximum(ChannelHandlerContext ctx, Channel channel) {
-//        InterleavedFrame next;
-//        while (channel.isWritable()) {
-//            if (!stream.hasNext()) {
-//                stream = packets.iterator();
-//            }
-//            next = stream.next();
-//            ctx.write(next, ctx.voidPromise());
-//        }
-
-//        System.err.println("write! " + new Date());
-        ctx.flush();
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
-//        this.strategy = new Strategy(ctx, packets);
-    }
-
-
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-//        cause.printStackTrace();
-//        ctx.close();
     }
 
     private FullHttpResponse description(RtspUriParser uri, MediaPacketSourceDescription description) {
@@ -163,5 +110,11 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         response.headers().add(HttpHeaderNames.CONTENT_TYPE, "application/sdp");
 
         return response;
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        cause.printStackTrace();
+        ctx.close();
     }
 }

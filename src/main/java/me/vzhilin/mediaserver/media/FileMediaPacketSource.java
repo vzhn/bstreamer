@@ -28,7 +28,7 @@ public class FileMediaPacketSource implements MediaPacketSource {
     private boolean wasClosed;
     private MediaPacketSourceDescription desc;
 
-    private Queue<MediaPacket> packetBuffer = new LinkedList<>();
+    private Queue<MediaPacket> packetQueue = new LinkedList<>();
 
     public FileMediaPacketSource(File file) throws IOException {
         if (file.exists()) {
@@ -88,7 +88,6 @@ public class FileMediaPacketSource implements MediaPacketSource {
         desc.setTimebase(streamTimebase);
         desc.setAvgFrameRate(avgFrameRate);
         desc.setVideoStreamId(videoStreamId);
-
         nextAvPacket();
     }
 
@@ -113,14 +112,17 @@ public class FileMediaPacketSource implements MediaPacketSource {
 
     @Override
     public boolean hasNext() {
-        return !packetBuffer.isEmpty();
+        return !packetQueue.isEmpty();
     }
 
     @Override
     public MediaPacket next() {
-        MediaPacket pkt = packetBuffer.poll();
-        if (packetBuffer.isEmpty()) {
-            nextAvPacket();
+        MediaPacket pkt = packetQueue.poll();
+        if (packetQueue.isEmpty()) {
+            boolean eof = nextAvPacket();
+            if (eof) {
+                return null;
+            }
         }
 
         return pkt;
@@ -151,7 +153,7 @@ public class FileMediaPacketSource implements MediaPacketSource {
                     ByteBuf payload = PooledByteBufAllocator.DEFAULT.buffer(avccLen, avccLen);
                     payload.writeBytes(data, offset + 4, avccLen);
 
-                    packetBuffer.offer(new MediaPacket(pts, dts, isKey, payload));
+                    packetQueue.offer(new MediaPacket(pts, dts, isKey, payload));
                     offset += (avccLen + 4);
                 }
 

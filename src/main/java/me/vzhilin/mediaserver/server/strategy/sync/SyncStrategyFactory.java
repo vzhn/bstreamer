@@ -1,6 +1,7 @@
 package me.vzhilin.mediaserver.server.strategy.sync;
 
 import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactory;
 
@@ -9,7 +10,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class SyncStrategyFactory implements StreamingStrategyFactory {
-    private final Map<String, SyncStrategy> filenameToStrategy = new HashMap<>();
+    private final Map<MediaPacketSourceFactory, SyncStrategy> filenameToStrategy = new HashMap<>();
     private final ScheduledExecutorService scheduledExecutor;
 
     public SyncStrategyFactory(ScheduledExecutorService scheduledExecutor) {
@@ -17,12 +18,12 @@ public class SyncStrategyFactory implements StreamingStrategyFactory {
     }
 
     @Override
-    public StreamingStrategy getStrategy(String fileName) {
-        return filenameToStrategy.computeIfAbsent(fileName, s -> new SyncStrategy(s, scheduledExecutor));
+    public StreamingStrategy getStrategy(MediaPacketSourceFactory sourceFactory) {
+        return filenameToStrategy.computeIfAbsent(sourceFactory, s -> new SyncStrategy(s, scheduledExecutor));
     }
 
     @Override
-    public MediaPacketSourceDescription describe(String fileName) {
-        return getStrategy(fileName).describe();
+    public MediaPacketSourceDescription describe(MediaPacketSourceFactory sourceFactory) {
+        return getStrategy(sourceFactory).describe();
     }
 }

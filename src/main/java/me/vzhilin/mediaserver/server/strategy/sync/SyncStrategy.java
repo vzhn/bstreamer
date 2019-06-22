@@ -9,10 +9,7 @@ import io.netty.channel.group.ChannelMatchers;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
-import me.vzhilin.mediaserver.media.FileMediaPacketSource;
-import me.vzhilin.mediaserver.media.MediaPacket;
-import me.vzhilin.mediaserver.media.MediaPacketSource;
-import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.*;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import org.ffmpeg.avutil.AVRational;
@@ -25,21 +22,17 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class SyncStrategy implements StreamingStrategy {
-    public static final String BASE_FOLDR = "/home/vzhilin/misc/video_samples/";
-
-    /** mkv file */
-    private final String fileName;
-
     /** executor */
     private final ScheduledExecutorService scheduledExecutor;
     private final ChannelGroup group;
+    private final MediaPacketSourceFactory sourceFactory;
 
     private ScheduledFuture<?> streamingFuture;
     private MediaPacketSource source;
     private Runnable command;
 
-    public SyncStrategy(String fileName, ScheduledExecutorService scheduledExecutor) {
-        this.fileName = fileName;
+    public SyncStrategy(MediaPacketSourceFactory sourceFactory, ScheduledExecutorService scheduledExecutor) {
+        this.sourceFactory = sourceFactory;
         this.scheduledExecutor = scheduledExecutor;
         this.group = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     }
@@ -71,17 +64,12 @@ public class SyncStrategy implements StreamingStrategy {
 
     @Override
     public MediaPacketSourceDescription describe() {
-        File file = new File(BASE_FOLDR + fileName);
-        try (MediaPacketSource source = new FileMediaPacketSource(file)){
-            return source.getDesc();
-        } catch (IOException e) {
-            return null;
-        }
+        MediaPacketSource src = sourceFactory.newSource();
+        return src.getDesc();
     }
 
     private void startPlaying() throws IOException {
-        File file = new File(BASE_FOLDR + fileName);
-        source = new FileMediaPacketSource(file);
+        source = sourceFactory.newSource();
         AVRational frameRate = source.getDesc().getAvgFrameRate();
         long delayNanos = (long) (1e9 / ((float) frameRate.num() / frameRate.den()));
         MediaPacket firstPkt = source.next();
