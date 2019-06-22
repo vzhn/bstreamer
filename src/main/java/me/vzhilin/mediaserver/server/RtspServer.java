@@ -5,13 +5,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
-import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
-import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.sctp.nio.NioSctpServerChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;
 import me.vzhilin.mediaserver.server.strategy.seq.SequencedStrategyFactory;
 import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
@@ -35,7 +30,7 @@ public class RtspServer {
                 .childHandler(new RtspServerInitializer(register))
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(256 * 1024, 512 * 1024))
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
-                .childOption(ChannelOption.SO_SNDBUF, 1 * 1024);
+                .childOption(ChannelOption.SO_SNDBUF, 8 * 1024);
 
         try {
             ChannelFuture future = bootstrap.bind(5000).sync();
