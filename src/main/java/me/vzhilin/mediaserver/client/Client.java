@@ -15,7 +15,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Client {
-
     public static final AttributeKey<ConnectionStatistics> STAT = AttributeKey.valueOf("stat");
 
     public static void main(String... argv) {
@@ -28,12 +27,9 @@ public class Client {
         Bootstrap bootstrap = new Bootstrap();
 
         EpollEventLoopGroup workerGroup = new EpollEventLoopGroup();
-//        workerGroup.setIoRatio(100);
-
         Bootstrap b = bootstrap
             .group(workerGroup)
             .channel(EpollSocketChannel.class)
-//            .option(ChannelOption.SO_RCVBUF, 128 * 1024)
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) {
@@ -54,9 +50,7 @@ public class Client {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             btstrp.attr(STAT, stat);
-
             ChannelFuture future = btstrp.connect("localhost", 5000);
-
             bindListener(btstrp, future);
         }
 

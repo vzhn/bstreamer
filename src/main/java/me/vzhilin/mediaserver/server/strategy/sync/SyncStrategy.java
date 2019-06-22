@@ -85,12 +85,12 @@ public class SyncStrategy implements StreamingStrategy {
         AVRational frameRate = source.getDesc().getAvgFrameRate();
         long delayNanos = (long) (1e9 / ((float) frameRate.num() / frameRate.den()));
         MediaPacket firstPkt = source.next();
-        long pts = firstPkt.getPts();
-        if (pts == AVUtil.AV_NOPTS_VALUE) {
-            pts = 0;
+        long dts = firstPkt.getDts();
+        if (dts == AVUtil.AV_NOPTS_VALUE) {
+            dts = 0;
         }
 
-        long firstPts = pts;
+        long firstDts = dts;
         long timeStarted = System.currentTimeMillis();
 
         command = new Runnable() {
@@ -116,7 +116,7 @@ public class SyncStrategy implements StreamingStrategy {
                 boolean stopped = false;
                 long delta = 0;
                 if (notWritable > 0) {
-                    System.err.println("overflow! " + notWritable);
+                    System.err.println("overflow! " + notWritable + " " + adjust);
                     adjust += d;
                     delta = d;
                 } else {
@@ -126,8 +126,8 @@ public class SyncStrategy implements StreamingStrategy {
                         if (source.hasNext()) {
                             MediaPacket pkt = source.next();
                             sz += pkt.getPayload().readableBytes();
-                            encoder.encode(buffer, pkt, rtpSeqNo++, pkt.getPts() * 90);
-                            delta = (pkt.getPts() - firstPts) - (now - timeStarted) + adjust;
+                            encoder.encode(buffer, pkt, rtpSeqNo++, pkt.getDts() * 90);
+                            delta = (pkt.getPts() - firstDts) - (now - timeStarted) + adjust;
                             if (delta > 0) {
                                 break;
                             }

@@ -39,4 +39,8 @@ public class MediaPacket {
                 ", payload=" + payload +
                 '}';
     }
+
+    public long getDts() {
+        return dts;
+    }
 }
