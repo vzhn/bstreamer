@@ -2,13 +2,16 @@ package me.vzhilin.mediaserver.util;
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RtspUriParser {
     private final List<String> pathItems = new ArrayList<>();
     private final String host;
     private final int port;
     private final String uri;
+    private final Map<String, String> params = new HashMap<>();
 
     public RtspUriParser(String uri) throws ParseException {
         this.uri = uri;
@@ -26,7 +29,21 @@ public class RtspUriParser {
 
         while (ps.hasNext() && ps.ch() == '/') {
             ps.next();
-            pathItems.add(ps.readTo('/'));
+            pathItems.add(ps.readTo('/', '?'));
+        }
+
+        if (ps.hasNext() && ps.ch() == '?') {
+            ps.read('?');
+            while (ps.hasNext()) {
+                String key = ps.readTo('=');
+                ps.read('=');
+                String value = ps.readTo('&');
+                if (ps.hasNext()) {
+                    ps.read('&');
+                }
+
+                params.put(key, value);
+            }
         }
     }
 
@@ -52,6 +69,14 @@ public class RtspUriParser {
 
     public int pathItems() {
         return pathItems.size();
+    }
+
+    public String getParam(String key) {
+        return params.get(key);
+    }
+
+    public String getParam(String key, String defaultValue) {
+        return params.getOrDefault(key, defaultValue);
     }
 
     private final static class LineParser {
@@ -117,6 +142,14 @@ public class RtspUriParser {
             }
 
             return Integer.parseInt(sb.toString());
+        }
+
+        public void read(char c) throws ParseException {
+            if (ch() != c) {
+                throw new ParseException("expected: '" + c + "'", pos);
+            }
+
+            next();
         }
     }
 }

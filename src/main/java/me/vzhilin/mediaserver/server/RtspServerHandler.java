@@ -35,16 +35,15 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             case "DESCRIBE": {
                 RtspUriParser uri = new RtspUriParser(request.uri());
 
-                if (uri.pathItems() < 2) {
+                if (uri.pathItems() < 1) {
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 } else {
-                    String strategyName = uri.pathItem(0);
-                    String fileName = uri.pathItem(1);
+                    String strategyName = uri.getParam("mode", "sync");
+                    String fileName = uri.pathItem(0);
 
-
-                    MediaPacketSourceFactory fsf = new FileSourceFactory(fileName);
+                    MediaPacketSourceFactory fsf = new FileSourceFactory("/home/vzhilin/misc/video_samples/" + fileName);
                     StreamingStrategyFactory strategyFactory = registry.get(strategyName);
                     MediaPacketSourceDescription description = strategyFactory.describe(fsf);
                     response = description(uri, description);
@@ -64,18 +63,24 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             }
             case "PLAY": {
                 RtspUriParser uri = new RtspUriParser(request.uri());
-                String strategyName = uri.pathItem(0);
-                String fileName = uri.pathItem(1);
+                if (uri.pathItems() < 1) {
+                    response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
+                    response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
+                    ctx.writeAndFlush(response);
+                } else {
+                    String strategyName = uri.getParam("mode", "sync");
+                    String fileName = uri.pathItem(0);
 
-                StreamingStrategyFactory strategyFactory = registry.get(strategyName);
+                    response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
+                    response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
+                    response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
+                    ctx.writeAndFlush(response);
 
-                response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
-                response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
-                response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
-                ctx.writeAndFlush(response);
+                    StreamingStrategyFactory strategyFactory = registry.get(strategyName);
+                    StreamingStrategy strategy = strategyFactory.getStrategy(new FileSourceFactory("/home/vzhilin/misc/video_samples/" + fileName));
+                    strategy.attachContext(ctx);
+                }
 
-                StreamingStrategy strategy = strategyFactory.getStrategy(new FileSourceFactory(fileName));
-                strategy.attachContext(ctx);
                 break;
             }
             default:

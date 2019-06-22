@@ -12,45 +12,37 @@ import me.vzhilin.mediaserver.server.strategy.seq.SequencedStrategyFactory;
 import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
 
 public class RtspServer {
+    private final EventLoopGroup bossGroup;
+    private final EventLoopGroup workerGroup;
+    private final ServerBootstrap bootstrap;
+    private final StreamingStrategyFactoryRegistry registry;
+    private ChannelFuture future;
+
+    public RtspServer() {
+        bootstrap = new ServerBootstrap();
+        bossGroup = new EpollEventLoopGroup(1);
+        workerGroup = new EpollEventLoopGroup(1);
+
+        registry = new StreamingStrategyFactoryRegistry();
+        registry.addFactory("sync", new SyncStrategyFactory(workerGroup));
+        registry.addFactory("seq", new SequencedStrategyFactory());
+    }
+
     public void start() {
-        ServerBootstrap bootstrap = new ServerBootstrap();
-
-        EventLoopGroup bossGroup = new EpollEventLoopGroup(1);
-        EpollEventLoopGroup workerGroup = new EpollEventLoopGroup(1);
-//        workerGroup.setIoRatio(100);
-
-        StreamingStrategyFactoryRegistry register = new StreamingStrategyFactoryRegistry();
-        register.addFactory("sync", new SyncStrategyFactory(workerGroup));
-        register.addFactory("seq", new SequencedStrategyFactory());
-
-//        final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-
+        WriteBufferWaterMark writeBufferWaterMark = new WriteBufferWaterMark(256 * 1024, 512 * 1024);
         bootstrap.group(bossGroup, workerGroup)
                 .channel(EpollServerSocketChannel.class)
-                .childHandler(new RtspServerInitializer(register))
-                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(256 * 1024, 512 * 1024))
+                .childHandler(new RtspServerInitializer(registry))
+                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.SO_SNDBUF, 8 * 1024);
 
-        try {
-            ChannelFuture future = bootstrap.bind(5000).sync();
+        future = bootstrap.bind(5000).syncUninterruptibly();
+    }
 
-//            workerGroup.scheduleWithFixedDelay(new Runnable() {
-//                TickEvent tick = new TickEvent();
-//                @Override
-//                public void run() {
-//                    channels.forEach(new Consumer<Channel>() {
-//                        @Override
-//                        public void accept(Channel channel) {
-//                            channel.pipeline().fireUserEventTriggered(tick);
-//                        }
-//                    });
-//                }
-//            }, 40, 40, TimeUnit.MILLISECONDS);
-
-            future.channel().closeFuture().sync();
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
+    public void stop() {
+        bossGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
+        future.channel().close().syncUninterruptibly();
     }
 }
