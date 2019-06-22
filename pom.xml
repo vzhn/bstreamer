@@ -7,6 +7,10 @@
     <groupId>com.vzhilin</groupId>
     <artifactId>mediaserver</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
     <build>
         <plugins>
             <plugin>
@@ -17,26 +21,100 @@
                     <target>8</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>rpm-maven-plugin</artifactId>
+                <version>2.2.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-rpm</id>
+                        <goals>
+                            <goal>rpm</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <license>GPL</license>
+                    <distribution>github</distribution>
+                    <group>Application/Misc</group>
+                    <mappings>
+                        <mapping>
+                            <directory>/usr/local/mediaserver</directory>
+                            <filemode>440</filemode>
+                            <username>dumper</username>
+                            <groupname>dumpgroup</groupname>
+                            <sources>
+                                <source>
+                                    <location>target/appassembler</location>
+                                </source>
+                            </sources>
+                        </mapping>
+                        <!--
+                        <mapping>
+                            <directory>/usr/local/bin/bin</directory>
+                            <filemode>440</filemode>
+                            <username>dumper</username>
+                            <groupname>dumpgroup</groupname>
+                            <sources>
+                                <source>
+                                    <location>/home/vzhilin/sources/commons-daemon/src/native/unix/jsvc</location>
+                                    <targetArchitecture>x86_64</targetArchitecture>
+                                </source>
+                            </sources>
+                        </mapping>
+                        -->
+                    </mappings>
+                    <preinstallScriptlet>
+                        <script>echo "installing ${project.name} now"</script>
+                    </preinstallScriptlet>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>2.1.0</version>
+                <configuration>
+                    <programs>
+                        <program>
+                            <mainClass>me.vzhilin.mediaserver.Mediaserver</mainClass>
+                            <id>app</id>
+                        </program>
+                    </programs>
+                    <repositoryLayout>flat</repositoryLayout>
+                    <useAllProjectDependencies>true</useAllProjectDependencies>
+                </configuration>
+                <executions>
+                    <execution>
+                    <id>assemble</id>
+                    <goals>
+                        <goal>assemble</goal>
+                    </goals>
+                    <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>com.vzhilin</groupId>-->
-<!--            <artifactId>ffmpeg-jna</artifactId>-->
-<!--            <version>1.0-SNAPSHOT</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.ffmpeg</groupId>
             <artifactId>ffmpeg</artifactId>
             <scope>system</scope>
             <systemPath>/home/vzhilin/sources/ffmpeg/dist/ffmpeg-4.0.jar</systemPath>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-daemon</groupId>
+            <artifactId>commons-daemon</artifactId>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>org.ffmpeg</groupId>
             <artifactId>bridj</artifactId>
             <scope>system</scope>
             <systemPath>/home/vzhilin/sources/ffmpeg/lib/bridj-0.7-SNAPSHOT.jar</systemPath>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -48,7 +126,6 @@
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
         </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

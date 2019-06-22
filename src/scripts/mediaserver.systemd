@@ -1,0 +1,14 @@
+[Unit]
+Description=RTSP Mediaserver
+
+[Service]
+User=nobody
+WorkingDirectory=/usr/local/mediaserver
+ExecStart=/usr/bin/java -Xmx256m -cp "repo/*" me.vzhilin.mediaserver.Mediaserver --server.port=8081
+SuccessExitStatus=143
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

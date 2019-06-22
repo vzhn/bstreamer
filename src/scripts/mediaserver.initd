@@ -1,0 +1,41 @@
+#!/bin/bash
+
+APP=/usr/local/mediaserver/
+JSVC="$APP/jsvc"
+
+COMMAND="-cwd $APP -cp "repo/*" me.vzhilin.mediaserver.MediaserverDaemon"
+COMMAND_START="$JSVC $COMMAND"
+COMMAND_STOP="$JSVC -stop $COMMAND"
+COMMAND_CHECK="$JSVC -check $COMMAND"
+
+start() {
+    COMMAND_START
+}
+
+stop() {
+    COMMAND_STOP
+}
+
+check() {
+    COMMAND_CHECK
+}
+
+case "$1" in
+        start)
+                start
+                ;;
+        stop)
+                stop
+                ;;
+        restart)
+                stop
+                start
+                ;;
+        status)
+                check
+                ;;
+        *)
+                echo $"Usage: $0 {start|stop|restart|status}"
+                RETVAL=1
+esac
+exit $RETVAL
