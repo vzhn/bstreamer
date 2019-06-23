@@ -2,7 +2,7 @@
 Description=RTSP Mediaserver
 
 [Service]
-User=nobody
+User=root
 WorkingDirectory=/usr/local/mediaserver
 ExecStart=/usr/bin/java -Xmx256m -cp "repo/*" me.vzhilin.mediaserver.Mediaserver --server.port=8081
 SuccessExitStatus=143

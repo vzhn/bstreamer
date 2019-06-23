@@ -36,33 +36,27 @@
                 <configuration>
                     <license>GPL</license>
                     <distribution>github</distribution>
-                    <group>Application/Misc</group>
+                    <group>Networking/Daemons</group>
                     <mappings>
                         <mapping>
                             <directory>/usr/local/mediaserver</directory>
-                            <filemode>440</filemode>
-                            <username>dumper</username>
-                            <groupname>dumpgroup</groupname>
+                            <filemode>444</filemode>
                             <sources>
                                 <source>
                                     <location>target/appassembler</location>
                                 </source>
                             </sources>
                         </mapping>
-                        <!--
                         <mapping>
-                            <directory>/usr/local/bin/bin</directory>
-                            <filemode>440</filemode>
-                            <username>dumper</username>
-                            <groupname>dumpgroup</groupname>
+                            <directoryIncluded>false</directoryIncluded>
+                            <directory>/usr/lib/systemd/system/</directory>
+                            <filemode>444</filemode>
                             <sources>
                                 <source>
-                                    <location>/home/vzhilin/sources/commons-daemon/src/native/unix/jsvc</location>
-                                    <targetArchitecture>x86_64</targetArchitecture>
+                                    <location>src/scripts/systemd/mediaserver.service</location>
                                 </source>
                             </sources>
                         </mapping>
-                        -->
                     </mappings>
                     <preinstallScriptlet>
                         <script>echo "installing ${project.name} now"</script>
