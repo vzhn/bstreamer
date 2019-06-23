@@ -43,7 +43,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
 
         HttpRequest request =
             new DefaultFullHttpRequest(RtspVersions.RTSP_1_0,
-                RtspMethods.SETUP, "rtsp://localhost:5000/sync/simpsons_video.mkv/TrackID=0");
+                RtspMethods.SETUP, "rtsp://localhost:5000/simpsons_video.mkv/TrackID=0");
 
         request.headers().set(RtspHeaderNames.CSEQ, 1);
         request.headers().set(RtspHeaderNames.TRANSPORT, "RTP/AVP/TCP;unicast;interleaved=0-1");
@@ -61,7 +61,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
                     String sessionid = response.headers().get(RtspHeaderNames.SESSION);
 
                     HttpRequest playRequest = new DefaultFullHttpRequest(RtspVersions.RTSP_1_0,
-                            RtspMethods.PLAY, "rtsp://localhost:5000/sync/simpsons_video.mkv");
+                            RtspMethods.PLAY, "rtsp://localhost:5000/simpsons_video.mkv");
                     playRequest.headers().set(RtspHeaderNames.CSEQ, cseq);
                     playRequest.headers().set(RtspHeaderNames.SESSION, sessionid);
                     ctx.writeAndFlush(playRequest);

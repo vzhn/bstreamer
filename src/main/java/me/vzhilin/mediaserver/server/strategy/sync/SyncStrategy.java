@@ -2,6 +2,7 @@ package me.vzhilin.mediaserver.server.strategy.sync;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.group.ChannelGroup;
@@ -9,14 +10,16 @@ import io.netty.channel.group.ChannelMatchers;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
-import me.vzhilin.mediaserver.media.*;
+import me.vzhilin.mediaserver.media.MediaPacket;
+import me.vzhilin.mediaserver.media.MediaPacketSource;
+import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
-import org.ffmpeg.avutil.AVRational;
-import org.ffmpeg.avutil.AVUtil;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -40,15 +43,12 @@ public class SyncStrategy implements StreamingStrategy {
     @Override
     public void attachContext(ChannelHandlerContext ctx) {
         boolean wasFirst = group.isEmpty();
-        group.add(ctx.channel());
-        ctx.channel().closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
+        Channel ch = ctx.channel();
+        group.add(ch);
+        ch.closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
 
         if (wasFirst) {
-            try {
-                startPlaying();
-            } catch (IOException ex) {
-                ctx.fireExceptionCaught(ex);
-            }
+            startPlaying();
         }
     }
 
@@ -68,87 +68,111 @@ public class SyncStrategy implements StreamingStrategy {
         return src.getDesc();
     }
 
-    private void startPlaying() throws IOException {
+    private void startPlaying() {
         source = sourceFactory.newSource();
-        AVRational frameRate = source.getDesc().getAvgFrameRate();
-        long delayNanos = (long) (1e9 / ((float) frameRate.num() / frameRate.den()));
-        MediaPacket firstPkt = source.next();
-        long dts = firstPkt.getDts();
-        if (dts == AVUtil.AV_NOPTS_VALUE) {
-            dts = 0;
-        }
-
-        long firstDts = dts;
-        long timeStarted = System.currentTimeMillis();
-
-        command = new Runnable() {
-            private final RtpEncoder encoder = new RtpEncoder();
-            private long rtpSeqNo = 0;
-            private int notWritable;
-            private long prev = System.currentTimeMillis();
-            private long adjust = 0;
-
-            @Override
-            public void run() {
-                long now = System.currentTimeMillis();
-                long d = now - prev;
-                prev = now;
-
-                notWritable = 0;
-                group.forEach(channel -> {
-                    if (!channel.isWritable()) {
-                        ++notWritable;
-                    }
-                });
-
-                boolean stopped = false;
-                long delta = 0;
-                if (notWritable > 0) {
-                    System.err.println("overflow! " + notWritable + " " + adjust);
-                    adjust += d;
-                    delta = d;
-                } else {
-                    ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
-                    int sz = 0;
-                    while (sz < 256 * 1024) {
-                        if (source.hasNext()) {
-                            MediaPacket pkt = source.next();
-                            sz += pkt.getPayload().readableBytes();
-                            encoder.encode(buffer, pkt, rtpSeqNo++, pkt.getDts() * 90);
-                            delta = (pkt.getPts() - firstDts) - (now - timeStarted) + adjust;
-                            if (delta > 0) {
-                                break;
-                            }
-                        } else {
-                            stopPlaying();
-                            stopped = true;
-                            break;
-                        }
-                    }
-
-                    if (group.size() >= 1) {
-                        buffer.retain(group.size());
-                        group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
-                    }
-
-                    buffer.release();
-                }
-
-                if (!stopped) {
-                    streamingFuture = scheduledExecutor.schedule(command, delta, TimeUnit.MILLISECONDS);
-                }
-            }
-        };
-        streamingFuture = scheduledExecutor.schedule(command, delayNanos, TimeUnit.NANOSECONDS);
+        command = new SyncRunnable();
+        streamingFuture = scheduledExecutor.schedule(command, 0, TimeUnit.NANOSECONDS);
     }
 
     private void stopPlaying() {
-        streamingFuture.cancel(true);
+        streamingFuture.cancel(false);
         group.close();
         try {
             source.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private class SyncRunnable implements Runnable {
+        private boolean firstFrame = false;
+        private final RtpEncoder encoder;
+        private long firstDts;
+        private long timeStarted;
+
+        private long rtpSeqNo;
+        private int notWritable;
+        private long prevMillis;
+        private long adjust;
+
+        public SyncRunnable() {
+            encoder = new RtpEncoder();
+            rtpSeqNo = 0;
+            prevMillis = System.currentTimeMillis();
+            adjust = 0;
+        }
+
+        @Override
+        public void run() {
+            long nowMillis = System.currentTimeMillis();
+            long deltaMillis = nowMillis - prevMillis;
+            prevMillis = nowMillis;
+
+            long sleepMillis;
+            if (!firstFrame) {
+                firstFrame = true;
+                List<MediaPacket> firstPackets = new ArrayList<>();
+                MediaPacket pkt;
+                do {
+                    pkt = source.next();
+                    firstPackets.add(pkt);
+                } while (pkt.getDts() < 0);
+                firstDts = pkt.getDts();
+                timeStarted = nowMillis;
+                send(firstPackets);
+                sleepMillis = 0;
+            } else {
+                if (!source.hasNext()) {
+                    stopPlaying();
+                    return;
+                }
+                if (isChannelsWritable()) {
+                    long sz = 0;
+                    long np = 0;
+                    long deltaPositionMillis = 0;
+                    List<MediaPacket> packets = new ArrayList<>();
+                    while (source.hasNext() && (sz < 256 * 1024 && np < 20 && deltaPositionMillis < 200)) {
+                        MediaPacket pkt = source.next();
+                        packets.add(pkt);
+                        sz += pkt.getPayload().readableBytes();
+                        np += 1;
+                        deltaPositionMillis = (pkt.getDts() - firstDts) - (nowMillis - timeStarted) + adjust;
+                    }
+                    send(packets);
+                    sleepMillis = deltaPositionMillis;
+                } else {
+                    System.err.println("overflow!");
+                    adjust += deltaMillis;
+                    sleepMillis = deltaMillis;
+                }
+            }
+
+            System.err.println("sleep: " + sleepMillis + " " + deltaMillis);
+            streamingFuture = scheduledExecutor.schedule(command, sleepMillis, TimeUnit.MILLISECONDS);
+        }
+
+        private void send(List<MediaPacket> packets) {
+            if (group.size() >= 1) {
+                ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+                buffer.retain(group.size());
+                for (int i = 0; i < packets.size(); i++) {
+                    MediaPacket pkt = packets.get(i);
+                    encoder.encode(buffer, pkt, rtpSeqNo++, pkt.getDts() * 90);
+                }
+                group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
+                buffer.release();
+            }
+        }
+
+        private boolean isChannelsWritable() {
+            notWritable = 0;
+            group.forEach(channel -> {
+                if (!channel.isWritable()) {
+                    ++notWritable;
+                }
+            });
+
+            return notWritable == 0;
         }
     }
 }

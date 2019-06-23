@@ -88,7 +88,7 @@ public class FileMediaPacketSource implements MediaPacketSource {
         desc.setTimebase(streamTimebase);
         desc.setAvgFrameRate(avgFrameRate);
         desc.setVideoStreamId(videoStreamId);
-        nextAvPacket();
+        fillQueue();
     }
 
     private AVStream getVideoStream() {
@@ -119,16 +119,13 @@ public class FileMediaPacketSource implements MediaPacketSource {
     public MediaPacket next() {
         MediaPacket pkt = packetQueue.poll();
         if (packetQueue.isEmpty()) {
-            boolean eof = nextAvPacket();
-            if (eof) {
-                return null;
-            }
+            fillQueue();
         }
 
         return pkt;
     }
 
-    private boolean nextAvPacket() {
+    private boolean fillQueue() {
         while (true) {
             av_packet_unref(pktPtr);
             if (av_read_frame(ifmtCtx, pktPtr) < 0) {

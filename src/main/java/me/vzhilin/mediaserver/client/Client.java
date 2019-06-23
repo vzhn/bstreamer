@@ -79,7 +79,7 @@ public class Client {
                     exec.shutdownNow();
                 }
             }
-        , 500, TimeUnit.SECONDS);
+        , 500 * 1000, TimeUnit.SECONDS);
 //        exec.shutdown();
     }
 
