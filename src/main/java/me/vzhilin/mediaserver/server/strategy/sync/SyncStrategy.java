@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class SyncStrategy implements StreamingStrategy {
     /** executor */
@@ -84,7 +85,7 @@ public class SyncStrategy implements StreamingStrategy {
         }
     }
 
-    private class SyncRunnable implements Runnable {
+    private final class SyncRunnable implements Runnable {
         private boolean firstFrame = false;
         private final RtpEncoder encoder;
         private long firstDts;
@@ -94,6 +95,8 @@ public class SyncStrategy implements StreamingStrategy {
         private int notWritable;
         private long prevMillis;
         private long adjust;
+
+        private final List<MediaPacket> packets = new ArrayList<>();
 
         public SyncRunnable() {
             encoder = new RtpEncoder();
@@ -111,15 +114,14 @@ public class SyncStrategy implements StreamingStrategy {
             long sleepMillis;
             if (!firstFrame) {
                 firstFrame = true;
-                List<MediaPacket> firstPackets = new ArrayList<>();
                 MediaPacket pkt;
                 do {
                     pkt = source.next();
-                    firstPackets.add(pkt);
+                    packets.add(pkt);
                 } while (pkt.getDts() < 0);
                 firstDts = pkt.getDts();
                 timeStarted = nowMillis;
-                send(firstPackets);
+                send(packets);
                 sleepMillis = 0;
             } else {
                 if (!source.hasNext()) {
@@ -130,7 +132,7 @@ public class SyncStrategy implements StreamingStrategy {
                     long sz = 0;
                     long np = 0;
                     long deltaPositionMillis = 0;
-                    List<MediaPacket> packets = new ArrayList<>();
+
                     while (source.hasNext() && (sz < 256 * 1024 && np < 20 && deltaPositionMillis < 200)) {
                         MediaPacket pkt = source.next();
                         packets.add(pkt);
@@ -147,13 +149,19 @@ public class SyncStrategy implements StreamingStrategy {
                 }
             }
 
+            System.err.println(PooledByteBufAllocator.DEFAULT.metric().usedDirectMemory());
             System.err.println("sleep: " + sleepMillis + " " + deltaMillis);
             streamingFuture = scheduledExecutor.schedule(command, sleepMillis, TimeUnit.MILLISECONDS);
         }
 
         private void send(List<MediaPacket> packets) {
             if (group.size() >= 1) {
-                ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+                int sz = 0;
+                for (int i = 0; i < packets.size(); i++) {
+                    sz += encoder.estimateSize(packets.get(i));
+                }
+
+                ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer(sz, sz);
                 buffer.retain(group.size());
                 for (int i = 0; i < packets.size(); i++) {
                     MediaPacket pkt = packets.get(i);
@@ -162,6 +170,8 @@ public class SyncStrategy implements StreamingStrategy {
                 group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
                 buffer.release();
             }
+            packets.forEach(mediaPacket -> mediaPacket.getPayload().release());
+            packets.clear();
         }
 
         private boolean isChannelsWritable() {
