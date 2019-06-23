@@ -15,30 +15,36 @@ import me.vzhilin.mediaserver.media.MediaPacketSource;
 import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.server.RtpEncoder;
+import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 public class SyncStrategy implements StreamingStrategy {
     /** executor */
     private final ScheduledExecutorService scheduledExecutor;
     private final ChannelGroup group;
     private final MediaPacketSourceFactory sourceFactory;
+    private final ServerStatistics stat;
 
     private ScheduledFuture<?> streamingFuture;
     private MediaPacketSource source;
     private Runnable command;
 
-    public SyncStrategy(MediaPacketSourceFactory sourceFactory, ScheduledExecutorService scheduledExecutor) {
+    public SyncStrategy(MediaPacketSourceFactory sourceFactory,
+                        ScheduledExecutorService scheduledExecutor,
+                        ServerStatistics stat) {
+
         this.sourceFactory = sourceFactory;
         this.scheduledExecutor = scheduledExecutor;
         this.group = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+        this.stat = stat;
     }
 
     @Override
@@ -143,32 +149,34 @@ public class SyncStrategy implements StreamingStrategy {
                     send(packets);
                     sleepMillis = deltaPositionMillis;
                 } else {
-                    System.err.println("overflow!");
+                    System.err.println(new Date() + "overflow!");
                     adjust += deltaMillis;
                     sleepMillis = deltaMillis;
+                    stat.getLagMillis().inc(deltaMillis);
                 }
             }
 
-            System.err.println(PooledByteBufAllocator.DEFAULT.metric().usedDirectMemory());
-            System.err.println("sleep: " + sleepMillis + " " + deltaMillis);
+//            System.err.println(PooledByteBufAllocator.DEFAULT.metric().usedDirectMemory());
+//            System.err.println("sleep: " + sleepMillis + " " + deltaMillis);
             streamingFuture = scheduledExecutor.schedule(command, sleepMillis, TimeUnit.MILLISECONDS);
         }
 
         private void send(List<MediaPacket> packets) {
-            if (group.size() >= 1) {
+            int connectedClients = group.size();
+            if (connectedClients >= 1) {
                 int sz = 0;
                 for (int i = 0; i < packets.size(); i++) {
                     sz += encoder.estimateSize(packets.get(i));
                 }
-
                 ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer(sz, sz);
-                buffer.retain(group.size());
+                buffer.retain(connectedClients);
                 for (int i = 0; i < packets.size(); i++) {
                     MediaPacket pkt = packets.get(i);
                     encoder.encode(buffer, pkt, rtpSeqNo++, pkt.getDts() * 90);
                 }
                 group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
                 buffer.release();
+                stat.getThroughputMeter().mark(8 * sz * connectedClients);
             }
             packets.forEach(mediaPacket -> mediaPacket.getPayload().release());
             packets.clear();

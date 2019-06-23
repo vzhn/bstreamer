@@ -7,6 +7,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
+import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;
 import me.vzhilin.mediaserver.server.strategy.seq.SequencedStrategyFactory;
 import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
@@ -15,7 +16,8 @@ public class RtspServer {
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
     private final ServerBootstrap bootstrap;
-    private final StreamingStrategyFactoryRegistry registry;
+    private final StreamingStrategyFactoryRegistry streamingStrategyRegistry;
+    private final ServerStatistics stat;
     private ChannelFuture future;
 
     public RtspServer() {
@@ -23,16 +25,28 @@ public class RtspServer {
         bossGroup = new EpollEventLoopGroup(1);
         workerGroup = new EpollEventLoopGroup(1);
 
-        registry = new StreamingStrategyFactoryRegistry();
-        registry.addFactory("sync", new SyncStrategyFactory(workerGroup));
-        registry.addFactory("seq", new SequencedStrategyFactory());
+        stat = new ServerStatistics();
+
+        streamingStrategyRegistry = new StreamingStrategyFactoryRegistry();
+        streamingStrategyRegistry.addFactory("sync", new SyncStrategyFactory(workerGroup, stat));
+        streamingStrategyRegistry.addFactory("seq", new SequencedStrategyFactory());
     }
 
     public void start() {
+        startMetrics();
+        startServer();
+    }
+
+    private void startMetrics() {
+
+    }
+
+    private void startServer() {
         WriteBufferWaterMark writeBufferWaterMark = new WriteBufferWaterMark(256 * 1024, 512 * 1024);
         bootstrap.group(bossGroup, workerGroup)
                 .channel(EpollServerSocketChannel.class)
-                .childHandler(new RtspServerInitializer(registry))
+                .attr(RtspServerAttributes.STAT, stat)
+                .childHandler(new RtspServerInitializer(streamingStrategyRegistry))
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childOption(ChannelOption.SO_SNDBUF, 8 * 1024);

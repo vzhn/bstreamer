@@ -22,6 +22,11 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         this.registry = registry;
     }
 
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelRegistered(ctx);
+    }
+
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         HttpMethod method = request.method();
         HttpResponse response;
