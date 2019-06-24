@@ -49,7 +49,7 @@ public class RtspServer {
                 .childHandler(new RtspServerInitializer(streamingStrategyRegistry))
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
-                .childOption(ChannelOption.SO_SNDBUF, 8 * 1024);
+                .childOption(ChannelOption.SO_SNDBUF, 64 * 1024);
 
         future = bootstrap.bind(5000).syncUninterruptibly();
     }

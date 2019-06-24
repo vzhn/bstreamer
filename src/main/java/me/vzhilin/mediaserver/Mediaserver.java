@@ -1,6 +1,7 @@
 package me.vzhilin.mediaserver;
 
 import me.vzhilin.mediaserver.server.RtspServer;
+import org.apache.log4j.BasicConfigurator;
 import org.bridj.Pointer;
 import org.ffmpeg.avcodec.AVPacket;
 import org.ffmpeg.avcodec.AvcodecLibrary;
@@ -15,6 +16,7 @@ public class Mediaserver {
     }
 
     private void start() {
+        BasicConfigurator.configure();
         new RtspServer().start();
     }
 }

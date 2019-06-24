@@ -77,7 +77,7 @@ public class SyncStrategy implements StreamingStrategy {
 
     private void startPlaying() {
         source = sourceFactory.newSource();
-        command = new SyncRunnable();
+        command = new SyncWorker();
         streamingFuture = scheduledExecutor.schedule(command, 0, TimeUnit.NANOSECONDS);
     }
 
@@ -91,7 +91,7 @@ public class SyncStrategy implements StreamingStrategy {
         }
     }
 
-    private final class SyncRunnable implements Runnable {
+    private final class SyncWorker implements Runnable {
         private boolean firstFrame = false;
         private final RtpEncoder encoder;
         private long firstDts;
@@ -104,7 +104,7 @@ public class SyncStrategy implements StreamingStrategy {
 
         private final List<MediaPacket> packets = new ArrayList<>();
 
-        public SyncRunnable() {
+        private SyncWorker() {
             encoder = new RtpEncoder();
             rtpSeqNo = 0;
             prevMillis = System.currentTimeMillis();
@@ -176,7 +176,7 @@ public class SyncStrategy implements StreamingStrategy {
                 }
                 group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
                 buffer.release();
-                stat.getThroughputMeter().mark(8 * sz * connectedClients);
+                stat.getThroughputMeter().mark((long) 8 * sz * connectedClients);
             }
             packets.forEach(mediaPacket -> mediaPacket.getPayload().release());
             packets.clear();
