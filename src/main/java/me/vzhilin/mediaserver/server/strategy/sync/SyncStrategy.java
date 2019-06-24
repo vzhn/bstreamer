@@ -102,13 +102,14 @@ public class SyncStrategy implements StreamingStrategy {
         private long prevMillis;
         private long adjust;
 
+        private boolean loop = true;
+
         private final List<MediaPacket> packets = new ArrayList<>();
 
         private SyncWorker() {
             encoder = new RtpEncoder();
             rtpSeqNo = 0;
             prevMillis = System.currentTimeMillis();
-            adjust = 0;
         }
 
         @Override
@@ -129,57 +130,74 @@ public class SyncStrategy implements StreamingStrategy {
                 timeStarted = nowMillis;
                 send(packets);
                 sleepMillis = 0;
+                adjust = 0;
             } else {
                 if (!source.hasNext()) {
-                    stopPlaying();
-                    return;
-                }
-                if (isChannelsWritable()) {
-                    long sz = 0;
-                    long np = 0;
-                    long deltaPositionMillis = 0;
-
-                    while (source.hasNext() && (sz < 256 * 1024 && np < 20 && deltaPositionMillis < 200)) {
-                        MediaPacket pkt = source.next();
-                        packets.add(pkt);
-                        sz += pkt.getPayload().readableBytes();
-                        np += 1;
-                        deltaPositionMillis = (pkt.getDts() - firstDts) - (nowMillis - timeStarted) + adjust;
+                    if (loop) {
+                        try {
+                            source.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                        source = sourceFactory.newSource();
+                        firstFrame = false;
+                        sleepMillis = 40;
+                    } else {
+                        stopPlaying();
+                        return;
                     }
-                    send(packets);
-                    sleepMillis = deltaPositionMillis;
                 } else {
-                    System.err.println(new Date() + "overflow!");
-                    adjust += deltaMillis;
-                    sleepMillis = deltaMillis;
-                    stat.getLagMillis().inc(deltaMillis);
+                    if (isChannelsWritable()) {
+                        long sz = 0;
+                        long np = 0;
+                        long deltaPositionMillis = 0;
+
+                        while (source.hasNext() && (sz < 256 * 1024 && np < 20 && deltaPositionMillis < 200)) {
+                            MediaPacket pkt = source.next();
+                            packets.add(pkt);
+                            sz += pkt.getPayload().readableBytes();
+                            np += 1;
+                            deltaPositionMillis = (pkt.getDts() - firstDts) - (nowMillis - timeStarted) + adjust;
+                        }
+                        send(packets);
+                        sleepMillis = deltaPositionMillis;
+                    } else {
+                        System.err.println(new Date() + "overflow!");
+                        adjust += deltaMillis;
+                        sleepMillis = deltaMillis;
+                        stat.getLagMillis().inc(deltaMillis);
+                    }
                 }
             }
 
-//            System.err.println(PooledByteBufAllocator.DEFAULT.metric().usedDirectMemory());
-//            System.err.println("sleep: " + sleepMillis + " " + deltaMillis);
             streamingFuture = scheduledExecutor.schedule(command, sleepMillis, TimeUnit.MILLISECONDS);
         }
 
         private void send(List<MediaPacket> packets) {
             int connectedClients = group.size();
             if (connectedClients >= 1) {
-                int sz = 0;
-                for (int i = 0; i < packets.size(); i++) {
-                    sz += encoder.estimateSize(packets.get(i));
-                }
+                int sz = estimateSize(packets);
                 ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer(sz, sz);
-                buffer.retain(connectedClients);
                 for (int i = 0; i < packets.size(); i++) {
                     MediaPacket pkt = packets.get(i);
                     encoder.encode(buffer, pkt, rtpSeqNo++, pkt.getDts() * 90);
                 }
+
+                buffer.retain(connectedClients);
                 group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
                 buffer.release();
                 stat.getThroughputMeter().mark((long) 8 * sz * connectedClients);
             }
             packets.forEach(mediaPacket -> mediaPacket.getPayload().release());
             packets.clear();
+        }
+
+        private int estimateSize(List<MediaPacket> packets) {
+            int sz = 0;
+            for (int i = 0; i < packets.size(); i++) {
+                sz += encoder.estimateSize(packets.get(i));
+            }
+            return sz;
         }
 
         private boolean isChannelsWritable() {
