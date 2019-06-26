@@ -1,12 +1,13 @@
 package me.vzhilin.mediaserver.media;
 
-import org.ffmpeg.avutil.AVRational;
+
+import org.bytedeco.javacpp.avutil;
 
 public class MediaPacketSourceDescription {
     private byte[] sps;
     private byte[] pps;
-    private AVRational timebase;
-    private AVRational avgFrameRate;
+    private avutil.AVRational timebase;
+    private avutil.AVRational avgFrameRate;
     private int videoStreamId;
 
     public void setSps(byte[] sps) {
@@ -25,19 +26,19 @@ public class MediaPacketSourceDescription {
         return pps;
     }
 
-    public void setTimebase(AVRational timebase) {
+    public void setTimebase(avutil.AVRational timebase) {
         this.timebase = timebase;
     }
 
-    public AVRational getTimebase() {
+    public avutil.AVRational getTimebase() {
         return timebase;
     }
 
-    public void setAvgFrameRate(AVRational avgFrameRate) {
+    public void setAvgFrameRate(avutil.AVRational avgFrameRate) {
         this.avgFrameRate = avgFrameRate;
     }
 
-    public AVRational getAvgFrameRate() {
+    public avutil.AVRational getAvgFrameRate() {
         return avgFrameRate;
     }
 

@@ -92,23 +92,20 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.ffmpeg</groupId>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>ffmpeg</artifactId>
-            <scope>system</scope>
-            <systemPath>/home/vzhilin/sources/ffmpeg/dist/ffmpeg-4.0.jar</systemPath>
-            <version>1.0</version>
+            <version>4.1-1.4.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>ffmpeg</artifactId>
+            <version>4.1-1.4.4</version>
+            <classifier>linux-x86_64</classifier>
         </dependency>
         <dependency>
             <groupId>commons-daemon</groupId>
             <artifactId>commons-daemon</artifactId>
             <version>1.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ffmpeg</groupId>
-            <artifactId>bridj</artifactId>
-            <scope>system</scope>
-            <systemPath>/home/vzhilin/sources/ffmpeg/lib/bridj-0.7-SNAPSHOT.jar</systemPath>
-            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -133,6 +130,11 @@
         <dependency>
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient_httpserver</artifactId>
+            <version>0.6.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient</artifactId>
             <version>0.6.0</version>
         </dependency>
         <dependency>

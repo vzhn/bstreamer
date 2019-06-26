@@ -3,13 +3,7 @@ package me.vzhilin.mediaserver.media;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import me.vzhilin.mediaserver.util.AVCCExtradataParser;
-import org.bridj.Pointer;
-import org.ffmpeg.avcodec.AVCodecParameters;
-import org.ffmpeg.avcodec.AVPacket;
-import org.ffmpeg.avcodec.AvcodecLibrary;
-import org.ffmpeg.avformat.AVFormatContext;
-import org.ffmpeg.avformat.AVStream;
-import org.ffmpeg.avutil.AVRational;
+import org.bytedeco.javacpp.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,18 +11,15 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import static org.ffmpeg.avcodec.AvcodecLibrary.AV_PKT_FLAG_KEY;
-import static org.ffmpeg.avcodec.AvcodecLibrary.av_packet_unref;
-import static org.ffmpeg.avformat.AvformatLibrary.*;
+import static org.bytedeco.javacpp.avcodec.*;
+import static org.bytedeco.javacpp.avformat.*;
 
 public class FileMediaPacketSource implements MediaPacketSource {
-    private Pointer<AVPacket> pktPtr;
-    private Pointer<Pointer<AVFormatContext>> pAvfmtCtx;
-    private Pointer<AVFormatContext> ifmtCtx;
     private boolean wasClosed;
     private MediaPacketSourceDescription desc;
-
     private Queue<MediaPacket> packetQueue = new LinkedList<>();
+    private AVPacket pk;
+    private AVFormatContext pAvfmtCtx;
 
     public FileMediaPacketSource(File file) throws IOException {
         if (file.exists()) {
@@ -39,49 +30,35 @@ public class FileMediaPacketSource implements MediaPacketSource {
     }
 
     private void open(File file) throws IOException {
-        int r;
-        pktPtr = Pointer.allocate(AVPacket.class);
-        pAvfmtCtx = Pointer.allocatePointer(AVFormatContext.class);
-
-        Pointer<Byte> name = Pointer.pointerToCString(file.getAbsolutePath());
-        r = avformat_open_input(pAvfmtCtx, name, null, null);
-        name.release();
-
+        pAvfmtCtx = new avformat.AVFormatContext(null);
+        int r = avformat_open_input(pAvfmtCtx, new BytePointer(file.getAbsolutePath()), null, null);
         if (r < 0) {
-            pAvfmtCtx.release();
-            pktPtr.release();
+            pAvfmtCtx.close();
             wasClosed = true;
             throw new IOException("avformat_open_input error: " + r);
         }
-
-        ifmtCtx = pAvfmtCtx.get();
-        r = avformat_find_stream_info(ifmtCtx, null);
+        r = avformat_find_stream_info(pAvfmtCtx, (PointerPointer) null);
         if (r < 0) {
             wasClosed = true;
             avformat_close_input(pAvfmtCtx);
-            pAvfmtCtx.release();
-            pktPtr.release();
+            pAvfmtCtx.close();
             throw new IOException("error: " + r);
         }
-
+        pk = new avcodec.AVPacket();
         AVStream avStream = getVideoStream();
         if (avStream == null) {
             close();
             throw new IOException("h264 stream not found");
         }
-
         int videoStreamId = avStream.index();
-        AVRational streamTimebase = avStream.time_base();
-        AVRational avgFrameRate = avStream.avg_frame_rate();
-
-        Pointer<AVCodecParameters> cp = avStream.codecpar();
-        AVCodecParameters codecpar = cp.get();
-        byte[] extradataBytes = codecpar.extradata().getBytes(codecpar.extradata_size());
-
+        avutil.AVRational streamTimebase = avStream.time_base();
+        avutil.AVRational avgFrameRate = avStream.avg_frame_rate();
+        avcodec.AVCodecParameters cp = avStream.codecpar();
+        byte[] extradataBytes = new byte[cp.extradata_size()];
+        cp.extradata().get(extradataBytes);
         AVCCExtradataParser extradata = new AVCCExtradataParser(extradataBytes);
         byte[] sps = extradata.getSps();
         byte[] pps = extradata.getPps();
-
         desc = new MediaPacketSourceDescription();
         desc.setSps(sps);
         desc.setPps(pps);
@@ -92,16 +69,14 @@ public class FileMediaPacketSource implements MediaPacketSource {
     }
 
     private AVStream getVideoStream() {
-        int ns = ifmtCtx.get().nb_streams();
+        int ns = pAvfmtCtx.nb_streams();
         for (int i = 0; i < ns; i++) {
-            Pointer<AVStream> pstream = ifmtCtx.get().streams().get(i);
-            AVStream stream = pstream.get();
-            AVCodecParameters cp = stream.codecpar().get();
-            if (cp.codec_id().value() == AvcodecLibrary.AVCodecID.AV_CODEC_ID_H264.value()) {
-                return stream;
+            AVStream pstream = pAvfmtCtx.streams(i);
+            avcodec.AVCodecParameters cp = pstream.codecpar();
+            if (cp.codec_id() == AV_CODEC_ID_H264) {
+                return pstream;
             }
         }
-
         return null;
     }
 
@@ -121,39 +96,33 @@ public class FileMediaPacketSource implements MediaPacketSource {
         if (packetQueue.isEmpty()) {
             fillQueue();
         }
-
         return pkt;
     }
 
     private boolean fillQueue() {
         while (true) {
-            av_packet_unref(pktPtr);
-            if (av_read_frame(ifmtCtx, pktPtr) < 0) {
+            av_packet_unref(pk);
+            if (av_read_frame(pAvfmtCtx, pk) < 0) {
                 return true;
             }
-
-            AVPacket pkt = pktPtr.get();
-            if (pkt.stream_index() == desc.getVideoStreamId()) {
-                long pts = pkt.pts();
-                long dts = pkt.dts();
-                boolean isKey = (pkt.flags() & AV_PKT_FLAG_KEY) != 0;
-
-                int sz = pkt.size();
-                byte[] data = pkt.data().getBytes(sz);
+            if (pk.stream_index() == desc.getVideoStreamId()) {
+                long pts = pk.pts();
+                long dts = pk.dts();
+                boolean isKey = (pk.flags() & AV_PKT_FLAG_KEY) != 0;
+                int sz = pk.size();
+                byte[] data = new byte[sz];
+                pk.data().get(data);
                 int offset = 0;
                 while (offset < data.length) {
                     int avccLen = ((data[offset] & 0xff) << 24) +
                             ((data[offset + 1] & 0xff) << 16) +
                             ((data[offset + 2] & 0xff) << 8) +
                             (data[offset + 3] & 0xff);
-
                     ByteBuf payload = PooledByteBufAllocator.DEFAULT.buffer(avccLen, avccLen);
                     payload.writeBytes(data, offset + 4, avccLen);
-
                     packetQueue.offer(new MediaPacket(pts, dts, isKey, payload));
                     offset += (avccLen + 4);
                 }
-
                 return false;
             }
         }
@@ -164,11 +133,11 @@ public class FileMediaPacketSource implements MediaPacketSource {
         if (!wasClosed) {
             wasClosed = true;
             if (hasNext()) {
-                av_packet_unref(pktPtr);
+                av_packet_unref(pk);
             }
             avformat_close_input(pAvfmtCtx);
-            pAvfmtCtx.release();
-            pktPtr.release();
+            pAvfmtCtx.close();
+            pk.close();
         }
     }
 }
