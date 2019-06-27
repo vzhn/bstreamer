@@ -128,6 +128,7 @@ public class H264EncodingSample {
         if (!oc.isNull() && (oc.flags() & AVFMT_NOFILE) == 0) {
             avio_closep(oc.pb());
         }
+        avcodec_free_context(c);
         avformat_free_context(oc);
         av_frame_free(frame);
         av_frame_free(rgbFrame);

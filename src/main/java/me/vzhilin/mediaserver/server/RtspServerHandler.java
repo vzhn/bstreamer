@@ -48,7 +48,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                     String strategyName = uri.getParam("mode", "sync");
                     String fileName = uri.pathItem(0);
 
-                    MediaPacketSourceFactory fsf = new FileSourceFactory("/home/vzhilin/misc/video_samples/" + fileName);
+                    MediaPacketSourceFactory fsf = new PictureSourceFactory();  // "/home/vzhilin/misc/video_samples/" + fileName
                     StreamingStrategyFactory strategyFactory = registry.get(strategyName);
                     MediaPacketSourceDescription description = strategyFactory.describe(fsf);
                     response = description(uri, description);
@@ -82,7 +82,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                     ctx.writeAndFlush(response);
 
                     StreamingStrategyFactory strategyFactory = registry.get(strategyName);
-                    StreamingStrategy strategy = strategyFactory.getStrategy(new FileSourceFactory("/home/vzhilin/misc/video_samples/" + fileName));
+                    StreamingStrategy strategy = strategyFactory.getStrategy(new PictureSourceFactory());
                     strategy.attachContext(ctx);
                 }
 
