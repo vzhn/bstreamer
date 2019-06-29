@@ -25,7 +25,7 @@ public class FileMediaPacketSource implements MediaPacketSource {
         if (file.exists()) {
             open(file);
         } else {
-            throw new FileNotFoundException("file not found: " + file);
+            throw new FileNotFoundException(file.getAbsolutePath());
         }
     }
 
@@ -114,7 +114,8 @@ public class FileMediaPacketSource implements MediaPacketSource {
                 pk.data().get(data);
                 int offset = 0;
                 while (offset < data.length) {
-                    int avccLen = ((data[offset] & 0xff) << 24) +
+                    int avccLen =
+                            ((data[offset] & 0xff) << 24) +
                             ((data[offset + 1] & 0xff) << 16) +
                             ((data[offset + 2] & 0xff) << 8) +
                             (data[offset + 3] & 0xff);
