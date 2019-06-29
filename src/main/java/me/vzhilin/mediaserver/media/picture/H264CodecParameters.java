@@ -10,6 +10,7 @@ public class H264CodecParameters {
     private avutil.AVRational timebase;
     private int gopSize = 10;
     private int maxBFrames = 1;
+    private int fps;
 
     public H264CodecParameters() {
         timebase = new avutil.AVRational();
@@ -73,5 +74,9 @@ public class H264CodecParameters {
         c.time_base(timebase);
         c.gop_size(gopSize);
         c.max_b_frames(maxBFrames);
+    }
+
+    public void setFps(int fps) {
+        this.fps = fps;
     }
 }

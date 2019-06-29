@@ -7,6 +7,14 @@ network:
 source:
   file:
     dir: "/home/vzhilin/misc/video_samples/"
+  picture:
+    width: 640
+    height: 480
+    encoder:
+      bitrate: 400000
+      fps: 25
+      gop_size: 10
+      max_b_frames: 1
 strategy:
   sync:
     limits:

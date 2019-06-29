@@ -3,6 +3,7 @@ package me.vzhilin.mediaserver.conf;
 import com.amihaiemil.eoyaml.Yaml;
 import com.amihaiemil.eoyaml.YamlMapping;
 import io.netty.channel.WriteBufferWaterMark;
+import me.vzhilin.mediaserver.media.picture.H264CodecParameters;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,11 +12,11 @@ import java.util.Optional;
 
 public class Config {
     private final YamlMapping mapping;
-    private final File filesDir;
     private int port;
     private final Optional<Integer> networkSndbuf; //so_sndbuf
     private final WriteBufferWaterMark networkWatermarks;
     private final SyncStrategyLimits syncStrategyLimits;
+    private final File filesDir;
 
     public Config(InputStream is) throws IOException {
         mapping = Yaml.createYamlInput(is).readYamlMapping();
@@ -52,6 +53,15 @@ public class Config {
         YamlMapping sourceMapping = mapping.yamlMapping("source");
         YamlMapping fileMapping = sourceMapping.yamlMapping("file");
         filesDir = new File(fileMapping.string("dir"));
+        YamlMapping pictureMapping = sourceMapping.yamlMapping("picture");
+        YamlMapping encoderMapping = pictureMapping.yamlMapping("encoder");
+        H264CodecParameters h264Params = new H264CodecParameters();
+        h264Params.setBitrate(Integer.parseInt(encoderMapping.string("bitrate")));
+        h264Params.setFps(Integer.parseInt(encoderMapping.string("fps")));
+        h264Params.setGopSize(Integer.parseInt(encoderMapping.string("gop_size")));
+        h264Params.setMaxBFrames(Integer.parseInt("max_b_frames"));
+        h264Params.setWidth(Integer.parseInt(pictureMapping.string("width")));
+        h264Params.setHeight(Integer.parseInt(pictureMapping.string("height")));
     }
 
     public int getPort() {
