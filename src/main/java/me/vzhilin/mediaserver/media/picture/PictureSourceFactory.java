@@ -1,4 +1,7 @@
-package me.vzhilin.mediaserver.media;
+package me.vzhilin.mediaserver.media.picture;
+
+import me.vzhilin.mediaserver.media.MediaPacketSource;
+import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
 
 public class PictureSourceFactory implements MediaPacketSourceFactory {
     @Override

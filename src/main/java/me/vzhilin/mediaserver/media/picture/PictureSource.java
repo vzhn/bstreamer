@@ -1,6 +1,9 @@
-package me.vzhilin.mediaserver.media;
+package me.vzhilin.mediaserver.media.picture;
 
 import io.netty.buffer.Unpooled;
+import me.vzhilin.mediaserver.media.MediaPacket;
+import me.vzhilin.mediaserver.media.MediaPacketSource;
+import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.avcodec;
@@ -9,7 +12,6 @@ import org.bytedeco.javacpp.avutil;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -20,10 +22,10 @@ import static org.bytedeco.javacpp.avutil.*;
 import static org.bytedeco.javacpp.swscale.*;
 
 public class PictureSource implements MediaPacketSource {
-    private final MediaPacketSourceDescription desc;
-    private final AVPacket pkt;
-    private final AVCodecContext c;
-    private final AVRational rtpTimebase;
+    private MediaPacketSourceDescription desc;
+    private AVPacket pkt;
+    private AVCodecContext c;
+    private AVRational timebaseMillis;
     private byte[] sps;
     private byte[] pps;
     private AVFrame frame;
@@ -32,9 +34,13 @@ public class PictureSource implements MediaPacketSource {
     private SwsContext swsContext;
     private long frameNumber = 0;
     private Deque<MediaPacket> queue = new LinkedList<MediaPacket>();
+    private boolean init;
 
     public PictureSource() {
-        initImage();
+    }
+
+    private void initEncoder() {
+        H264CodecParameters parameters = new H264CodecParameters();
 
         avcodec.AVCodec codec = avcodec_find_encoder(AV_CODEC_ID_H264);
         c = avcodec_alloc_context3(codec);
@@ -43,19 +49,13 @@ public class PictureSource implements MediaPacketSource {
         timebase.den(25);
 
         avutil.AVRational framerate = new avutil.AVRational();
-        framerate.num(25);
-        framerate.den(1);
+        framerate.num(timebase.den());
+        framerate.den(timebase.num());
 
-        rtpTimebase = new AVRational();
-        rtpTimebase.num(1);
-        rtpTimebase.den(1000);
-
-        c.bit_rate(400000);
-        c.width(352);
-        c.height(288);
-        c.time_base(timebase);
-        c.gop_size(10);
-        c.max_b_frames(1);
+        timebaseMillis = new AVRational();
+        timebaseMillis.num(1);
+        timebaseMillis.den(1000);
+        parameters.setParameters(c);
         c.pix_fmt(avutil.AV_PIX_FMT_YUV420P);
         c.flags(c.flags() | AV_CODEC_FLAG_GLOBAL_HEADER);
         if (avcodec_open2(c, codec, (avutil.AVDictionary) null) < 0) {
@@ -64,7 +64,7 @@ public class PictureSource implements MediaPacketSource {
         }
         byte[] extradata = new byte[c.extradata_size()];
         c.extradata().get(extradata);
-        
+
         parseSpsPps(extradata);
         desc = new MediaPacketSourceDescription();
         desc.setSps(sps);
@@ -73,14 +73,9 @@ public class PictureSource implements MediaPacketSource {
         desc.setAvgFrameRate(framerate);
         desc.setVideoStreamId(0);
 
-        System.err.println(extradata);
-
         pkt = av_packet_alloc();
+        image = new BufferedImage(parameters.getWidth(), parameters.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
         initFrames(c);
-    }
-
-    private void initImage() {
-        image = new BufferedImage(352, 288, BufferedImage.TYPE_3BYTE_BGR);
     }
 
     private void initFrames(AVCodecContext c) {
@@ -120,9 +115,7 @@ public class PictureSource implements MediaPacketSource {
                 extradata[i + 1] == 0 && 
                 extradata[i + 2] == 0 &&                
                 extradata[i + 3] == 1) {
-                
                 seps[sep++] = i;
-                
                 i += 4;
             } else {
                 ++i;
@@ -135,18 +128,16 @@ public class PictureSource implements MediaPacketSource {
 
     @Override
     public MediaPacketSourceDescription getDesc() {
+        ensureInitialized();
         return desc;
     }
 
     @Override
-    public boolean hasNext() {
-        return true;
-    }
-
-    @Override
     public MediaPacket next() {
+        ensureInitialized();
+
         while (queue.isEmpty()) {
-            refreshPicture();
+            refreshPicture(image);
 
             /* make sure the frame data is writable */
             int ret = av_frame_make_writable(frame);
@@ -169,10 +160,22 @@ public class PictureSource implements MediaPacketSource {
         return queue.poll();
     }
 
-    private void refreshPicture() {
+    @Override
+    public boolean hasNext() {
+        return true;
+    }
+
+    private void ensureInitialized() {
+        if (!init) {
+            init = true;
+            initEncoder();
+        }
+    }
+
+    private void refreshPicture(BufferedImage image) {
         Graphics gc = image.getGraphics();
         gc.setColor(Color.ORANGE);
-        gc.fillRect(0, 0, 352, 288);
+        gc.fillRect(0, 0, image.getWidth(), image.getHeight());
         gc.setColor(Color.BLACK);
         gc.setFont(gc.getFont().deriveFont(35f));
         gc.drawString("Hello, world! " + frameNumber, 10, 100);
@@ -194,7 +197,7 @@ public class PictureSource implements MediaPacketSource {
                 System.err.println("Error during encoding");
                 exit(1);
             }
-            av_packet_rescale_ts(pkt, c.time_base(), rtpTimebase);
+            av_packet_rescale_ts(pkt, c.time_base(), timebaseMillis);
             byte[] data = new byte[pkt.size()];
             pkt.data().get(data);
 
@@ -204,7 +207,7 @@ public class PictureSource implements MediaPacketSource {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         sws_freeContext(swsContext);
         avcodec_free_context(c);
         av_frame_free(rgbFrame);
