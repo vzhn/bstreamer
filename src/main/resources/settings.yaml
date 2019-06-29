@@ -1,0 +1,12 @@
+network:
+  port: 5000
+  sndbuf: default
+  watermarks:
+    high: 524288
+    low: 262144
+strategy:
+  sync:
+    limits:
+      packets: 20
+      size: 256000
+      time: 200
