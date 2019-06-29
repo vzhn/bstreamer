@@ -121,7 +121,6 @@ public class PictureSource implements MediaPacketSource {
                 ++i;
             }
         }
-
         sps = Arrays.copyOfRange(extradata, 4, seps[1]);
         pps = Arrays.copyOfRange(extradata, seps[1] + 4, extradata.length);
     }

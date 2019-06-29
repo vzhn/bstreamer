@@ -17,6 +17,7 @@ import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,6 +28,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class SyncStrategy implements StreamingStrategy {
+    private final static Logger LOG = Logger.getLogger(SyncStrategy.class);
+
     /** executor */
     private final ScheduledExecutorService scheduledExecutor;
     private final ChannelGroup group;
@@ -72,7 +75,13 @@ public class SyncStrategy implements StreamingStrategy {
     @Override
     public MediaPacketSourceDescription describe() {
         MediaPacketSource src = sourceFactory.newSource();
-        return src.getDesc();
+        MediaPacketSourceDescription desc = src.getDesc();
+        try {
+            src.close();
+        } catch (IOException e) {
+            LOG.error(e, e);
+        }
+        return desc;
     }
 
     private void startPlaying() {
@@ -96,14 +105,11 @@ public class SyncStrategy implements StreamingStrategy {
         private final RtpEncoder encoder;
         private long firstDts;
         private long timeStarted;
-
         private long rtpSeqNo;
         private int notWritable;
         private long prevMillis;
         private long adjust;
-
         private boolean loop = true;
-
         private final List<MediaPacket> packets = new ArrayList<>();
 
         private SyncWorker() {
