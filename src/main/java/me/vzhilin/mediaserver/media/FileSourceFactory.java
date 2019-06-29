@@ -5,16 +5,16 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class FileSourceFactory implements MediaPacketSourceFactory {
-    private final String fileName;
+    private final File file;
 
-    public FileSourceFactory(String fileName) {
-        this.fileName = fileName;
+    public FileSourceFactory(File file) {
+        this.file = file;
     }
 
     @Override
     public MediaPacketSource newSource() {
         try {
-            return new FileMediaPacketSource(new File(fileName));
+            return new FileMediaPacketSource(file);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -25,11 +25,11 @@ public class FileSourceFactory implements MediaPacketSourceFactory {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FileSourceFactory that = (FileSourceFactory) o;
-        return fileName.equals(that.fileName);
+        return Objects.equals(file, that.file);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(fileName);
+        return Objects.hash(file);
     }
 }

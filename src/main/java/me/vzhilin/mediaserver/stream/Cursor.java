@@ -30,5 +30,4 @@ public class Cursor<T> {
 
         return v;
     }
-
 }

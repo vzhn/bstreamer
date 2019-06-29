@@ -4,12 +4,14 @@ import com.amihaiemil.eoyaml.Yaml;
 import com.amihaiemil.eoyaml.YamlMapping;
 import io.netty.channel.WriteBufferWaterMark;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 
 public class Config {
     private final YamlMapping mapping;
+    private final File filesDir;
     private int port;
     private final Optional<Integer> networkSndbuf; //so_sndbuf
     private final WriteBufferWaterMark networkWatermarks;
@@ -47,6 +49,9 @@ public class Config {
             Integer.parseInt(packets),
             Integer.parseInt(time)
         );
+        YamlMapping sourceMapping = mapping.yamlMapping("source");
+        YamlMapping fileMapping = sourceMapping.yamlMapping("file");
+        filesDir = new File(fileMapping.string("dir"));
     }
 
     public int getPort() {
@@ -63,6 +68,10 @@ public class Config {
 
     public SyncStrategyLimits getSyncStrategyLimits() {
         return syncStrategyLimits;
+    }
+
+    public File getFilesDir() {
+        return filesDir;
     }
 
     @Override

@@ -3,21 +3,30 @@ package me.vzhilin.mediaserver.server;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
-import me.vzhilin.mediaserver.media.*;
+import me.vzhilin.mediaserver.conf.Config;
+import me.vzhilin.mediaserver.media.FileSourceFactory;
+import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.media.picture.PictureSourceFactory;
+import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactory;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;
 import me.vzhilin.mediaserver.util.RtspUriParser;
 
+import java.io.File;
 import java.util.Base64;
 
 public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final StreamingStrategyFactoryRegistry registry;
+    private Config config;
+    private ServerStatistics stat;
 
     public RtspServerHandler(StreamingStrategyFactoryRegistry registry) {
         this.registry = registry;
@@ -26,6 +35,9 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         super.channelRegistered(ctx);
+        Channel ch = ctx.channel();
+        config = ch.attr(RtspServerAttributes.CONFIG).get();
+        stat = ch.attr(RtspServerAttributes.STAT).get();
     }
 
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
@@ -47,11 +59,16 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                     ctx.writeAndFlush(response);
                 } else {
                     String strategyName = uri.getParam("mode", "sync");
-                    String fileName = uri.pathItem(0);
-
-                    MediaPacketSourceFactory fsf = new PictureSourceFactory();  // "/home/vzhilin/misc/video_samples/" + fileName
+                    String source = uri.pathItem(0);
+                    MediaPacketSourceFactory mpsf;
+                    if ("file".equals(source)) {
+                        String file = uri.pathItem(1);
+                        mpsf = new FileSourceFactory(new File(config.getFilesDir(), file));
+                    } else {
+                        mpsf = new PictureSourceFactory();
+                    }
                     StreamingStrategyFactory strategyFactory = registry.get(strategyName);
-                    MediaPacketSourceDescription description = strategyFactory.describe(fsf);
+                    MediaPacketSourceDescription description = strategyFactory.describe(mpsf);
                     response = description(uri, description);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
@@ -75,15 +92,21 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                     ctx.writeAndFlush(response);
                 } else {
                     String strategyName = uri.getParam("mode", "sync");
-                    String fileName = uri.pathItem(0);
-
+                    String source = uri.pathItem(0);
+                    MediaPacketSourceFactory mpsf;
+                    if ("file".equals(source)) {
+                        String file = uri.pathItem(1);
+                        mpsf = new FileSourceFactory(new File(config.getFilesDir(), file));
+                    } else {
+                        mpsf = new PictureSourceFactory();
+                    }
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
                     ctx.writeAndFlush(response);
 
                     StreamingStrategyFactory strategyFactory = registry.get(strategyName);
-                    StreamingStrategy strategy = strategyFactory.getStrategy(new PictureSourceFactory());
+                    StreamingStrategy strategy = strategyFactory.getStrategy(mpsf);
                     strategy.attachContext(ctx);
                 }
 

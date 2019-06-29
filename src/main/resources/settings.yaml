@@ -4,6 +4,9 @@ network:
   watermarks:
     high: 524288
     low: 262144
+source:
+  file:
+    dir: "/home/vzhilin/misc/video_samples/"
 strategy:
   sync:
     limits:
