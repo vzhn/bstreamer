@@ -28,7 +28,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>me.vzhilin.mediaserver.Mediaserver</mainClass>
+                            <mainClass>me.vzhilin.mediaserver.EntryPoint</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -40,7 +40,7 @@
                 <configuration>
                     <programs>
                         <program>
-                            <mainClass>me.vzhilin.mediaserver.Mediaserver</mainClass>
+                            <mainClass>me.vzhilin.mediaserver.EntryPoint</mainClass>
                             <id>app</id>
                         </program>
                     </programs>

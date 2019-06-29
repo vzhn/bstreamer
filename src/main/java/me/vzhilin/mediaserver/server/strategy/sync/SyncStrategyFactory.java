@@ -1,5 +1,6 @@
 package me.vzhilin.mediaserver.server.strategy.sync;
 
+import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
@@ -14,15 +15,17 @@ public class SyncStrategyFactory implements StreamingStrategyFactory {
     private final Map<MediaPacketSourceFactory, SyncStrategy> filenameToStrategy = new HashMap<>();
     private final ScheduledExecutorService scheduledExecutor;
     private final ServerStatistics stat;
+    private final Config config;
 
-    public SyncStrategyFactory(ScheduledExecutorService scheduledExecutor, ServerStatistics stat) {
+    public SyncStrategyFactory(ScheduledExecutorService scheduledExecutor, ServerStatistics stat, Config config) {
         this.scheduledExecutor = scheduledExecutor;
         this.stat = stat;
+        this.config = config;
     }
 
     @Override
-    public StreamingStrategy getStrategy(MediaPacketSourceFactory sourceFactory) {
-        return filenameToStrategy.computeIfAbsent(sourceFactory, s -> new SyncStrategy(s, scheduledExecutor, stat));
+    public StreamingStrategy getStrategy(MediaPacketSourceFactory sf) {
+        return filenameToStrategy.computeIfAbsent(sf, s -> new SyncStrategy(s, scheduledExecutor, stat, config));
     }
 
     @Override

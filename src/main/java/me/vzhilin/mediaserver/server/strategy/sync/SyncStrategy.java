@@ -10,6 +10,8 @@ import io.netty.channel.group.ChannelMatchers;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
+import me.vzhilin.mediaserver.conf.Config;
+import me.vzhilin.mediaserver.conf.SyncStrategyLimits;
 import me.vzhilin.mediaserver.media.MediaPacket;
 import me.vzhilin.mediaserver.media.MediaPacketSource;
 import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
@@ -35,6 +37,11 @@ public class SyncStrategy implements StreamingStrategy {
     private final ChannelGroup group;
     private final MediaPacketSourceFactory sourceFactory;
     private final ServerStatistics stat;
+    private final SyncStrategyLimits limits;
+
+    private final int SIZE_LIMIT;
+    private final int PACKET_LIMIT;
+    private final int TIME_LIMIT_MS;
 
     private ScheduledFuture<?> streamingFuture;
     private MediaPacketSource source;
@@ -42,8 +49,13 @@ public class SyncStrategy implements StreamingStrategy {
 
     public SyncStrategy(MediaPacketSourceFactory sourceFactory,
                         ScheduledExecutorService scheduledExecutor,
-                        ServerStatistics stat) {
+                        ServerStatistics stat,
+                        Config config) {
 
+        limits = config.getSyncStrategyLimits();
+        SIZE_LIMIT = limits.getSize();
+        PACKET_LIMIT = limits.getPackets();
+        TIME_LIMIT_MS = limits.getTime();
         this.sourceFactory = sourceFactory;
         this.scheduledExecutor = scheduledExecutor;
         this.group = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
@@ -158,7 +170,9 @@ public class SyncStrategy implements StreamingStrategy {
                         long np = 0;
                         long deltaPositionMillis = 0;
 
-                        while (source.hasNext() && (sz < 256 * 1024 && np < 20 && deltaPositionMillis < 200)) {
+                        while (source.hasNext() && (sz < SIZE_LIMIT &&
+                                                    np < PACKET_LIMIT &&
+                                                    deltaPositionMillis < TIME_LIMIT_MS)) {
                             MediaPacket pkt = source.next();
                             packets.add(pkt);
                             sz += pkt.getPayload().readableBytes();
@@ -175,7 +189,6 @@ public class SyncStrategy implements StreamingStrategy {
                     }
                 }
             }
-
             streamingFuture = scheduledExecutor.schedule(command, sleepMillis, TimeUnit.MILLISECONDS);
         }
 
@@ -205,7 +218,6 @@ public class SyncStrategy implements StreamingStrategy {
             }
             return sz;
         }
-
         private boolean isChannelsWritable() {
             notWritable = 0;
             group.forEach(channel -> {
