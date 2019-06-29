@@ -174,7 +174,8 @@ public class PictureSource implements MediaPacketSource {
         gc.setColor(Color.ORANGE);
         gc.fillRect(0, 0, 352, 288);
         gc.setColor(Color.BLACK);
-        gc.drawString("Hello, world! " + frameNumber, 100, 100);
+        gc.setFont(gc.getFont().deriveFont(35f));
+        gc.drawString("Hello, world! " + frameNumber, 10, 100);
         gc.dispose();
     }
 
