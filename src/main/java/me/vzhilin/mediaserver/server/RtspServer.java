@@ -46,8 +46,8 @@ public class RtspServer {
         WriteBufferWaterMark writeBufferWaterMark = config.getNetworkWatermarks();
         bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
-                .attr(RtspServerAttributes.CONFIG, config)
-                .attr(RtspServerAttributes.STAT, stat)
+                .childAttr(RtspServerAttributes.CONFIG, config)
+                .childAttr(RtspServerAttributes.STAT, stat)
                 .childHandler(new RtspServerInitializer(streamingStrategyRegistry))
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark)
                 .childOption(ChannelOption.SO_KEEPALIVE, true);

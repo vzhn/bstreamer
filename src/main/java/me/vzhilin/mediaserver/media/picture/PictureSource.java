@@ -22,6 +22,7 @@ import static org.bytedeco.javacpp.avutil.*;
 import static org.bytedeco.javacpp.swscale.*;
 
 public class PictureSource implements MediaPacketSource {
+    private final H264CodecParameters codecParameters;
     private MediaPacketSourceDescription desc;
     private AVPacket pkt;
     private AVCodecContext c;
@@ -36,12 +37,11 @@ public class PictureSource implements MediaPacketSource {
     private Deque<MediaPacket> queue = new LinkedList<MediaPacket>();
     private boolean init;
 
-    public PictureSource() {
+    public PictureSource(H264CodecParameters h264CodecParameters) {
+        this.codecParameters = h264CodecParameters;
     }
 
     private void initEncoder() {
-        H264CodecParameters parameters = new H264CodecParameters();
-
         avcodec.AVCodec codec = avcodec_find_encoder(AV_CODEC_ID_H264);
         c = avcodec_alloc_context3(codec);
         avutil.AVRational timebase = new avutil.AVRational();
@@ -55,7 +55,7 @@ public class PictureSource implements MediaPacketSource {
         timebaseMillis = new AVRational();
         timebaseMillis.num(1);
         timebaseMillis.den(1000);
-        parameters.setParameters(c);
+        codecParameters.setParameters(c);
         c.pix_fmt(avutil.AV_PIX_FMT_YUV420P);
         c.flags(c.flags() | AV_CODEC_FLAG_GLOBAL_HEADER);
         if (avcodec_open2(c, codec, (avutil.AVDictionary) null) < 0) {
@@ -74,7 +74,7 @@ public class PictureSource implements MediaPacketSource {
         desc.setVideoStreamId(0);
 
         pkt = av_packet_alloc();
-        image = new BufferedImage(parameters.getWidth(), parameters.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+        image = new BufferedImage(codecParameters.getWidth(), codecParameters.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
         initFrames(c);
     }
 

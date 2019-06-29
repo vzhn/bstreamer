@@ -12,6 +12,7 @@ import java.util.Optional;
 
 public class Config {
     private final YamlMapping mapping;
+    private final H264CodecParameters h264Params;
     private int port;
     private final Optional<Integer> networkSndbuf; //so_sndbuf
     private final WriteBufferWaterMark networkWatermarks;
@@ -55,11 +56,11 @@ public class Config {
         filesDir = new File(fileMapping.string("dir"));
         YamlMapping pictureMapping = sourceMapping.yamlMapping("picture");
         YamlMapping encoderMapping = pictureMapping.yamlMapping("encoder");
-        H264CodecParameters h264Params = new H264CodecParameters();
+        h264Params = new H264CodecParameters();
         h264Params.setBitrate(Integer.parseInt(encoderMapping.string("bitrate")));
         h264Params.setFps(Integer.parseInt(encoderMapping.string("fps")));
         h264Params.setGopSize(Integer.parseInt(encoderMapping.string("gop_size")));
-        h264Params.setMaxBFrames(Integer.parseInt("max_b_frames"));
+        h264Params.setMaxBFrames(Integer.parseInt(encoderMapping.string("max_b_frames")));
         h264Params.setWidth(Integer.parseInt(pictureMapping.string("width")));
         h264Params.setHeight(Integer.parseInt(pictureMapping.string("height")));
     }
@@ -82,6 +83,10 @@ public class Config {
 
     public File getFilesDir() {
         return filesDir;
+    }
+
+    public H264CodecParameters getH264Params() {
+        return h264Params;
     }
 
     @Override

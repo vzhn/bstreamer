@@ -65,7 +65,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                         String file = uri.pathItem(1);
                         mpsf = new FileSourceFactory(new File(config.getFilesDir(), file));
                     } else {
-                        mpsf = new PictureSourceFactory();
+                        mpsf = new PictureSourceFactory(config.getH264Params());
                     }
                     StreamingStrategyFactory strategyFactory = registry.get(strategyName);
                     MediaPacketSourceDescription description = strategyFactory.describe(mpsf);
@@ -98,7 +98,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                         String file = uri.pathItem(1);
                         mpsf = new FileSourceFactory(new File(config.getFilesDir(), file));
                     } else {
-                        mpsf = new PictureSourceFactory();
+                        mpsf = new PictureSourceFactory(config.getH264Params());
                     }
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));

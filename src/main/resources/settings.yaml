@@ -6,7 +6,7 @@ network:
     low: 262144
 source:
   file:
-    dir: "/home/vzhilin/misc/video_samples/"
+    dir: /home/vzhilin/misc/video_samples/
   picture:
     width: 640
     height: 480
