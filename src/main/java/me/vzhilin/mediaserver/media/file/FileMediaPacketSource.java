@@ -3,6 +3,7 @@ package me.vzhilin.mediaserver.media.file;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import me.vzhilin.mediaserver.conf.PropertyMap;
+import me.vzhilin.mediaserver.media.CommonSourceAttributes;
 import me.vzhilin.mediaserver.media.MediaPacketSource;
 import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
 import me.vzhilin.mediaserver.util.AVCCExtradataParser;
@@ -26,7 +27,7 @@ public class FileMediaPacketSource implements MediaPacketSource {
 
     public FileMediaPacketSource(PropertyMap sourceProperties) throws IOException {
         File dir = new File(sourceProperties.getValue(FileSourceAttributes.DIR));
-        File videoFile = new File(dir, sourceProperties.getValue(FileSourceAttributes.FILE));
+        File videoFile = new File(dir, sourceProperties.getValue(CommonSourceAttributes.EXTRA));
         if (videoFile.exists()) {
             open(videoFile);
         } else {

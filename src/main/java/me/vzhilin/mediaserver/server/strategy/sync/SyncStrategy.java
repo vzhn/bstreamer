@@ -12,11 +12,10 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.conf.SyncStrategyLimits;
 import me.vzhilin.mediaserver.media.MediaPacketSource;
 import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
-import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
-import me.vzhilin.mediaserver.media.file.*;
+import me.vzhilin.mediaserver.media.file.MediaPacket;
+import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
@@ -54,10 +53,10 @@ public final class SyncStrategy implements StreamingStrategy {
                         ServerStatistics stat,
                         Config config) {
 
-        SyncStrategyLimits limits = config.getSyncStrategyLimits();
-        SIZE_LIMIT = limits.getSize();
-        PACKET_LIMIT = limits.getPackets();
-        TIME_LIMIT_MS = limits.getTime();
+        PropertyMap props = config.getStrategyConfig("sync");
+        SIZE_LIMIT = props.getInt(SyncStrategyAttributes.LIMIT_SIZE);
+        PACKET_LIMIT = props.getInt(SyncStrategyAttributes.LIMIT_PACKETS);
+        TIME_LIMIT_MS = props.getInt(SyncStrategyAttributes.LIMIT_TIME);
         this.sourceFactory = sourceFactory;
         this.sourceConfig = sourceConfig;
         this.scheduledExecutor = scheduledExecutor;
