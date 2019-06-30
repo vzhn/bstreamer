@@ -8,6 +8,8 @@ import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import me.vzhilin.mediaserver.conf.Config;
+import me.vzhilin.mediaserver.conf.NetworkAttributes;
+import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.file.FileSourceFactory;
 import me.vzhilin.mediaserver.media.file.SourceFactoryRegistry;
 import me.vzhilin.mediaserver.media.picture.PictureSourceFactory;
@@ -48,17 +50,25 @@ public class RtspServer {
     }
 
     private void startServer() {
-        WriteBufferWaterMark writeBufferWaterMark = config.getNetworkWatermarks();
+        PropertyMap network = config.getNetwork();
+        int port = network.getInt(NetworkAttributes.PORT);
+        int sndbuf = network.getInt(NetworkAttributes.SNDBUF);
+        int lowWatermark = network.getInt(NetworkAttributes.WATERMARKS_LOW);
+        int highWatermark = network.getInt(NetworkAttributes.WATERMARKS_HIGH);
         bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 .childAttr(RtspServerAttributes.CONFIG, config)
                 .childAttr(RtspServerAttributes.STAT, stat)
-                .childHandler(new RtspServerInitializer(streamingStrategyRegistry, sourceFactoryRegistry))
-                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark)
                 .childOption(ChannelOption.SO_KEEPALIVE, true);
-
-        bootstrap.childOption(ChannelOption.SO_SNDBUF, config.getNetworkSndbuf());
-        future = bootstrap.bind(config.getPort()).syncUninterruptibly();
+        if (sndbuf > 0) {
+            bootstrap.childOption(ChannelOption.SO_SNDBUF, sndbuf);
+        }
+        if (lowWatermark > 0 && highWatermark > 0) {
+            WriteBufferWaterMark writeBufferWaterMark = new WriteBufferWaterMark(lowWatermark, highWatermark);
+            bootstrap.childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark);
+        }
+        bootstrap.childHandler(new RtspServerInitializer(streamingStrategyRegistry, sourceFactoryRegistry));
+        future = bootstrap.bind(port).syncUninterruptibly();
     }
 
     public void stop() {
