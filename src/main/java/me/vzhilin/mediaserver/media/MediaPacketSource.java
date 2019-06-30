@@ -1,4 +1,7 @@
-package me.vzhilin.mediaserver.media.file;
+package me.vzhilin.mediaserver.media;
+
+import me.vzhilin.mediaserver.media.file.MediaPacket;
+import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
 
 import java.io.Closeable;
 import java.util.Iterator;

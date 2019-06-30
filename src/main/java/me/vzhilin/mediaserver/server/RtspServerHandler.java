@@ -10,8 +10,10 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
 import me.vzhilin.mediaserver.conf.Config;
+import me.vzhilin.mediaserver.conf.PropertyMap;
+import me.vzhilin.mediaserver.media.CommonSourceAttributes;
 import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
-import me.vzhilin.mediaserver.media.file.MediaPaketSourceConfig;
+import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
 import me.vzhilin.mediaserver.media.file.SourceFactoryRegistry;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
@@ -23,13 +25,10 @@ import java.util.Base64;
 
 public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final StreamingStrategyFactoryRegistry registry;
-    private final SourceFactoryRegistry sourceFactoryRegistry;
     private Config config;
-    private ServerStatistics stat;
 
     public RtspServerHandler(StreamingStrategyFactoryRegistry registry, SourceFactoryRegistry sourceFactoryRegistry) {
         this.registry = registry;
-        this.sourceFactoryRegistry = sourceFactoryRegistry;
     }
 
     @Override
@@ -37,7 +36,6 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         super.channelRegistered(ctx);
         Channel ch = ctx.channel();
         config = ch.attr(RtspServerAttributes.CONFIG).get();
-        stat = ch.attr(RtspServerAttributes.STAT).get();
     }
 
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
@@ -58,16 +56,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 } else {
-                    String strategyName = uri.getParam("mode", "sync");
-                    String source = uri.pathItem(0);
-                    String extra = uri.pathItem(1);
-
-                    StreamingStrategyFactory strategyFactory = registry.get(strategyName);
-                    MediaPaketSourceConfig mpsc = config.getSourceConfig(source);
-                    mpsc.setName(source);
-                    mpsc.setExtra(extra);
-                    MediaPacketSourceDescription description = strategyFactory.describe(mpsc);
-                    response = description(uri, description);
+                    response = description(uri, getStreamingStrategy(uri).describe());
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 }
@@ -89,20 +78,12 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 } else {
-                    String strategyName = uri.getParam("mode", "sync");
-                    String source = uri.pathItem(0);
-                    String extra = uri.pathItem(1);
+                    getStreamingStrategy(uri).attachContext(ctx);
+
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
                     ctx.writeAndFlush(response);
-
-                    MediaPaketSourceConfig mpsc = config.getSourceConfig(source);
-                    mpsc.setName(source);
-                    mpsc.setExtra(extra);
-                    StreamingStrategyFactory strategyFactory = registry.get(strategyName);
-                    StreamingStrategy strategy = strategyFactory.getStrategy(mpsc);
-                    strategy.attachContext(ctx);
                 }
 
                 break;
@@ -112,6 +93,17 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                 ctx.writeAndFlush(response);
         }
+    }
+
+    private StreamingStrategy getStreamingStrategy(RtspUriParser uri) {
+        String strategyName = uri.getParam("mode", "sync");
+        String source = uri.pathItem(0);
+        String extra = uri.pathItem(1);
+        PropertyMap mpsc = config.getSourceConfig(source);
+        mpsc.put(CommonSourceAttributes.NAME, source);
+        mpsc.put(CommonSourceAttributes.EXTRA, extra);
+        StreamingStrategyFactory strategyFactory = registry.get(strategyName);
+        return strategyFactory.getStrategy(mpsc);
     }
 
     private FullHttpResponse description(RtspUriParser uri, MediaPacketSourceDescription description) {

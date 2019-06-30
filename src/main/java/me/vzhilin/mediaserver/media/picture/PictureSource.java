@@ -1,8 +1,9 @@
 package me.vzhilin.mediaserver.media.picture;
 
 import io.netty.buffer.Unpooled;
+import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.file.MediaPacket;
-import me.vzhilin.mediaserver.media.file.MediaPacketSource;
+import me.vzhilin.mediaserver.media.MediaPacketSource;
 import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -37,8 +38,25 @@ public class PictureSource implements MediaPacketSource {
     private Deque<MediaPacket> queue = new LinkedList<MediaPacket>();
     private boolean init;
 
-    public PictureSource(H264CodecParameters h264CodecParameters) {
-        this.codecParameters = h264CodecParameters;
+    public PictureSource(PropertyMap properties) {
+        this.codecParameters = extractH264Parameters(properties);
+    }
+
+    private static H264CodecParameters extractH264Parameters(PropertyMap properties) {
+        int width = properties.getInt(PictureSourceAttributes.PICTURE_WIDTH);
+        int height = properties.getInt(PictureSourceAttributes.PICTURE_HEIGHT);
+        int bitrate = properties.getInt(PictureSourceAttributes.PICTURE_ENCODER_BITRATE);
+        int fps = properties.getInt(PictureSourceAttributes.PICTURE_ENCODER_FPS);
+        int gopSize = properties.getInt(PictureSourceAttributes.PICTURE_ENCODER_GOP_SIZE);
+        int maxBFrames = properties.getInt(PictureSourceAttributes.PICTURE_ENCODER_MAX_B_FRAMES);
+        H264CodecParameters parameters = new H264CodecParameters();
+        parameters.setWidth(width);
+        parameters.setHeight(height);
+        parameters.setBitrate(bitrate);
+        parameters.setFps(fps);
+        parameters.setGopSize(gopSize);
+        parameters.setMaxBFrames(maxBFrames);
+        return parameters;
     }
 
     private void initEncoder() {

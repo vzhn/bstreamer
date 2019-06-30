@@ -2,6 +2,9 @@ package me.vzhilin.mediaserver.media.file;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import me.vzhilin.mediaserver.conf.PropertyMap;
+import me.vzhilin.mediaserver.media.MediaPacketSource;
+import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
 import me.vzhilin.mediaserver.util.AVCCExtradataParser;
 import org.bytedeco.javacpp.*;
 
@@ -21,9 +24,9 @@ public class FileMediaPacketSource implements MediaPacketSource {
     private AVPacket pk;
     private AVFormatContext pAvfmtCtx;
 
-    public FileMediaPacketSource(MediaPaketSourceConfig conf) throws IOException {
-        File dir = conf.getFileDir();
-        File videoFile = new File(dir, conf.getExtra());
+    public FileMediaPacketSource(PropertyMap sourceProperties) throws IOException {
+        File dir = new File(sourceProperties.getValue(FileSourceAttributes.DIR));
+        File videoFile = new File(dir, sourceProperties.getValue(FileSourceAttributes.FILE));
         if (videoFile.exists()) {
             open(videoFile);
         } else {

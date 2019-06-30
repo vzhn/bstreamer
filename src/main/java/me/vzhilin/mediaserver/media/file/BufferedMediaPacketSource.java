@@ -1,5 +1,7 @@
 package me.vzhilin.mediaserver.media.file;
 
+import me.vzhilin.mediaserver.media.MediaPacketSource;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;

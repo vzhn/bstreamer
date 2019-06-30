@@ -32,8 +32,8 @@ public class RtspServer {
         workerGroup = new NioEventLoopGroup(1);
         stat = new ServerStatistics();
         sourceFactoryRegistry = new SourceFactoryRegistry();
-        sourceFactoryRegistry.register("picture", new PictureSourceFactory(config.getH264Params()));
-        sourceFactoryRegistry.register("file", new FileSourceFactory(config.getFilesDir()));
+        sourceFactoryRegistry.register("picture", new PictureSourceFactory());
+        sourceFactoryRegistry.register("file", new FileSourceFactory());
         streamingStrategyRegistry = new StreamingStrategyFactoryRegistry();
         streamingStrategyRegistry.addFactory("sync", new SyncStrategyFactory(workerGroup, stat, config, sourceFactoryRegistry));
     }

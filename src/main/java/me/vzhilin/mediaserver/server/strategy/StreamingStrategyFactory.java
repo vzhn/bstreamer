@@ -1,9 +1,9 @@
 package me.vzhilin.mediaserver.server.strategy;
 
+import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
-import me.vzhilin.mediaserver.media.file.MediaPaketSourceConfig;
 
 public interface StreamingStrategyFactory {
-    StreamingStrategy getStrategy(MediaPaketSourceConfig sourceConfig);
-    MediaPacketSourceDescription describe(MediaPaketSourceConfig sourceConfig);
+    StreamingStrategy getStrategy(PropertyMap sourceConfig);
+    MediaPacketSourceDescription describe(PropertyMap sourceConfig);
 }

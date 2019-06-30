@@ -11,7 +11,11 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.conf.Config;
+import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.conf.SyncStrategyLimits;
+import me.vzhilin.mediaserver.media.MediaPacketSource;
+import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
+import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
 import me.vzhilin.mediaserver.media.file.*;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
@@ -32,7 +36,7 @@ public final class SyncStrategy implements StreamingStrategy {
     /** executor */
     private final ScheduledExecutorService scheduledExecutor;
     private final ChannelGroup group;
-    private final MediaPaketSourceConfig sourceConfig;
+    private final PropertyMap sourceConfig;
     private final MediaPacketSourceFactory sourceFactory;
     private final ServerStatistics stat;
 
@@ -45,7 +49,7 @@ public final class SyncStrategy implements StreamingStrategy {
     private Runnable command;
 
     public SyncStrategy(MediaPacketSourceFactory sourceFactory,
-                        MediaPaketSourceConfig sourceConfig,
+                        PropertyMap sourceConfig,
                         ScheduledExecutorService scheduledExecutor,
                         ServerStatistics stat,
                         Config config) {
