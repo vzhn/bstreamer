@@ -11,20 +11,15 @@ import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.NetworkAttributes;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.file.FileSourceFactory;
-import me.vzhilin.mediaserver.media.file.SourceFactoryRegistry;
 import me.vzhilin.mediaserver.media.picture.PictureSourceFactory;
-import me.vzhilin.mediaserver.server.stat.ServerStatistics;
-import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;
 import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
 
 public class RtspServer {
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
     private final ServerBootstrap bootstrap;
-    private final StreamingStrategyFactoryRegistry streamingStrategyRegistry;
-    private final SourceFactoryRegistry sourceFactoryRegistry;
-    private final ServerStatistics stat;
     private final Config config;
+    private final ServerContext serverContext;
     private ChannelFuture future;
 
     public RtspServer(Config config) {
@@ -32,12 +27,11 @@ public class RtspServer {
         bootstrap = new ServerBootstrap();
         bossGroup = new NioEventLoopGroup(1);
         workerGroup = new NioEventLoopGroup(1);
-        stat = new ServerStatistics();
-        sourceFactoryRegistry = new SourceFactoryRegistry();
-        sourceFactoryRegistry.register("picture", new PictureSourceFactory());
-        sourceFactoryRegistry.register("file", new FileSourceFactory());
-        streamingStrategyRegistry = new StreamingStrategyFactoryRegistry();
-        streamingStrategyRegistry.addFactory("sync", new SyncStrategyFactory(workerGroup, stat, config, sourceFactoryRegistry));
+        this.serverContext = new ServerContext(config);
+        this.serverContext.registerSourceFactory("picture", new PictureSourceFactory());
+        this.serverContext.registerSourceFactory("file", new FileSourceFactory());
+        this.serverContext.registerSyncStrategy("sync", new SyncStrategyFactory(serverContext));
+        this.serverContext.setScheduledExecutor(workerGroup);
     }
 
     public void start() {
@@ -57,8 +51,7 @@ public class RtspServer {
         int highWatermark = network.getInt(NetworkAttributes.WATERMARKS_HIGH);
         bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
-                .childAttr(RtspServerAttributes.CONFIG, config)
-                .childAttr(RtspServerAttributes.STAT, stat)
+                .childAttr(RtspServerAttributes.CONTEXT, serverContext)
                 .childOption(ChannelOption.SO_KEEPALIVE, true);
         if (sndbuf > 0) {
             bootstrap.childOption(ChannelOption.SO_SNDBUF, sndbuf);
@@ -67,7 +60,7 @@ public class RtspServer {
             WriteBufferWaterMark writeBufferWaterMark = new WriteBufferWaterMark(lowWatermark, highWatermark);
             bootstrap.childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark);
         }
-        bootstrap.childHandler(new RtspServerInitializer(streamingStrategyRegistry, sourceFactoryRegistry));
+        bootstrap.childHandler(new RtspServerInitializer());
         future = bootstrap.bind(port).syncUninterruptibly();
     }
 

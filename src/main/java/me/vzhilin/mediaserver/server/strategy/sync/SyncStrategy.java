@@ -10,13 +10,14 @@ import io.netty.channel.group.ChannelMatchers;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
-import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.PropertyMap;
+import me.vzhilin.mediaserver.media.CommonSourceAttributes;
 import me.vzhilin.mediaserver.media.MediaPacketSource;
 import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.media.file.MediaPacket;
 import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.RtpEncoder;
+import me.vzhilin.mediaserver.server.ServerContext;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import org.apache.log4j.Logger;
@@ -47,21 +48,18 @@ public final class SyncStrategy implements StreamingStrategy {
     private MediaPacketSource source;
     private Runnable command;
 
-    public SyncStrategy(MediaPacketSourceFactory sourceFactory,
-                        PropertyMap sourceConfig,
-                        ScheduledExecutorService scheduledExecutor,
-                        ServerStatistics stat,
-                        Config config) {
+    public SyncStrategy(ServerContext context, PropertyMap sourceConfig) {
+        String sourceName = sourceConfig.getValue(CommonSourceAttributes.NAME);
+        this.sourceConfig = sourceConfig;
+        this.sourceFactory = context.getSourceFactory(sourceName);
+        this.scheduledExecutor = context.getScheduledExecutor();
+        this.group = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+        this.stat = context.getStat();
 
-        PropertyMap props = config.getStrategyConfig("sync");
+        PropertyMap props = context.getConfig().getStrategyConfig("sync");
         SIZE_LIMIT = props.getInt(SyncStrategyAttributes.LIMIT_SIZE);
         PACKET_LIMIT = props.getInt(SyncStrategyAttributes.LIMIT_PACKETS);
         TIME_LIMIT_MS = props.getInt(SyncStrategyAttributes.LIMIT_TIME);
-        this.sourceFactory = sourceFactory;
-        this.sourceConfig = sourceConfig;
-        this.scheduledExecutor = scheduledExecutor;
-        this.group = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-        this.stat = stat;
     }
 
     @Override

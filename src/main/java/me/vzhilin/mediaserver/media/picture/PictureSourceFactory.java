@@ -11,6 +11,4 @@ public class PictureSourceFactory implements MediaPacketSourceFactory {
     public MediaPacketSource newSource(PropertyMap properties) {
         return new BufferedMediaPacketSource(new PictureSource(properties), 20);
     }
-
-
 }

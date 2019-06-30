@@ -13,29 +13,24 @@ import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.CommonSourceAttributes;
 import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
-import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
-import me.vzhilin.mediaserver.media.file.SourceFactoryRegistry;
-import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactory;
-import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;
 import me.vzhilin.mediaserver.util.RtspUriParser;
 
 import java.util.Base64;
 
 public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-    private final StreamingStrategyFactoryRegistry registry;
     private Config config;
+    private ServerContext context;
 
-    public RtspServerHandler(StreamingStrategyFactoryRegistry registry, SourceFactoryRegistry sourceFactoryRegistry) {
-        this.registry = registry;
-    }
+    public RtspServerHandler() { }
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         super.channelRegistered(ctx);
         Channel ch = ctx.channel();
-        config = ch.attr(RtspServerAttributes.CONFIG).get();
+        context = ch.attr(RtspServerAttributes.CONTEXT).get();
+        config = context.getConfig();
     }
 
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
@@ -102,7 +97,7 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         PropertyMap mpsc = config.getSourceConfig(source);
         mpsc.put(CommonSourceAttributes.NAME, source);
         mpsc.put(CommonSourceAttributes.EXTRA, extra);
-        StreamingStrategyFactory strategyFactory = registry.get(strategyName);
+        StreamingStrategyFactory strategyFactory = context.getStreamingStrategyFactory(strategyName);
         return strategyFactory.getStrategy(mpsc);
     }
 
