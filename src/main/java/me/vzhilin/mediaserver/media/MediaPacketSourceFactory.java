@@ -1,5 +1,5 @@
 package me.vzhilin.mediaserver.media;
 
 public interface MediaPacketSourceFactory {
-    MediaPacketSource newSource();
+    MediaPacketSource newSource(MediaPaketSourceConfig sourceConfig);
 }

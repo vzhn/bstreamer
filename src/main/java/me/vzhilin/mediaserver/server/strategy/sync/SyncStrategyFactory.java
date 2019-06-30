@@ -3,6 +3,9 @@ package me.vzhilin.mediaserver.server.strategy.sync;
 import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
+import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
+import me.vzhilin.mediaserver.media.SourceFactoryRegistry;
+import me.vzhilin.mediaserver.media.picture.PictureSourceFactory;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactory;
@@ -12,24 +15,31 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class SyncStrategyFactory implements StreamingStrategyFactory {
-    private final Map<MediaPacketSourceFactory, SyncStrategy> filenameToStrategy = new HashMap<>();
+    private final Map<MediaPaketSourceConfig, SyncStrategy> filenameToStrategy = new HashMap<>();
     private final ScheduledExecutorService scheduledExecutor;
     private final ServerStatistics stat;
     private final Config config;
+    private final SourceFactoryRegistry sourceFactoryRegistry;
 
-    public SyncStrategyFactory(ScheduledExecutorService scheduledExecutor, ServerStatistics stat, Config config) {
+    public SyncStrategyFactory(ScheduledExecutorService scheduledExecutor,
+                               ServerStatistics stat,
+                               Config config,
+                               SourceFactoryRegistry sourceFactoryRegistry) {
+
         this.scheduledExecutor = scheduledExecutor;
         this.stat = stat;
         this.config = config;
+        this.sourceFactoryRegistry = sourceFactoryRegistry;
     }
 
     @Override
-    public StreamingStrategy getStrategy(MediaPacketSourceFactory sf) {
-        return filenameToStrategy.computeIfAbsent(sf, s -> new SyncStrategy(s, scheduledExecutor, stat, config));
+    public StreamingStrategy getStrategy(MediaPaketSourceConfig sourceConfig) {
+        MediaPacketSourceFactory factory = sourceFactoryRegistry.get(sourceConfig.getName());
+        return filenameToStrategy.computeIfAbsent(sourceConfig, s -> new SyncStrategy(factory, sourceConfig, scheduledExecutor, stat, config));
     }
 
     @Override
-    public MediaPacketSourceDescription describe(MediaPacketSourceFactory sourceFactory) {
-        return getStrategy(sourceFactory).describe();
+    public MediaPacketSourceDescription describe(MediaPaketSourceConfig sourceConfig) {
+        return getStrategy(sourceConfig).describe();
     }
 }

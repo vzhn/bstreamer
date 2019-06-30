@@ -1,6 +1,7 @@
 package me.vzhilin.mediaserver;
 
 import me.vzhilin.mediaserver.conf.Config;
+import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.server.RtspServer;
 import org.apache.commons.daemon.Daemon;
 import org.apache.commons.daemon.DaemonContext;
@@ -12,7 +13,7 @@ public class MediaserverDaemon implements Daemon {
 
     @Override
     public void init(DaemonContext daemonContext) throws IOException {
-        Config config = new Config(EntryPoint.class.getResourceAsStream("/settings.yaml"));
+        Config config = new Config(PropertyMap.parseYaml(EntryPoint.class.getResourceAsStream("/settings.yaml")));
         instance = new RtspServer(config);
     }
 

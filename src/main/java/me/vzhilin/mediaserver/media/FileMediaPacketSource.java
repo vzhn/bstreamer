@@ -21,11 +21,13 @@ public class FileMediaPacketSource implements MediaPacketSource {
     private AVPacket pk;
     private AVFormatContext pAvfmtCtx;
 
-    public FileMediaPacketSource(File file) throws IOException {
-        if (file.exists()) {
-            open(file);
+    public FileMediaPacketSource(MediaPaketSourceConfig conf) throws IOException {
+        File dir = conf.getFileDir();
+        File videoFile = new File(dir, conf.getExtra());
+        if (videoFile.exists()) {
+            open(videoFile);
         } else {
-            throw new FileNotFoundException(file.getAbsolutePath());
+            throw new FileNotFoundException(dir.getAbsolutePath());
         }
     }
 

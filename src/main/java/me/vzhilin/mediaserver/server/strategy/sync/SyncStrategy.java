@@ -12,10 +12,7 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.SyncStrategyLimits;
-import me.vzhilin.mediaserver.media.MediaPacket;
-import me.vzhilin.mediaserver.media.MediaPacketSource;
-import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
-import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
+import me.vzhilin.mediaserver.media.*;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
@@ -29,15 +26,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class SyncStrategy implements StreamingStrategy {
+public final class SyncStrategy implements StreamingStrategy {
     private final static Logger LOG = Logger.getLogger(SyncStrategy.class);
 
     /** executor */
     private final ScheduledExecutorService scheduledExecutor;
     private final ChannelGroup group;
+    private final MediaPaketSourceConfig sourceConfig;
     private final MediaPacketSourceFactory sourceFactory;
     private final ServerStatistics stat;
-    private final SyncStrategyLimits limits;
 
     private final int SIZE_LIMIT;
     private final int PACKET_LIMIT;
@@ -48,15 +45,17 @@ public class SyncStrategy implements StreamingStrategy {
     private Runnable command;
 
     public SyncStrategy(MediaPacketSourceFactory sourceFactory,
+                        MediaPaketSourceConfig sourceConfig,
                         ScheduledExecutorService scheduledExecutor,
                         ServerStatistics stat,
                         Config config) {
 
-        limits = config.getSyncStrategyLimits();
+        SyncStrategyLimits limits = config.getSyncStrategyLimits();
         SIZE_LIMIT = limits.getSize();
         PACKET_LIMIT = limits.getPackets();
         TIME_LIMIT_MS = limits.getTime();
         this.sourceFactory = sourceFactory;
+        this.sourceConfig = sourceConfig;
         this.scheduledExecutor = scheduledExecutor;
         this.group = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
         this.stat = stat;
@@ -86,7 +85,7 @@ public class SyncStrategy implements StreamingStrategy {
 
     @Override
     public MediaPacketSourceDescription describe() {
-        MediaPacketSource src = sourceFactory.newSource();
+        MediaPacketSource src = sourceFactory.newSource(sourceConfig);
         MediaPacketSourceDescription desc = src.getDesc();
         try {
             src.close();
@@ -97,7 +96,7 @@ public class SyncStrategy implements StreamingStrategy {
     }
 
     private void startPlaying() {
-        source = sourceFactory.newSource();
+        source = sourceFactory.newSource(sourceConfig);
         command = new SyncWorker();
         streamingFuture = scheduledExecutor.schedule(command, 0, TimeUnit.NANOSECONDS);
     }
@@ -157,7 +156,7 @@ public class SyncStrategy implements StreamingStrategy {
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
-                        source = sourceFactory.newSource();
+                        source = sourceFactory.newSource(sourceConfig);
                         firstFrame = false;
                         sleepMillis = 40;
                     } else {

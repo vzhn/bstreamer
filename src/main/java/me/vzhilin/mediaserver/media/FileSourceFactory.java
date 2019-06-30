@@ -12,9 +12,9 @@ public class FileSourceFactory implements MediaPacketSourceFactory {
     }
 
     @Override
-    public MediaPacketSource newSource() {
+    public MediaPacketSource newSource(MediaPaketSourceConfig sourceConfig) {
         try {
-            return new FileMediaPacketSource(file);
+            return new FileMediaPacketSource(sourceConfig);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -10,26 +10,27 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
 import me.vzhilin.mediaserver.conf.Config;
-import me.vzhilin.mediaserver.media.FileSourceFactory;
 import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
-import me.vzhilin.mediaserver.media.picture.PictureSourceFactory;
+import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
+import me.vzhilin.mediaserver.media.SourceFactoryRegistry;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactory;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;
 import me.vzhilin.mediaserver.util.RtspUriParser;
 
-import java.io.File;
 import java.util.Base64;
 
 public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final StreamingStrategyFactoryRegistry registry;
+    private final SourceFactoryRegistry sourceFactoryRegistry;
     private Config config;
     private ServerStatistics stat;
 
-    public RtspServerHandler(StreamingStrategyFactoryRegistry registry) {
+    public RtspServerHandler(StreamingStrategyFactoryRegistry registry, SourceFactoryRegistry sourceFactoryRegistry) {
         this.registry = registry;
+        this.sourceFactoryRegistry = sourceFactoryRegistry;
     }
 
     @Override
@@ -60,15 +61,13 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 } else {
                     String strategyName = uri.getParam("mode", "sync");
                     String source = uri.pathItem(0);
-                    MediaPacketSourceFactory mpsf;
-                    if ("file".equals(source)) {
-                        String file = uri.pathItem(1);
-                        mpsf = new FileSourceFactory(new File(config.getFilesDir(), file));
-                    } else {
-                        mpsf = new PictureSourceFactory(config.getH264Params());
-                    }
+                    String extra = uri.pathItem(1);
+
                     StreamingStrategyFactory strategyFactory = registry.get(strategyName);
-                    MediaPacketSourceDescription description = strategyFactory.describe(mpsf);
+                    MediaPaketSourceConfig mpsc = config.getSourceConfig(source);
+                    mpsc.setName(source);
+                    mpsc.setExtra(extra);
+                    MediaPacketSourceDescription description = strategyFactory.describe(mpsc);
                     response = description(uri, description);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
@@ -93,20 +92,17 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 } else {
                     String strategyName = uri.getParam("mode", "sync");
                     String source = uri.pathItem(0);
-                    MediaPacketSourceFactory mpsf;
-                    if ("file".equals(source)) {
-                        String file = uri.pathItem(1);
-                        mpsf = new FileSourceFactory(new File(config.getFilesDir(), file));
-                    } else {
-                        mpsf = new PictureSourceFactory(config.getH264Params());
-                    }
+                    String extra = uri.pathItem(1);
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
                     ctx.writeAndFlush(response);
 
+                    MediaPaketSourceConfig mpsc = config.getSourceConfig(source);
+                    mpsc.setName(source);
+                    mpsc.setExtra(extra);
                     StreamingStrategyFactory strategyFactory = registry.get(strategyName);
-                    StreamingStrategy strategy = strategyFactory.getStrategy(mpsf);
+                    StreamingStrategy strategy = strategyFactory.getStrategy(mpsc);
                     strategy.attachContext(ctx);
                 }
 

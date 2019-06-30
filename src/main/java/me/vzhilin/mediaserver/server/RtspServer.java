@@ -8,9 +8,11 @@ import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import me.vzhilin.mediaserver.conf.Config;
+import me.vzhilin.mediaserver.media.FileSourceFactory;
+import me.vzhilin.mediaserver.media.SourceFactoryRegistry;
+import me.vzhilin.mediaserver.media.picture.PictureSourceFactory;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;
-import me.vzhilin.mediaserver.server.strategy.seq.SequencedStrategyFactory;
 import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
 
 public class RtspServer {
@@ -18,6 +20,7 @@ public class RtspServer {
     private final EventLoopGroup workerGroup;
     private final ServerBootstrap bootstrap;
     private final StreamingStrategyFactoryRegistry streamingStrategyRegistry;
+    private final SourceFactoryRegistry sourceFactoryRegistry;
     private final ServerStatistics stat;
     private final Config config;
     private ChannelFuture future;
@@ -28,9 +31,11 @@ public class RtspServer {
         bossGroup = new NioEventLoopGroup(1);
         workerGroup = new NioEventLoopGroup(1);
         stat = new ServerStatistics();
+        sourceFactoryRegistry = new SourceFactoryRegistry();
+        sourceFactoryRegistry.register("picture", new PictureSourceFactory(config.getH264Params()));
+        sourceFactoryRegistry.register("file", new FileSourceFactory(config.getFilesDir()));
         streamingStrategyRegistry = new StreamingStrategyFactoryRegistry();
-        streamingStrategyRegistry.addFactory("sync", new SyncStrategyFactory(workerGroup, stat, config));
-        streamingStrategyRegistry.addFactory("seq", new SequencedStrategyFactory());
+        streamingStrategyRegistry.addFactory("sync", new SyncStrategyFactory(workerGroup, stat, config, sourceFactoryRegistry));
     }
 
     public void start() {
@@ -48,15 +53,12 @@ public class RtspServer {
                 .channel(NioServerSocketChannel.class)
                 .childAttr(RtspServerAttributes.CONFIG, config)
                 .childAttr(RtspServerAttributes.STAT, stat)
-                .childHandler(new RtspServerInitializer(streamingStrategyRegistry))
+                .childHandler(new RtspServerInitializer(streamingStrategyRegistry, sourceFactoryRegistry))
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark)
                 .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-        if (config.getNetworkSndbuf().isPresent()) {
-            bootstrap.childOption(ChannelOption.SO_SNDBUF, config.getNetworkSndbuf().get());
-        }
-
-        future = bootstrap.bind(5000).syncUninterruptibly();
+        bootstrap.childOption(ChannelOption.SO_SNDBUF, config.getNetworkSndbuf());
+        future = bootstrap.bind(config.getPort()).syncUninterruptibly();
     }
 
     public void stop() {

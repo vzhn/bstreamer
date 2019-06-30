@@ -3,6 +3,7 @@ package me.vzhilin.mediaserver.media.picture;
 import me.vzhilin.mediaserver.media.BufferedMediaPacketSource;
 import me.vzhilin.mediaserver.media.MediaPacketSource;
 import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
+import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
 
 public class PictureSourceFactory implements MediaPacketSourceFactory {
     private final H264CodecParameters h264CodecParameters;
@@ -12,7 +13,7 @@ public class PictureSourceFactory implements MediaPacketSourceFactory {
     }
 
     @Override
-    public MediaPacketSource newSource() {
+    public MediaPacketSource newSource(MediaPaketSourceConfig config) {
         return new BufferedMediaPacketSource(new PictureSource(h264CodecParameters), 20);
     }
 }
