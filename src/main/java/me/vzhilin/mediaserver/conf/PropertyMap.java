@@ -109,7 +109,6 @@ public final class PropertyMap {
         YAMLFactory factory = new YAMLFactory();
         YAMLParser parser = factory.createParser(is);
         Deque<PropertyMap> stack = new LinkedList<>();
-//        stack.push(new PropertyMap());
         String label = "";
         JsonToken token;
         while ((token = parser.nextToken()) != null) {
@@ -183,6 +182,10 @@ public final class PropertyMap {
 
     public int getInt(String key) {
         return Integer.parseInt(getValue(key));
+    }
+
+    public void putAll(Map<String, String> params) {
+        params.forEach(this::put);
     }
 
     private final static class Entry {

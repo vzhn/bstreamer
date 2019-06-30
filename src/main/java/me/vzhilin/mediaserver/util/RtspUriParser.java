@@ -64,6 +64,9 @@ public class RtspUriParser {
     }
 
     public String pathItem(int i) {
+        if (pathItems.size() <= i) {
+            return null;
+        }
         return pathItems.get(i);
     }
 
@@ -77,6 +80,10 @@ public class RtspUriParser {
 
     public String getParam(String key, String defaultValue) {
         return params.getOrDefault(key, defaultValue);
+    }
+
+    public Map<String, String> allParameters() {
+        return params;
     }
 
     private final static class LineParser {

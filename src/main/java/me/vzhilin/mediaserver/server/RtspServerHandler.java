@@ -19,11 +19,9 @@ import me.vzhilin.mediaserver.util.RtspUriParser;
 
 import java.util.Base64;
 
-public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private Config config;
     private ServerContext context;
-
-    public RtspServerHandler() { }
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
@@ -97,7 +95,9 @@ public class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         PropertyMap mpsc = config.getSourceConfig(source);
         mpsc.put(CommonSourceAttributes.NAME, source);
         mpsc.put(CommonSourceAttributes.EXTRA, extra);
+        mpsc.putAll(uri.allParameters());
         StreamingStrategyFactory strategyFactory = context.getStreamingStrategyFactory(strategyName);
+
         return strategyFactory.getStrategy(mpsc);
     }
 

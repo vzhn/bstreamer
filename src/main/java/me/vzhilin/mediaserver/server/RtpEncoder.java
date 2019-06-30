@@ -98,6 +98,4 @@ public class RtpEncoder {
             return sz + 16;
         }
     }
-
-
 }
