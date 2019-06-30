@@ -1,13 +1,11 @@
 package me.vzhilin.mediaserver.conf;
 
-import com.amihaiemil.eoyaml.YamlMapping;
 import io.netty.channel.WriteBufferWaterMark;
-import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
+import me.vzhilin.mediaserver.media.file.MediaPaketSourceConfig;
 import me.vzhilin.mediaserver.media.picture.H264CodecParameters;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
 
 public class Config {
     public static final String NETWORK_PORT                        = "network.port";

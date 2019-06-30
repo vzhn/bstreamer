@@ -1,9 +1,9 @@
 package me.vzhilin.mediaserver.media.picture;
 
-import me.vzhilin.mediaserver.media.BufferedMediaPacketSource;
-import me.vzhilin.mediaserver.media.MediaPacketSource;
-import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
-import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
+import me.vzhilin.mediaserver.media.file.BufferedMediaPacketSource;
+import me.vzhilin.mediaserver.media.file.MediaPacketSource;
+import me.vzhilin.mediaserver.media.file.MediaPacketSourceFactory;
+import me.vzhilin.mediaserver.media.file.MediaPaketSourceConfig;
 
 public class PictureSourceFactory implements MediaPacketSourceFactory {
     private final H264CodecParameters h264CodecParameters;

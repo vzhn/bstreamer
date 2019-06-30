@@ -1,8 +1,7 @@
 package me.vzhilin.mediaserver.server.strategy;
 
-import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
-import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
-import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
+import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.file.MediaPaketSourceConfig;
 
 public interface StreamingStrategyFactory {
     StreamingStrategy getStrategy(MediaPaketSourceConfig sourceConfig);

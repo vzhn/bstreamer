@@ -5,7 +5,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
-import me.vzhilin.mediaserver.media.SourceFactoryRegistry;
+import me.vzhilin.mediaserver.media.file.SourceFactoryRegistry;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;
 
 public class RtspServerInitializer extends ChannelInitializer<SocketChannel> {

@@ -1,9 +1,9 @@
 package me.vzhilin.mediaserver.media.picture;
 
 import io.netty.buffer.Unpooled;
-import me.vzhilin.mediaserver.media.MediaPacket;
-import me.vzhilin.mediaserver.media.MediaPacketSource;
-import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.file.MediaPacket;
+import me.vzhilin.mediaserver.media.file.MediaPacketSource;
+import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.avcodec;

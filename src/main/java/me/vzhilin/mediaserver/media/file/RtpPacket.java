@@ -1,4 +1,4 @@
-package me.vzhilin.mediaserver.media;
+package me.vzhilin.mediaserver.media.file;
 
 public class RtpPacket {
     private final MediaPacket pkt;

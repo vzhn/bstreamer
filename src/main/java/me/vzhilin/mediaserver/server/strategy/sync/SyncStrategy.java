@@ -12,7 +12,7 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.SyncStrategyLimits;
-import me.vzhilin.mediaserver.media.*;
+import me.vzhilin.mediaserver.media.file.*;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;

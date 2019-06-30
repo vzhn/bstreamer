@@ -1,4 +1,4 @@
-package me.vzhilin.mediaserver.media;
+package me.vzhilin.mediaserver.media.file;
 
 import java.io.IOException;
 import java.util.ArrayList;

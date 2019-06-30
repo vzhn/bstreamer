@@ -1,11 +1,10 @@
 package me.vzhilin.mediaserver.server.strategy.sync;
 
 import me.vzhilin.mediaserver.conf.Config;
-import me.vzhilin.mediaserver.media.MediaPacketSourceDescription;
-import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
-import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
-import me.vzhilin.mediaserver.media.SourceFactoryRegistry;
-import me.vzhilin.mediaserver.media.picture.PictureSourceFactory;
+import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.file.MediaPacketSourceFactory;
+import me.vzhilin.mediaserver.media.file.MediaPaketSourceConfig;
+import me.vzhilin.mediaserver.media.file.SourceFactoryRegistry;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactory;
