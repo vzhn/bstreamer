@@ -94,8 +94,16 @@ public class DigiRain {
             this.rnd = new Random();
         }
 
+        public void randomMutate() {
+            if (data.length() > 2) {
+                int p = rnd.nextInt(data.length());
+                data = data.substring(0, p) + randomCharacter() + data.substring(p+1);
+            }
+        }
+
         public void appendRandomCharacter() {
-            char ch = (char) ('a' + rnd.nextInt('z' - 'a'));
+//            char ch = (char) ('a' + rnd.nextInt('z' - 'a'));
+            char ch = randomCharacter();
             if (data.length() > 20) {
                 data = data.substring(1) + ch;
                 y += CHAR_H;
@@ -103,6 +111,14 @@ public class DigiRain {
                 data += ch;
             }
 
+        }
+
+        private char randomCharacter() {
+            if (rnd.nextFloat() > 0.2) {
+                return (char) ('a' + rnd.nextInt('z' - 'a'));
+            } else {
+                return (char)(0x30a0 + rnd.nextInt(0x30ff - 0x30a0));
+            }
         }
     }
 
@@ -129,6 +145,12 @@ public class DigiRain {
             gr.setColor(Color.GREEN);
             synchronized (strings) {
                 strings.forEach(digiString -> paintString(gr, digiString));
+                strings.forEach(new Consumer<DigiString>() {
+                    @Override
+                    public void accept(DigiString digiString) {
+                        digiString.randomMutate();
+                    }
+                });
                 strings.forEach(new Consumer<DigiString>() {
                     @Override
                     public void accept(DigiString digiString) {
@@ -164,11 +186,11 @@ public class DigiRain {
                 data[i] *= 1f/273;
             }
 
-            Kernel kernel = new Kernel(r, r, data);
-            BufferedImageOp op = new ConvolveOp(kernel);
+//            Kernel kernel = new Kernel(r, r, data);
+//            BufferedImageOp op = new ConvolveOp(kernel);
 
-            BufferedImage rs = op.filter(img, null);
-            g.drawImage(rs, 0, 0, null);
+//            BufferedImage rs = op.filter(img, null);
+            g.drawImage(img, 0, 0, null);
         }
 
         private void paintString(Graphics gr, DigiString s) {
