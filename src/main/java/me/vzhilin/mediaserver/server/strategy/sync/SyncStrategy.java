@@ -3,11 +3,10 @@ package me.vzhilin.mediaserver.server.strategy.sync;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.ChannelMatchers;
-import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.group.*;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.conf.PropertyMap;
@@ -18,6 +17,7 @@ import me.vzhilin.mediaserver.media.file.MediaPacket;
 import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 import me.vzhilin.mediaserver.server.ServerContext;
+import me.vzhilin.mediaserver.server.stat.GroupStatistics;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import org.apache.log4j.Logger;
@@ -68,19 +68,27 @@ public final class SyncStrategy implements StreamingStrategy {
         Channel ch = ctx.channel();
         group.add(ch);
         ch.closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
-
+        GroupStatistics groupStat;
         if (wasFirst) {
             startPlaying();
+            groupStat = stat.addGroupStatistics(sourceConfig);
+        } else {
+            groupStat = stat.getGroupStatistics(sourceConfig);
         }
+
+        groupStat.incClientCount();
     }
 
     @Override
     public void detachContext(ChannelHandlerContext context) {
         group.remove(context.channel());
+        GroupStatistics groupStat = stat.getGroupStatistics(sourceConfig);
+        groupStat.decClientCount();
 
         boolean wasLast = group.isEmpty();
         if (wasLast) {
             stopPlaying();
+            stat.removeGroupStatistics(sourceConfig);
         }
     }
 
@@ -97,6 +105,7 @@ public final class SyncStrategy implements StreamingStrategy {
     }
 
     private void startPlaying() {
+        stat.addGroupStatistics(sourceConfig);
         source = sourceFactory.newSource(sourceConfig);
         command = new SyncWorker();
         streamingFuture = scheduledExecutor.schedule(command, 0, TimeUnit.NANOSECONDS);
@@ -203,7 +212,16 @@ public final class SyncStrategy implements StreamingStrategy {
                 }
 
                 buffer.retain(connectedClients);
-                group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
+                long t = System.nanoTime();
+                ChannelGroupFuture gf = group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all());
+                gf.addListener(new ChannelGroupFutureListener() {
+
+                    @Override
+                    public void operationComplete(ChannelGroupFuture future) throws Exception {
+                        long dt = System.nanoTime() - t;
+                        System.err.println("complete! " + connectedClients * (float) sz / dt * 1e9 / 1e6 * 8);
+                    }
+                });
                 buffer.release();
                 stat.getThroughputMeter().mark((long) 8 * sz * connectedClients);
             }

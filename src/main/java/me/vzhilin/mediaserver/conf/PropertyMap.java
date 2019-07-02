@@ -198,4 +198,17 @@ public final class PropertyMap {
             this.depth = depth;
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PropertyMap that = (PropertyMap) o;
+        return properties.equals(that.properties);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(properties);
+    }
 }

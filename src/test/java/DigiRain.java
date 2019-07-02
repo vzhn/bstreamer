@@ -117,7 +117,9 @@ public class DigiRain {
             if (rnd.nextFloat() > 0.2) {
                 return (char) ('a' + rnd.nextInt('z' - 'a'));
             } else {
-                return (char)(0x30a0 + rnd.nextInt(0x30ff - 0x30a0));
+                char a = 0x30a0;
+                char b = 0x30ff;
+                return (char)(a + rnd.nextInt(b - a));
             }
         }
     }

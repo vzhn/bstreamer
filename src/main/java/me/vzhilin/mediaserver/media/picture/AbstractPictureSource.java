@@ -5,6 +5,8 @@ import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.file.MediaPacket;
 import me.vzhilin.mediaserver.media.MediaPacketSource;
 import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.server.ServerContext;
+import me.vzhilin.mediaserver.server.stat.GroupStatistics;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.avcodec;
@@ -22,8 +24,10 @@ import static org.bytedeco.javacpp.avcodec.*;
 import static org.bytedeco.javacpp.avutil.*;
 import static org.bytedeco.javacpp.swscale.*;
 
-public class PictureSource implements MediaPacketSource {
+public abstract class AbstractPictureSource implements MediaPacketSource {
     private final H264CodecParameters codecParameters;
+    private final ServerContext context;
+    private final PropertyMap properties;
     private MediaPacketSourceDescription desc;
     private AVPacket pkt;
     private AVCodecContext c;
@@ -37,8 +41,11 @@ public class PictureSource implements MediaPacketSource {
     private long frameNumber = 0;
     private Deque<MediaPacket> queue = new LinkedList<MediaPacket>();
     private boolean init;
+    private GroupStatistics groupStatistics;
 
-    public PictureSource(PropertyMap properties) {
+    public AbstractPictureSource(ServerContext context, PropertyMap properties) {
+        this.context = context;
+        this.properties = properties;
         this.codecParameters = extractH264Parameters(properties);
     }
 
@@ -57,6 +64,10 @@ public class PictureSource implements MediaPacketSource {
         parameters.setGopSize(gopSize);
         parameters.setMaxBFrames(maxBFrames);
         return parameters;
+    }
+
+    protected long getFrameNumber() {
+        return frameNumber;
     }
 
     private void initEncoder() {
@@ -154,7 +165,7 @@ public class PictureSource implements MediaPacketSource {
         ensureInitialized();
 
         while (queue.isEmpty()) {
-            refreshPicture(image);
+            drawPicture(image);
 
             /* make sure the frame data is writable */
             int ret = av_frame_make_writable(frame);
@@ -189,14 +200,17 @@ public class PictureSource implements MediaPacketSource {
         }
     }
 
-    private void refreshPicture(BufferedImage image) {
-        Graphics gc = image.getGraphics();
-        gc.setColor(Color.ORANGE);
-        gc.fillRect(0, 0, image.getWidth(), image.getHeight());
-        gc.setColor(Color.BLACK);
-        gc.setFont(gc.getFont().deriveFont(35f));
-        gc.drawString("Hello, world! " + frameNumber, 10, 100);
-        gc.dispose();
+    private synchronized void setGroupStatistics(GroupStatistics groupStatistics) {
+        this.groupStatistics = groupStatistics;
+    }
+
+    protected abstract void drawPicture(BufferedImage image);
+
+    protected synchronized GroupStatistics getGroupStatistics() {
+        if (this.groupStatistics == null) {
+            this.groupStatistics = context.getStat().getGroupStatistics(properties);
+        }
+        return groupStatistics;
     }
 
     private void encode(AVCodecContext c, AVFrame frame, AVPacket pkt) {
@@ -218,7 +232,7 @@ public class PictureSource implements MediaPacketSource {
             byte[] data = new byte[pkt.size()];
             pkt.data().get(data);
 
-            queue.offer(new MediaPacket(pkt.pts(), pkt.dts(), (pkt.flags() & AV_PKT_FLAG_KEY) != 0, Unpooled.wrappedBuffer(data)));
+            queue.offer(new MediaPacket(pkt.pts(), pkt.dts(), (pkt.flags() & AV_PKT_FLAG_KEY) != 0, Unpooled.wrappedBuffer(data))); // FIXME Unpooled
             av_packet_unref(pkt);
         }
     }
@@ -229,5 +243,6 @@ public class PictureSource implements MediaPacketSource {
         avcodec_free_context(c);
         av_frame_free(rgbFrame);
         av_frame_free(frame);
+//        context.getStat().removeGroupStatistics(properties);
     }
 }

@@ -11,7 +11,7 @@ import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.NetworkAttributes;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.file.FileSourceFactory;
-import me.vzhilin.mediaserver.media.picture.PictureSourceFactory;
+import me.vzhilin.mediaserver.media.picture.SimplePictureSourceFactory;
 import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
 
 public class RtspServer {
@@ -28,7 +28,7 @@ public class RtspServer {
         bossGroup = new NioEventLoopGroup(1);
         workerGroup = new NioEventLoopGroup(1);
         this.serverContext = new ServerContext(config);
-        this.serverContext.registerSourceFactory("picture", new PictureSourceFactory());
+        this.serverContext.registerSourceFactory("picture", new SimplePictureSourceFactory(serverContext));
         this.serverContext.registerSourceFactory("file", new FileSourceFactory());
         this.serverContext.registerSyncStrategy("sync", new SyncStrategyFactory(serverContext));
         this.serverContext.setScheduledExecutor(workerGroup);

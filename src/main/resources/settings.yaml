@@ -18,6 +18,6 @@ source:
 strategy:
   sync:
     limits:
-      packets: 20
+      packets: 5
       size: 256000
       time: 200

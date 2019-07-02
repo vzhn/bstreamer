@@ -9,7 +9,7 @@ public class InterleavedFrameEncoder extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof InterleavedFrame) {
-            ctx.write(((InterleavedFrame) msg).getPayload().duplicate());
+            ctx.write(((InterleavedFrame) msg).getPayload().duplicate(), promise);
         } else {
             super.write(ctx, msg, promise);
         }
