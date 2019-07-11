@@ -28,7 +28,7 @@ public class RtspServer {
         bossGroup = new NioEventLoopGroup(1);
         workerGroup = new NioEventLoopGroup(1);
         this.serverContext = new ServerContext(config);
-        this.serverContext.registerSourceFactory("picture", new SimplePictureSourceFactory(serverContext));
+        this.serverContext.registerSourceFactory("picture", new SimplePictureSourceFactory());
         this.serverContext.registerSourceFactory("file", new FileSourceFactory());
         this.serverContext.registerSyncStrategy("sync", new SyncStrategyFactory(serverContext));
         this.serverContext.setScheduledExecutor(workerGroup);

@@ -7,7 +7,6 @@ import me.vzhilin.mediaserver.media.file.MediaPacket;
 import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.ServerContext;
 import me.vzhilin.mediaserver.server.stat.GroupStatistics;
-import me.vzhilin.mediaserver.util.FFmpeg;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.avcodec;
@@ -230,7 +229,9 @@ public abstract class AbstractPictureSource implements MediaPacketSource {
             byte[] data = new byte[pkt.size()];
             pkt.data().get(data);
 
-            queue.offer(new MediaPacket(pkt.pts(), pkt.dts(), (pkt.flags() & AV_PKT_FLAG_KEY) != 0, Unpooled.wrappedBuffer(data))); // FIXME Unpooled
+            boolean isKey = (pkt.flags() & AV_PKT_FLAG_KEY) != 0;
+            MediaPacket e = new MediaPacket(pkt.pts(), pkt.dts(), isKey, Unpooled.wrappedBuffer(data));
+            queue.offer(e); // FIXME Unpooled
             av_packet_unref(pkt);
         }
     }
@@ -242,6 +243,7 @@ public abstract class AbstractPictureSource implements MediaPacketSource {
             avcodec_free_context(c);
             av_frame_free(rgbFrame);
             av_frame_free(frame);
+            timebaseMillis.deallocate();
 //        }
     }
 }

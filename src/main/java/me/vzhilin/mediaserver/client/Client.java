@@ -39,7 +39,6 @@ public class Client {
                     ChannelPipeline pipeline = ch.pipeline();
                     RtspInterleavedDecoder rtspInterleavedDecoder = new RtspInterleavedDecoder();
                     rtspInterleavedDecoder.setCumulator(RtspInterleavedDecoder.COMPOSITE_CUMULATOR);
-
                     pipeline.addLast(rtspInterleavedDecoder);
                     pipeline.addLast(new HttpClientCodec());
                     pipeline.addLast(new ClientHandler());
@@ -83,7 +82,6 @@ public class Client {
                 }
             }
         , 500 * 1000, TimeUnit.SECONDS);
-//        exec.shutdown();
     }
 
     private void bindListener(Bootstrap b, ChannelFuture connectFuture) {

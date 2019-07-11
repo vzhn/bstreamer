@@ -6,15 +6,9 @@ import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.media.file.BufferedMediaPacketSource;
 import me.vzhilin.mediaserver.server.ServerContext;
 
-public class SimplePictureSourceFactory implements MediaPacketSourceFactory {
-    private final ServerContext context;
-
-    public SimplePictureSourceFactory(ServerContext context) {
-        this.context = context;
-    }
-
+public final class SimplePictureSourceFactory implements MediaPacketSourceFactory {
     @Override
-    public MediaPacketSource newSource(PropertyMap properties) {
+    public MediaPacketSource newSource(ServerContext context, PropertyMap properties) {
         return new BufferedMediaPacketSource(new SimplePictureSource(context, properties), 5);
     }
 }

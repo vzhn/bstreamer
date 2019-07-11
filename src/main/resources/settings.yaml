@@ -4,6 +4,12 @@ network:
   watermarks:
     high: 524288
     low: 262144
+strategy:
+  sync:
+    limits:
+      packets: 5
+      size: 256000
+      time: 200
 source:
   file:
     dir: /home/vzhilin/misc/video_samples/
@@ -15,9 +21,3 @@ source:
       fps: 25
       gop_size: 10
       max_b_frames: 1
-strategy:
-  sync:
-    limits:
-      packets: 5
-      size: 256000
-      time: 200

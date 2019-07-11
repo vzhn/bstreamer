@@ -34,7 +34,7 @@ public class SimplePictureSource extends AbstractPictureSource {
     public SimplePictureSource(ServerContext context, PropertyMap properties) {
         super(context, properties);
         stat = context.getStat();
-        ts = new ArrayList<TimeSeries.TimeSeriesEntry>();
+        ts = new ArrayList<>();
         this.chart = new Chart(stat);
     }
 
@@ -61,8 +61,6 @@ public class SimplePictureSource extends AbstractPictureSource {
         GroupStatistics groupStat = getGroupStatistics();
         FontMetrics fm = gc.getFontMetrics();
         int height = fm.getHeight();
-
-
 
         gc.setBackground(Color.YELLOW);
         gc.clearRect(x - padding, y - padding, 200 + 2 * padding, 4 * height + 2 * padding);
