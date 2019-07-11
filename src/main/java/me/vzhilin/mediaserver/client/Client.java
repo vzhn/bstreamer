@@ -1,12 +1,14 @@
 package me.vzhilin.mediaserver.client;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
-import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import org.apache.log4j.BasicConfigurator;
 
@@ -30,6 +32,7 @@ public class Client {
         Bootstrap b = bootstrap
             .group(workerGroup)
             .channel(EpollSocketChannel.class)
+            .attr(AttributeKey.<String>valueOf("url"), "rtsp://localhost:5000/picture?width=640")
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) {

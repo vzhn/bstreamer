@@ -61,6 +61,17 @@ public class BufferedMediaPacketSource implements MediaPacketSource {
 
         return packetQueue.poll();
     }
+    @Override
+    public synchronized void close() throws IOException {
+        unbufferedSource.close();
+    }
+    private synchronized void ensureStarted() {
+        if (!started) {
+            started = true;
+            populateCount = 0;
+            pool.execute(populateTask);
+        }
+    }
     private void drainPackets() {
         try {
             drainedPackets.add(taskResultQueue.take());
@@ -83,19 +94,6 @@ public class BufferedMediaPacketSource implements MediaPacketSource {
             // nop
         }
     }
-    private void ensureStarted() {
-        if (!started) {
-            started = true;
-            populateCount = 0;
-            pool.execute(populateTask);
-        }
-    }
-    @Override
-    public void close() throws IOException {
-        synchronized (unbufferedSource) {
-            unbufferedSource.close();
-        }
-    }
     private final static class TaskResult {
         private MediaPacket next;
         private TaskResult(MediaPacket next) {
@@ -112,7 +110,7 @@ public class BufferedMediaPacketSource implements MediaPacketSource {
         }
         @Override
         public void run() {
-            synchronized (unbufferedSource) {
+            synchronized (BufferedMediaPacketSource.this) {
                 final int remainingCapacity = taskResultQueue.remainingCapacity();
                 for (int i = 0; i < remainingCapacity; i++) {
                     if (unbufferedSource.hasNext()) {
@@ -122,8 +120,8 @@ public class BufferedMediaPacketSource implements MediaPacketSource {
                         break;
                     }
                 }
+                taskResultQueue.addAll(local);
             }
-            taskResultQueue.addAll(local);
             local.clear();
         }
     }

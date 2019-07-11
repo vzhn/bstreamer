@@ -5,8 +5,8 @@ import io.netty.buffer.PooledByteBufAllocator;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.CommonSourceAttributes;
 import me.vzhilin.mediaserver.media.MediaPacketSource;
-import me.vzhilin.mediaserver.media.MediaPaketSourceConfig;
 import me.vzhilin.mediaserver.util.AVCCExtradataParser;
+import me.vzhilin.mediaserver.util.FFmpeg;
 import org.bytedeco.javacpp.*;
 
 import java.io.File;
@@ -37,19 +37,22 @@ public class FileMediaPacketSource implements MediaPacketSource {
 
     private void open(File file) throws IOException {
         pAvfmtCtx = new avformat.AVFormatContext(null);
-        int r = avformat_open_input(pAvfmtCtx, new BytePointer(file.getAbsolutePath()), null, null);
-        if (r < 0) {
-            pAvfmtCtx.close();
-            wasClosed = true;
-            throw new IOException("avformat_open_input error: " + r);
-        }
-        r = avformat_find_stream_info(pAvfmtCtx, (PointerPointer) null);
-        if (r < 0) {
-            wasClosed = true;
-            avformat_close_input(pAvfmtCtx);
-            pAvfmtCtx.close();
-            throw new IOException("error: " + r);
-        }
+        int r;
+//        synchronized (FFmpeg.class) {
+            r = avformat_open_input(pAvfmtCtx, new BytePointer(file.getAbsolutePath()), null, null);
+            if (r < 0) {
+                pAvfmtCtx.close();
+                wasClosed = true;
+                throw new IOException("avformat_open_input error: " + r);
+            }
+            r = avformat_find_stream_info(pAvfmtCtx, (PointerPointer) null);
+            if (r < 0) {
+                wasClosed = true;
+                avformat_close_input(pAvfmtCtx);
+                pAvfmtCtx.close();
+                throw new IOException("error: " + r);
+            }
+//        }
         pk = new avcodec.AVPacket();
         AVStream avStream = getVideoStream();
         if (avStream == null) {
@@ -107,7 +110,6 @@ public class FileMediaPacketSource implements MediaPacketSource {
 
     private boolean fillQueue() {
         while (true) {
-            av_packet_unref(pk);
             if (av_read_frame(pAvfmtCtx, pk) < 0) {
                 return true;
             }
@@ -130,8 +132,9 @@ public class FileMediaPacketSource implements MediaPacketSource {
                     packetQueue.offer(new MediaPacket(pts, dts, isKey, payload));
                     offset += (avccLen + 4);
                 }
-                return false;
             }
+
+            av_packet_unref(pk);
         }
     }
 
@@ -139,10 +142,11 @@ public class FileMediaPacketSource implements MediaPacketSource {
     public void close() {
         if (!wasClosed) {
             wasClosed = true;
-            if (hasNext()) {
-                av_packet_unref(pk);
-            }
-            avformat_close_input(pAvfmtCtx);
+//            synchronized (FFmpeg.class) {
+                avformat_close_input(pAvfmtCtx);
+//            }
+            packetQueue.forEach(mediaPacket -> mediaPacket.getPayload().release());
+            packetQueue.clear();
             pAvfmtCtx.close();
             pk.close();
         }

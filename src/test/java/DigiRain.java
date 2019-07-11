@@ -1,11 +1,8 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.BufferedImageOp;
-import java.awt.image.ConvolveOp;
-import java.awt.image.Kernel;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -114,11 +111,11 @@ public class DigiRain {
         }
 
         private char randomCharacter() {
-            if (rnd.nextFloat() > 0.2) {
+            if (rnd.nextFloat() > 0.3) {
                 return (char) ('a' + rnd.nextInt('z' - 'a'));
             } else {
-                char a = 0x30a0;
-                char b = 0x30ff;
+                char a = 0xff66;
+                char b = 0xff9d;
                 return (char)(a + rnd.nextInt(b - a));
             }
         }

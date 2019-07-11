@@ -1,5 +1,3 @@
-import com.amihaiemil.eoyaml.Yaml;
-import com.amihaiemil.eoyaml.YamlMapping;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import org.junit.Test;
 

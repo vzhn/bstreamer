@@ -34,6 +34,10 @@ public class RtspServer {
         this.serverContext.setScheduledExecutor(workerGroup);
     }
 
+    public ServerContext getServerContext() {
+        return serverContext;
+    }
+
     public void start() {
         startMetrics();
         startServer();

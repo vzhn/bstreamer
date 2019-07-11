@@ -10,7 +10,9 @@ import me.vzhilin.mediaserver.conf.PropertyMap;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public final class ServerStatistics {
     private final Map<PropertyMap, GroupStatistics> groupStats = new HashMap<>();
@@ -21,6 +23,8 @@ public final class ServerStatistics {
 
     private int clientCount;
     private int groupCount;
+
+    private final TimeSeries ts = new TimeSeries(60, TimeUnit.SECONDS);
 
     public ServerStatistics() {
         MetricRegistry registry = new MetricRegistry();
@@ -85,5 +89,14 @@ public final class ServerStatistics {
 
     public synchronized void decClientCount() {
         --clientCount;
+    }
+
+    public void onSend(int npackets, long size) {
+        throughputMeter.mark(8 * size);
+        ts.put(npackets, size);
+    }
+
+    public synchronized void drainTs(List<TimeSeries.TimeSeriesEntry> ts) {
+        this.ts.drain(ts);
     }
 }

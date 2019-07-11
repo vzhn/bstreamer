@@ -3,10 +3,11 @@ package me.vzhilin.mediaserver.server.strategy.sync;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.group.*;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.ChannelMatchers;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.conf.PropertyMap;
@@ -202,28 +203,20 @@ public final class SyncStrategy implements StreamingStrategy {
         }
 
         private void send(List<MediaPacket> packets) {
-            int connectedClients = group.size();
+            final int npackets = packets.size();
+            final int connectedClients = group.size();
             if (connectedClients >= 1) {
                 int sz = estimateSize(packets);
                 ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer(sz, sz);
-                for (int i = 0; i < packets.size(); i++) {
+                for (int i = 0; i < npackets; i++) {
                     MediaPacket pkt = packets.get(i);
                     encoder.encode(buffer, pkt, rtpSeqNo++, pkt.getDts() * 90);
                 }
 
                 buffer.retain(connectedClients);
-                long t = System.nanoTime();
-                ChannelGroupFuture gf = group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all());
-                gf.addListener(new ChannelGroupFutureListener() {
-
-                    @Override
-                    public void operationComplete(ChannelGroupFuture future) throws Exception {
-                        long dt = System.nanoTime() - t;
-                        System.err.println("complete! " + connectedClients * (float) sz / dt * 1e9 / 1e6 * 8);
-                    }
-                });
+                group.writeAndFlush(new InterleavedFrame(buffer), ChannelMatchers.all(), true);
                 buffer.release();
-                stat.getThroughputMeter().mark((long) 8 * sz * connectedClients);
+                stat.onSend(npackets, (long) sz * connectedClients);
             }
             packets.forEach(mediaPacket -> mediaPacket.getPayload().release());
             packets.clear();

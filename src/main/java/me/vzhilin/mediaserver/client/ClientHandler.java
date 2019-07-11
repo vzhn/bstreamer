@@ -39,11 +39,14 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
         statistics =
             ctx.channel().attr(AttributeKey.<ConnectionStatistics>valueOf("stat")).get();
 
+        String url =
+            ctx.channel().attr(AttributeKey.<String>valueOf("url")).get();
+
         state = State.SETUP;
 
         HttpRequest request =
             new DefaultFullHttpRequest(RtspVersions.RTSP_1_0,
-                RtspMethods.SETUP, "rtsp://localhost:5000/file/simpsons_video.mkv/TrackID=0");
+                RtspMethods.SETUP, url + "/TrackID=0");
 
         request.headers().set(RtspHeaderNames.CSEQ, 1);
         request.headers().set(RtspHeaderNames.TRANSPORT, "RTP/AVP/TCP;unicast;interleaved=0-1");
@@ -57,11 +60,14 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
 
             switch (state) {
                 case SETUP:
+                    String url =
+                            ctx.channel().attr(AttributeKey.<String>valueOf("url")).get();
+
                     String cseq = response.headers().get(RtspHeaderNames.CSEQ);
                     String sessionid = response.headers().get(RtspHeaderNames.SESSION);
 
                     HttpRequest playRequest = new DefaultFullHttpRequest(RtspVersions.RTSP_1_0,
-                            RtspMethods.PLAY, "rtsp://localhost:5000/file/simpsons_video.mkv");
+                            RtspMethods.PLAY, url);
                     playRequest.headers().set(RtspHeaderNames.CSEQ, cseq);
                     playRequest.headers().set(RtspHeaderNames.SESSION, sessionid);
                     ctx.writeAndFlush(playRequest);

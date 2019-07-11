@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 
 import static java.lang.System.exit;
+import static java.lang.System.setErr;
 import static org.bytedeco.javacpp.avcodec.*;
 import static org.bytedeco.javacpp.avformat.*;
 import static org.bytedeco.javacpp.avutil.*;
@@ -12,15 +13,23 @@ import static org.bytedeco.javacpp.presets.avutil.AVERROR_EAGAIN;
 import static org.bytedeco.javacpp.swscale.*;
 
 public class H264EncodingSample {
+
+    public static final int WIDTH = 800;
+    public static final int HEIGHT = 600;
+    private AVFrame frame;
+
     public static void main(String... argv) {
-        new H264EncodingSample().start();
+        H264EncodingSample h264EncodingSample = new H264EncodingSample();
+        while (true) {
+            h264EncodingSample.start();
+        }
     }
 
     private void start() {
-        BufferedImage image = new BufferedImage(352, 288, BufferedImage.TYPE_3BYTE_BGR);
+        BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_3BYTE_BGR);
         Graphics gc = image.getGraphics();
         gc.setColor(Color.ORANGE);
-        gc.fillRect(0, 0, 352, 288);
+        gc.fillRect(0, 0, WIDTH, HEIGHT);
 
         gc.setColor(Color.BLACK);
         gc.drawString("Hello, world!", 100, 100);
@@ -41,7 +50,7 @@ public class H264EncodingSample {
             exit(1);
         }
 
-        String filename = "output.mkv";
+        String filename = "/tmp/output.mkv";
         /* open the output file, if needed */
         if ((oc.flags() & AVFMT_NOFILE) == 0) {
             AVIOContext avioContext = new AVIOContext(null);
@@ -64,18 +73,10 @@ public class H264EncodingSample {
             exit(1);
         }
 
-        avutil.AVFrame frame = av_frame_alloc();
-        frame.format(c.pix_fmt());
-        frame.width(c.width());
-        frame.height(c.height());
 
-        avutil.AVFrame rgbFrame = av_frame_alloc();
-        rgbFrame.format(AV_PIX_FMT_BGR24);
-        rgbFrame.width(frame.width());
-        rgbFrame.height(frame.height());
 
-        SwsContext swsContext = sws_getContext(c.width(), c.height(), rgbFrame.format(),
-                c.width(), c.height(), frame.format(), SWS_BICUBIC,
+        SwsContext swsContext = sws_getContext(c.width(), c.height(), AV_PIX_FMT_BGR24,
+                c.width(), c.height(), AV_PIX_FMT_YUV420P, SWS_BICUBIC,
                 null, null, (DoublePointer) null);
 
         if (swsContext.isNull()) {
@@ -84,6 +85,15 @@ public class H264EncodingSample {
         }
 
 
+        frame = av_frame_alloc();
+        frame.format(c.pix_fmt());
+        frame.width(c.width());
+        frame.height(c.height());
+
+        avutil.AVFrame rgbFrame = av_frame_alloc();
+        rgbFrame.format(AV_PIX_FMT_BGR24);
+        rgbFrame.width(frame.width());
+        rgbFrame.height(frame.height());
         int ret = av_frame_get_buffer(frame, 32);
         if (ret < 0) {
             System.err.println("Could not allocate the video frame data");
@@ -101,7 +111,7 @@ public class H264EncodingSample {
         avcodec.AVPacket pkt = av_packet_alloc();
 
         /* encode 1 second of video */
-        for (int i = 0; i < 25; i++) {
+        for (int i = 0; i < 25 * 5; i++) {
             /* make sure the frame data is writable */
             ret = av_frame_make_writable(frame);
             if (ret < 0) {
@@ -114,10 +124,12 @@ public class H264EncodingSample {
             }
 
             rgbFrame.data().put(((DataBufferByte) image.getRaster().getDataBuffer()).getData());
-            sws_scale(swsContext, rgbFrame.data(),rgbFrame.linesize(), 0, c.height(), frame.data(), frame.linesize());
+            int h = sws_scale(swsContext, rgbFrame.data(), rgbFrame.linesize(), 0, c.height(), frame.data(), frame.linesize());
+            System.err.println("h = " + h);
 
             frame.pts(i);
             encode(c, frame, pkt, oc, st);
+
         }
 
         sws_freeContext(swsContext);
@@ -140,8 +152,8 @@ public class H264EncodingSample {
         timebase.num(1);
         timebase.den(25);
         c.bit_rate(400000);
-        c.width(352);
-        c.height(288);
+        c.width(WIDTH);
+        c.height(HEIGHT);
         c.time_base(timebase);
         c.gop_size(10);
         c.max_b_frames(1);
