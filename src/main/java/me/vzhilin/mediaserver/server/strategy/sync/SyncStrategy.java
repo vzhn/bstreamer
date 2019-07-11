@@ -44,6 +44,7 @@ public final class SyncStrategy implements StreamingStrategy {
     private final int SIZE_LIMIT;
     private final int PACKET_LIMIT;
     private final int TIME_LIMIT_MS;
+    private final ServerContext context;
 
     private ScheduledFuture<?> streamingFuture;
     private MediaPacketSource source;
@@ -51,6 +52,7 @@ public final class SyncStrategy implements StreamingStrategy {
 
     public SyncStrategy(ServerContext context, PropertyMap sourceConfig) {
         String sourceName = sourceConfig.getValue(CommonSourceAttributes.NAME);
+        this.context = context;
         this.sourceConfig = sourceConfig;
         this.sourceFactory = context.getSourceFactory(sourceName);
         this.scheduledExecutor = context.getScheduledExecutor();
@@ -95,7 +97,7 @@ public final class SyncStrategy implements StreamingStrategy {
 
     @Override
     public MediaPacketSourceDescription describe() {
-        MediaPacketSource src = sourceFactory.newSource(sourceConfig);
+        MediaPacketSource src = sourceFactory.newSource(context, sourceConfig);
         MediaPacketSourceDescription desc = src.getDesc();
         try {
             src.close();
@@ -107,7 +109,7 @@ public final class SyncStrategy implements StreamingStrategy {
 
     private void startPlaying() {
         stat.addGroupStatistics(sourceConfig);
-        source = sourceFactory.newSource(sourceConfig);
+        source = sourceFactory.newSource(context, sourceConfig);
         command = new SyncWorker();
         streamingFuture = scheduledExecutor.schedule(command, 0, TimeUnit.NANOSECONDS);
     }
@@ -167,7 +169,7 @@ public final class SyncStrategy implements StreamingStrategy {
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
-                        source = sourceFactory.newSource(sourceConfig);
+                        source = sourceFactory.newSource(context, sourceConfig);
                         firstFrame = false;
                         sleepMillis = 40;
                     } else {
