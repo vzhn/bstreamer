@@ -93,6 +93,16 @@
                                 </source>
                             </sources>
                         </mapping>
+                        <mapping>
+                            <directoryIncluded>false</directoryIncluded>
+                            <directory>/etc/logrotate.d/mediaserver.conf</directory>
+                            <filemode>444</filemode>
+                            <sources>
+                                <source>
+                                    <location>src/scripts/log/mediaserver.conf</location>
+                                </source>
+                            </sources>
+                        </mapping>
                     </mappings>
                     <preinstallScriptlet>
                         <script>echo "installing ${project.name} now"</script>
