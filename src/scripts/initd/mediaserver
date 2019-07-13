@@ -11,7 +11,7 @@
 
 dir="/usr/local/mediaserver"
 cmd="java -Xmx256m -jar repo/mediaserver-1.0-SNAPSHOT.jar"
-user=""
+user="mediaserver"
 
 name=`basename $0`
 pid_file="/var/run/$name.pid"
