@@ -6,6 +6,7 @@ import me.vzhilin.mediaserver.server.RtspServer;
 import org.apache.log4j.BasicConfigurator;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 public class EntryPoint {
     public static void main(String... argv) throws IOException {
@@ -14,7 +15,8 @@ public class EntryPoint {
 
     private void start() throws IOException {
         BasicConfigurator.configure();
-        Config config = new Config(PropertyMap.parseYaml(EntryPoint.class.getResourceAsStream("/settings.yaml")));
+        InputStream yamlResource = EntryPoint.class.getResourceAsStream("/settings.yaml");
+        Config config = new Config(PropertyMap.parseYaml(yamlResource));
         RtspServer server = new RtspServer(config);
         server.start();
     }
