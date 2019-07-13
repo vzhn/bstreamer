@@ -1,0 +1,58 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start daemon at boot time
+# Description:       Enable service provided by daemon.
+### END INIT INFO
+
+APP=/usr/local/mediaserver/
+APP_USER=mediaserver
+JSVC="$APP/jsvc"
+PIDFILE=/var/run/mediaserver.pid
+
+COMMAND="-cwd $APP \
+  -pidfile $PID_FILE \
+  -cp "repo/*" \
+  -user $APP_USER \
+  me.vzhilin.mediaserver.MediaserverDaemon"
+
+COMMAND_START="$JSVC $COMMAND"
+COMMAND_STOP="$JSVC -stop $COMMAND"
+COMMAND_CHECK="$JSVC -check $COMMAND"
+
+start() {
+    COMMAND_START
+}
+
+stop() {
+    COMMAND_STOP
+}
+
+check() {
+    COMMAND_CHECK
+}
+
+case "$1" in
+        start)
+                start
+                ;;
+        stop)
+                stop
+                ;;
+        restart)
+                stop
+                start
+                ;;
+        status)
+                check
+                ;;
+        *)
+                echo $"Usage: $0 {start|stop|restart|status}"
+                RETVAL=1
+esac
+exit $RETVAL
