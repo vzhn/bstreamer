@@ -173,7 +173,6 @@
                                     <verbose>true</verbose>
                                     <controlDir>${basedir}/src/deb/control</controlDir>
                                     <dataSet>
-
                                         <data>
                                             <src>target/appassembler</src>
                                             <type>directory</type>
@@ -319,6 +318,11 @@
             </build>
         </profile>
     </profiles>
+
+    <scm>
+        <connection>scm:git:ssh://git@vzhilin-ci.local/~/mediaserver.git</connection>
+        <developerConnection>scm:git:ssh://git@vzhilin-ci.local/~/mediaserver.git</developerConnection>
+    </scm>
 
     <distributionManagement>
         <snapshotRepository>
