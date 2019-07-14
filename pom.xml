@@ -181,8 +181,6 @@
                                             <mapper>
                                                 <type>perm</type>
                                                 <prefix>/usr/share/mediaserver</prefix>
-                                                <!--                                        <user>loader</user>-->
-                                                <!--                                        <group>loader</group>-->
                                                 <filemode>640</filemode>
                                             </mapper>
                                         </data>
@@ -294,7 +292,7 @@
                                 <mapping>
                                     <directoryIncluded>false</directoryIncluded>
                                     <directory>/etc/init.d</directory>
-                                    <filemode>444</filemode>
+                                    <filemode>744</filemode>
                                     <sources>
                                         <source>
                                             <location>src/scripts/jsvc/mediaserver</location>

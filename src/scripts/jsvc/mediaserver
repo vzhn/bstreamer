@@ -16,7 +16,7 @@ JSVC="$APP/jsvc"
 PIDFILE=/var/run/mediaserver.pid
 
 COMMAND="-cwd $APP \
-  -pidfile $PID_FILE \
+  -pidfile $PIDFILE \
   -cp "repo/*" \
   -user $APP_USER \
   me.vzhilin.mediaserver.MediaserverDaemon"
@@ -26,15 +26,15 @@ COMMAND_STOP="$JSVC -stop $COMMAND"
 COMMAND_CHECK="$JSVC -check $COMMAND"
 
 start() {
-    COMMAND_START
+    $COMMAND_START
 }
 
 stop() {
-    COMMAND_STOP
+    $COMMAND_STOP
 }
 
 check() {
-    COMMAND_CHECK
+    $COMMAND_CHECK
 }
 
 case "$1" in
