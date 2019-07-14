@@ -81,17 +81,15 @@ public abstract class AbstractPictureSource implements MediaPacketSource {
         timebaseMillis.num(1);
         timebaseMillis.den(1000);
         avcodec.AVCodec codec;
-//        synchronized (FFmpeg.class) {
-            codec = avcodec_find_encoder(AV_CODEC_ID_H264);
-            c = avcodec_alloc_context3(codec);
-            codecParameters.setParameters(c);
-            c.pix_fmt(avutil.AV_PIX_FMT_YUV420P);
-            c.flags(c.flags() | AV_CODEC_FLAG_GLOBAL_HEADER);
-            if (avcodec_open2(c, codec, (avutil.AVDictionary) null) < 0) {
-                System.err.println("could not open codec");
-                exit(1);
-            }
-//        }
+        codec = avcodec_find_encoder(AV_CODEC_ID_H264);
+        c = avcodec_alloc_context3(codec);
+        codecParameters.setParameters(c);
+        c.pix_fmt(avutil.AV_PIX_FMT_YUV420P);
+        c.flags(c.flags() | AV_CODEC_FLAG_GLOBAL_HEADER);
+        if (avcodec_open2(c, codec, (avutil.AVDictionary) null) < 0) {
+            System.err.println("could not open codec");
+            exit(1);
+        }
         byte[] extradata = new byte[c.extradata_size()];
         c.extradata().get(extradata);
         parseSpsPps(extradata);
@@ -180,8 +178,6 @@ public abstract class AbstractPictureSource implements MediaPacketSource {
             rgbData.put(((DataBufferByte) image.getRaster().getDataBuffer()).getData());
             sws_scale(swsContext, rgbData,rgbFrame.linesize(), 0, c.height(), frame.data(), frame.linesize());
             rgbData.get().deallocate();
-//            av_frame_unref(rgbFrame);
-//            av_frame_unref(rgbFrame);
             frame.pts(frameNumber++);
             encode(c, frame, pkt);
         }
@@ -215,7 +211,6 @@ public abstract class AbstractPictureSource implements MediaPacketSource {
 
     private void encode(AVCodecContext c, AVFrame frame, AVPacket pkt) {
         int ret = avcodec_send_frame(c, frame);
-//        av_frame_unref(frame);
         if (ret < 0) {
             System.err.println("Error sending a frame for encoding");
             exit(1);

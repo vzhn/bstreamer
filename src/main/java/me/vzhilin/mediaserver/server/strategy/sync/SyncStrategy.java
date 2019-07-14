@@ -181,7 +181,6 @@ public final class SyncStrategy implements StreamingStrategy {
                         long sz = 0;
                         long np = 0;
                         long deltaPositionMillis = 0;
-
                         while (source.hasNext() && (sz < SIZE_LIMIT &&
                                                     np < PACKET_LIMIT &&
                                                     deltaPositionMillis < TIME_LIMIT_MS)) {
