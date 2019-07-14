@@ -16,7 +16,6 @@
         <mediaserver.home>/usr/local/mediaserver</mediaserver.home>
     </properties>
     <build>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -316,4 +315,15 @@
             </build>
         </profile>
     </profiles>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>nexus-snapshots</id>
+            <url>http://vzhilin-ci.local:8081/repository/maven-snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>nexus-releases</id>
+            <url>http://vzhilin-ci.local:8081/repository/maven-releases/</url>
+        </repository>
+    </distributionManagement>
 </project>

@@ -19,9 +19,9 @@ COMMAND="-cwd $APP \
   -procname mediaserver \
   -server \
   -pidfile $PIDFILE \
-  -cp ":repo/*" \
-  -errfile /var/log/mediaserver.err
-  -outfile /var/log/mediaserver.out
+  -cp ":/usr/local/mediaserver/repo/*" \
+  -errfile /var/log/mediaserver.err \
+  -outfile /var/log/mediaserver.out \
   -user $APP_USER \
   me.vzhilin.mediaserver.MediaserverDaemon"
 
