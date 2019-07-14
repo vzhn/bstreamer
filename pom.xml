@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.vzhilin</groupId>
     <artifactId>mediaserver</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.2</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -325,7 +325,7 @@
     <scm>
         <connection>scm:git:ssh://git@vzhilin-ci.local/~/mediaserver.git</connection>
         <developerConnection>scm:git:ssh://git@vzhilin-ci.local/~/mediaserver.git</developerConnection>
-        <tag>mediaserver-0.1</tag>
+        <tag>mediaserver-0.2</tag>
     </scm>
     <distributionManagement>
         <snapshotRepository>
