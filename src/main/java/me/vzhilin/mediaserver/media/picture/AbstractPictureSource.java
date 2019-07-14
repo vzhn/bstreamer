@@ -41,6 +41,7 @@ public abstract class AbstractPictureSource implements MediaPacketSource {
     private Deque<MediaPacket> queue = new LinkedList<MediaPacket>();
     private boolean init;
     private GroupStatistics groupStatistics;
+    private boolean closed;
 
     public AbstractPictureSource(ServerContext context, PropertyMap properties) {
         this.context = context;
@@ -160,6 +161,9 @@ public abstract class AbstractPictureSource implements MediaPacketSource {
 
     @Override
     public MediaPacket next() {
+        if (closed) {
+            return null;
+        }
         ensureInitialized();
         while (queue.isEmpty()) {
             drawPicture(image);
@@ -186,7 +190,7 @@ public abstract class AbstractPictureSource implements MediaPacketSource {
 
     @Override
     public boolean hasNext() {
-        return true;
+        return !closed;
     }
 
     private void ensureInitialized() {
@@ -238,12 +242,13 @@ public abstract class AbstractPictureSource implements MediaPacketSource {
 
     @Override
     public void close() {
-//        synchronized (FFmpeg.class) {
+        if (!closed) {
+            closed = true;
             sws_freeContext(swsContext);
             avcodec_free_context(c);
             av_frame_free(rgbFrame);
             av_frame_free(frame);
             timebaseMillis.deallocate();
-//        }
+        }
     }
 }

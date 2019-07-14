@@ -12,12 +12,16 @@
 
 APP=/usr/local/mediaserver/
 APP_USER=mediaserver
-JSVC="$APP/jsvc"
+JSVC="$APP/jsvc -debug"
 PIDFILE=/var/run/mediaserver.pid
 
 COMMAND="-cwd $APP \
+  -procname mediaserver \
+  -server \
   -pidfile $PIDFILE \
-  -cp "repo/*" \
+  -cp ":repo/*" \
+  -errfile /var/log/mediaserver.err
+  -outfile /var/log/mediaserver.out
   -user $APP_USER \
   me.vzhilin.mediaserver.MediaserverDaemon"
 
