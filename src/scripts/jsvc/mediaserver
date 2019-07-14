@@ -10,7 +10,7 @@
 # Description:       Enable service provided by daemon.
 ### END INIT INFO
 
-APP=/usr/local/mediaserver/
+APP=/usr/local/mediaserver
 APP_USER=mediaserver
 JSVC="$APP/jsvc -debug"
 PIDFILE=/var/run/mediaserver.pid
