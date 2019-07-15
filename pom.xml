@@ -253,6 +253,11 @@
                         <artifactId>rpm-maven-plugin</artifactId>
                         <version>2.2.0</version>
                         <configuration>
+                            <preremoveScriptlet>
+                                <scriptFile>src/rpm.systemd/preremove.sh</scriptFile>
+                                <fileEncoding>utf-8</fileEncoding>
+                                <filter>true</filter>
+                            </preremoveScriptlet>
                             <mappings>
                                 <mapping>
                                     <directory>${mediaserver.home}</directory>
