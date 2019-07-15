@@ -13,8 +13,15 @@ import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.file.FileSourceFactory;
 import me.vzhilin.mediaserver.media.picture.SimplePictureSourceFactory;
 import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.bytedeco.javacpp.avutil.AV_LOG_ERROR;
+import static org.bytedeco.javacpp.avutil.av_log_set_level;
 
 public class RtspServer {
+    private final static Logger LOG = LoggerFactory.getLogger(RtspServer.class);
+
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
     private final ServerBootstrap bootstrap;
@@ -39,8 +46,15 @@ public class RtspServer {
     }
 
     public void start() {
+        setupLoglevel();
         startMetrics();
         startServer();
+
+        LOG.info("mediaserver started");
+    }
+
+    private void setupLoglevel() {
+        av_log_set_level(AV_LOG_ERROR);
     }
 
     private void startMetrics() {

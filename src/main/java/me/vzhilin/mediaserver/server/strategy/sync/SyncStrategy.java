@@ -124,6 +124,8 @@ public final class SyncStrategy implements StreamingStrategy {
         }
     }
 
+    // array blocking queue
+
     private final class SyncWorker implements Runnable {
         private boolean firstFrame = false;
         private final RtpEncoder encoder;
