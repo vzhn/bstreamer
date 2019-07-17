@@ -186,7 +186,9 @@
                                             <type>directory</type>
                                             <mapper>
                                                 <type>perm</type>
-                                                <prefix>/usr/share/mediaserver</prefix>
+                                                <user>${mediaserver.user}</user>
+                                                <group>${mediaserver.group}</group>
+                                                <prefix>${mediaserver.home}</prefix>
                                                 <filemode>640</filemode>
                                             </mapper>
                                         </data>
