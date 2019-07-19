@@ -83,7 +83,7 @@ public class BufferedPacketSource {
                 long np = 0;
                 long deltaPositionMillis = 0;
                 MediaPacket pkt = null;
-                while (unbuffered.hasNext() && limits.satisfy(sz, np, deltaPositionMillis)) {
+                while (unbuffered.hasNext() && limits.check(sz, np, deltaPositionMillis)) {
                     pkt = unbuffered.next();
                     ps.add(pkt);
                     if (!started) {
@@ -171,7 +171,7 @@ public class BufferedPacketSource {
             this.timeMillis = timeMillis;
         }
 
-        public boolean satisfy(long sz, long np, long deltaPositionMillis) {
+        public boolean check(long sz, long np, long deltaPositionMillis) {
             return sz < this.bytes &&
                    np < this.npackets &&
                    deltaPositionMillis < this.timeMillis;
