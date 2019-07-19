@@ -9,6 +9,6 @@ import me.vzhilin.mediaserver.server.ServerContext;
 public final class SimplePictureSourceFactory implements MediaPacketSourceFactory {
     @Override
     public MediaPacketSource newSource(ServerContext context, PropertyMap properties) {
-        return new BufferedMediaPacketSource(new SimplePictureSource(context, properties), 5);
+        return new SimplePictureSource(context, properties);
     }
 }

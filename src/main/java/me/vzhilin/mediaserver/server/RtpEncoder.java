@@ -5,14 +5,16 @@ import me.vzhilin.mediaserver.media.file.MediaPacket;
 
 public class RtpEncoder {
     private static final int MTU = 64000;
+    private long seqNo = 0;
 
-    public void encode(ByteBuf buffer, MediaPacket pkt, long seqNo, long rtpTimestamp) {
+    public void encode(ByteBuf buffer, MediaPacket pkt, long rtpTimestamp) {
         int sz = pkt.getPayload().readableBytes();
         if (sz + 16 > MTU) {
             writeFuA(buffer, pkt, seqNo, rtpTimestamp);
         } else {
             writeNalu(buffer, pkt, seqNo, rtpTimestamp);
         }
+        ++seqNo;
     }
 
 

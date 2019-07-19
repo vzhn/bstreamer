@@ -37,7 +37,7 @@ public class RtspServer {
         this.serverContext = new ServerContext(config);
         this.serverContext.registerSourceFactory("picture", new SimplePictureSourceFactory());
         this.serverContext.registerSourceFactory("file", new FileSourceFactory());
-        this.serverContext.registerSyncStrategy("sync", new SyncStrategyFactory(serverContext));
+        this.serverContext.registerSyncStrategy("sync", new SyncStrategyFactory(serverContext, workerGroup));
         this.serverContext.setScheduledExecutor(workerGroup);
     }
 

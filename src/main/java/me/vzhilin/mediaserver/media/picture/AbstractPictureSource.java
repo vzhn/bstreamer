@@ -237,7 +237,7 @@ public abstract class AbstractPictureSource implements MediaPacketSource {
 
     @Override
     public void close() {
-        if (!closed) {
+        if (init && !closed) {
             closed = true;
             sws_freeContext(swsContext);
             avcodec_free_context(c);
