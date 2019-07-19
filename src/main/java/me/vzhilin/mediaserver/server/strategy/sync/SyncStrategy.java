@@ -74,7 +74,7 @@ public final class SyncStrategy implements StreamingStrategy {
 
     @Override
     public void detachContext(ChannelHandlerContext context) {
-        boolean wasLast = group.remove(context.channel()) && group.isEmpty();
+        boolean wasLast = group.isEmpty();
         if (wasLast) {
             stopPlaying();
         }

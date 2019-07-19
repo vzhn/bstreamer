@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class BufferedPacketSource {
     private final MediaPacketSource unbuffered;
@@ -125,6 +126,7 @@ public class BufferedPacketSource {
                 MediaPacket pkt = packets.get(i);
                 encoder.encode(buffer, pkt, pkt.getDts() * 90);
             }
+            packets.forEach(mediaPacket -> mediaPacket.getPayload().release());
             return new InterleavedFrame(buffer);
         }
 
