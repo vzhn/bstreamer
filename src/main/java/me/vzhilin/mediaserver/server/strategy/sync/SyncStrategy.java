@@ -14,7 +14,6 @@ import me.vzhilin.mediaserver.media.CommonSourceAttributes;
 import me.vzhilin.mediaserver.media.MediaPacketSource;
 import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
-import me.vzhilin.mediaserver.server.RtpEncoder;
 import me.vzhilin.mediaserver.server.ServerContext;
 import me.vzhilin.mediaserver.server.stat.GroupStatistics;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
@@ -35,7 +34,6 @@ public final class SyncStrategy implements StreamingStrategy {
     private final PropertyMap sourceConfig;
     private final MediaPacketSourceFactory sourceFactory;
     private final ServerStatistics stat;
-    private final RtpEncoder encoder = new RtpEncoder();
     private final PacketListener packetListener;
     private final ServerContext context;
     private final ExecutorService executor;
