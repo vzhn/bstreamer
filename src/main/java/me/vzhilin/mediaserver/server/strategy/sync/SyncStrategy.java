@@ -63,32 +63,25 @@ public final class SyncStrategy implements StreamingStrategy {
 
     @Override
     public void attachContext(ChannelHandlerContext ctx) {
-        boolean wasFirst = group.isEmpty();
         Channel ch = ctx.channel();
+        boolean wasFirst = group.isEmpty();
         group.add(ch);
         ch.closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
-        GroupStatistics groupStat;
         if (wasFirst) {
             startPlaying();
-            groupStat = stat.addGroupStatistics(sourceConfig);
-        } else {
-            groupStat = stat.getGroupStatistics(sourceConfig);
         }
 
-        groupStat.incClientCount();
+        statOnAttach(wasFirst);
     }
 
     @Override
     public void detachContext(ChannelHandlerContext context) {
-        group.remove(context.channel());
-        GroupStatistics groupStat = stat.getGroupStatistics(sourceConfig);
-        groupStat.decClientCount();
-
-        boolean wasLast = group.isEmpty();
+        boolean wasLast = group.remove(context.channel()) && group.isEmpty();
         if (wasLast) {
             stopPlaying();
-            stat.removeGroupStatistics(sourceConfig);
         }
+
+        statOnDetach(wasLast);
     }
 
     @Override
@@ -105,13 +98,8 @@ public final class SyncStrategy implements StreamingStrategy {
 
     private void startPlaying() {
         stat.addGroupStatistics(sourceConfig);
-        MediaPacketSource source = sourceFactory.newSource(context, sourceConfig);
-        buffered = new BufferedPacketSource(source, packetListener, limits);
+        buffered = new BufferedPacketSource(sourceFactory.newSource(context, sourceConfig), packetListener, limits);
         buffered.start();
-    }
-
-    private void send(BufferedPacketSource.BufferedMediaPacket buffered) {
-        send(buffered.drain());
     }
 
     private void stopPlaying() {
@@ -121,6 +109,25 @@ public final class SyncStrategy implements StreamingStrategy {
             LOG.error(e, e);
         }
         group.close();
+    }
+
+    private void statOnAttach(boolean wasFirst) {
+        GroupStatistics groupStat;
+        if (wasFirst) {
+            groupStat = stat.addGroupStatistics(sourceConfig);
+        } else {
+            groupStat = stat.getGroupStatistics(sourceConfig);
+        }
+
+        groupStat.incClientCount();
+    }
+
+    private void statOnDetach(boolean wasLast) {
+        GroupStatistics groupStat = stat.getGroupStatistics(sourceConfig);
+        groupStat.decClientCount();
+        if (wasLast) {
+            stat.removeGroupStatistics(sourceConfig);
+        }
     }
 
     private void send(InterleavedFrame frame) {
@@ -150,7 +157,7 @@ public final class SyncStrategy implements StreamingStrategy {
     private final class PacketListener implements BufferedPacketSource.BufferedMediaPacketListener {
         @Override
         public void next(BufferedPacketSource.BufferedMediaPacket bufferedMediaPacket) {
-            executor.execute(() -> send(bufferedMediaPacket));
+            executor.execute(() -> send(bufferedMediaPacket.drain()));
         }
 
         @Override
