@@ -63,6 +63,9 @@ public class BufferedPacketSource {
 
         private void advance(long dtsMillis) {
             long timeMillis = System.currentTimeMillis();
+            if (dtsMillis == Long.MIN_VALUE) {
+                dtsMillis = 0;
+            }
             long delay = (startTimeMillis - timeMillis) - (startDtsMillis - dtsMillis);
             // TODO handle the situation when delay is negative
             advanceFuture = executor.schedule(this, delay, TimeUnit.MILLISECONDS);
@@ -87,6 +90,9 @@ public class BufferedPacketSource {
                         started = true;
                         startTimeMillis = System.currentTimeMillis();
                         startDtsMillis = pkt.getDts();
+                        if (startDtsMillis == Long.MIN_VALUE) {
+                            startDtsMillis = 0;
+                        }
                     }
                     sz += pkt.size();
                     np += 1;
