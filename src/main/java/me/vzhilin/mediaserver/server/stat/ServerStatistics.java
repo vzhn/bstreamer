@@ -33,17 +33,14 @@ public final class ServerStatistics {
         this.lagMillis = registry.counter("lagMillis");
 
         CollectorRegistry.defaultRegistry.register(new DropwizardExports(registry));
+    }
+
+    private void startPrometheusServer() {
         try {
             HTTPServer server = new HTTPServer(1234);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-//        ConsoleReporter reporter = ConsoleReporter.forRegistry(registry)
-//                .convertRatesTo(TimeUnit.SECONDS)
-//                .convertDurationsTo(TimeUnit.MILLISECONDS)
-//                .build();
-//        reporter.start(1, TimeUnit.SECONDS);
     }
 
     public synchronized GroupStatistics getGroupStatistics(PropertyMap properties) {
