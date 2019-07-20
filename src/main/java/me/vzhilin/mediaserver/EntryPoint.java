@@ -25,11 +25,11 @@ public class EntryPoint {
         return INSTANCE;
     }
 
-    public static void start() throws IOException {
+    public static void start(String... args) throws IOException {
         getInstance().startServer();
     }
 
-    public static void stop() throws IOException {
+    public static void stop(String... args) throws IOException {
         getInstance().stopServer();
     }
 
