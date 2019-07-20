@@ -11,19 +11,41 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class EntryPoint {
+    private static EntryPoint INSTANCE;
+    private RtspServer server;
+
     public static void main(String... argv) throws IOException {
-        new EntryPoint().start();
+        start();
     }
 
-    public EntryPoint() {
+    private synchronized static EntryPoint getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new EntryPoint();
+        }
+        return INSTANCE;
+    }
+
+    public static void start() throws IOException {
+        getInstance().startServer();
+    }
+
+    public static void stop() throws IOException {
+        getInstance().stopServer();
+    }
+
+    private EntryPoint() {
         BasicConfigurator.configure();
         Logger.getLogger("io.netty").setLevel(Level.INFO);
     }
 
-    private void start() throws IOException {
+    private synchronized void startServer() throws IOException {
         InputStream yamlResource = EntryPoint.class.getResourceAsStream("/settings.yaml");
         Config config = new Config(PropertyMap.parseYaml(yamlResource));
-        RtspServer server = new RtspServer(config);
+        server = new RtspServer(config);
         server.start();
+    }
+
+    private synchronized void stopServer() {
+        server.stop();
     }
 }
