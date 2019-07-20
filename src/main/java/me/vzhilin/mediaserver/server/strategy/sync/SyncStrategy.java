@@ -23,13 +23,10 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 
 public final class SyncStrategy implements StreamingStrategy {
     private final static Logger LOG = Logger.getLogger(SyncStrategy.class);
 
-    /** executor */
-    private final ScheduledExecutorService scheduledExecutor;
     private final ChannelGroup group;
     private final PropertyMap sourceConfig;
     private final MediaPacketSourceFactory sourceFactory;
@@ -47,7 +44,6 @@ public final class SyncStrategy implements StreamingStrategy {
         this.context = context;
         this.sourceConfig = sourceConfig;
         this.sourceFactory = context.getSourceFactory(sourceName);
-        this.scheduledExecutor = context.getScheduledExecutor();
         this.group = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
         this.stat = context.getStat();
         packetListener = new PacketListener();
