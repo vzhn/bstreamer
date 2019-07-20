@@ -193,11 +193,29 @@
                                             </mapper>
                                         </data>
                                         <data>
-                                            <type>link</type>
-                                            <symlink>true</symlink>
-                                            <linkName>/usr/share/java/jdeb.jar</linkName>
-                                            <linkTarget>lib/${project.build.finalName}.jar</linkTarget>
+                                            <src>src/scripts/systemd/mediaserver.service</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <user>${mediaserver.user}</user>
+                                                <group>${mediaserver.group}</group>
+                                                <prefix>/lib/systemd/system/</prefix>
+                                                <filemode>444</filemode>
+                                            </mapper>
                                         </data>
+                                        <!--
+                                        <mapping>
+                                            <directoryIncluded>false</directoryIncluded>
+                                            <directory>/usr/lib/systemd/system/</directory>
+                                            <filemode>444</filemode>
+                                            <sources>
+                                                <source>
+                                                    <location>src/scripts/systemd/mediaserver.service</location>
+                                                </source>
+                                            </sources>
+                                        </mapping>
+
+                                        -->
                                     </dataSet>
                                 </configuration>
                             </execution>

@@ -1,2 +1,2 @@
 getent group mediaserver >/dev/null || groupadd -r mediaserver
-getent passwd mediaserver >/dev/null || /usr/sbin/useradd --comment "Mediaserver" --shell /sbin/nologin -M -r -g mediaserver --home mediaserver mediaserver
+getent passwd mediaserver >/dev/null || /usr/sbin/useradd --comment "Mediaserver" --shell /sbin/nologin -M -r -g mediaserver --home /usr/local/mediaserver mediaserver

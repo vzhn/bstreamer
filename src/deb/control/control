@@ -5,4 +5,4 @@ Priority: low
 Architecture: all
 Description: [[description]]
 Maintainer: Vladimir Zhilin <zhilin.vladimir.nic@gmail.com>
-Depends: default-jre | java6-runtime
+Suggests: openjdk-8-jre, default-jre
