@@ -5,47 +5,56 @@
 <?define Version = "0.3" ?>
 <?define CabName = "Mediaserver.cab" ?>
 <?define UpgradeCode = "{3ffd2739-6044-4c6a-9893-c538eef66ffb}" ?>
+<?define ProcrunScriptsDir="src\procrun\"?>
+
+<?ifndef env.CommonsDaemonDir ?>
+	<?error CommonsDaemonDir environment variable must be defined ?>
+<?endif ?>
+
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-    <?define Mediaserver_TargetDir="c:\opt\mediaserver"?>
-    <Product Name='$(var.Name)' Manufacturer="$(var.Manufacturer)" Id='*' UpgradeCode='$(var.UpgradeCode)' Language='1033' Version="$(var.Version)">
+
+    <Product Name='$(var.Name)'
+      Manufacturer="$(var.Manufacturer)"
+      Id='*'
+      UpgradeCode='$(var.UpgradeCode)'
+      Language='1033'
+      Version="$(var.Version)">
 		<Package Id='*'
 		         Manufacturer="$(var.Manufacturer)"
 		         Keywords='Installer'
 		         Description="Mediaserver Installer"
-			     InstallerVersion='100' Languages='1033' Compressed='yes'/>
-		<!--Embed Cabinet into single msi file-->
-		<Media Id="1" Cabinet="$(var.CabName)" EmbedCab="yes" />		
-		
-		<!-- Allow upgrades and prevent downgrades -->
+			     InstallerVersion='100'
+			     Languages='1033'
+			     Compressed='yes'/>
+
+		<Media Id="1" Cabinet="$(var.CabName)" EmbedCab="yes" />
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-		<!--Main Feature for this Setup which can be found in Fragment Tag with ComponentGroupRef Id-->
+
 		<Feature Id="ProductFeature" Title="$(var.Name)" Level="1">
 		  <ComponentGroupRef Id="ProductComponents" />
 		</Feature>
-		
+
 		<InstallExecuteSequence>
 			<Custom Action="InstallService" After="InstallFiles">NOT Installed</Custom>
 			<Custom Action="UninstallService" After="InstallInitialize">(NOT UPGRADINGPRODUCTCODE) AND (REMOVE="ALL")</Custom>
 		</InstallExecuteSequence>
-		
+
 		<CustomAction Id="InstallService" Directory="INSTALLFOLDER"
 			ExeCommand='[INSTALLFOLDER]install_service.bat'
 			Impersonate='no'
 			Execute='deferred' Return='ignore'/>
-		
-		<CustomAction Id="UninstallService" Directory="INSTALLFOLDER" 
+
+		<CustomAction Id="UninstallService" Directory="INSTALLFOLDER"
 		  ExeCommand='[INSTALLFOLDER]uninstall_service.bat'
 		  Impersonate='no'
-		  Return="ignore" 
+		  Return="ignore"
 		  Execute="deferred"/>
 	</Product>
-	
+
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
-        <!-- Create a folder inside program files with Company Name-->
         <Directory Id="ROOTDIRECTORY" Name="$(var.Manufacturer)">
-          <!-- Create a folder inside Company Name folder with Product Name-->
           <Directory Id="INSTALLFOLDER" Name="$(var.Name)">
 			<Directory Id="RepoDir"/>
           </Directory>
@@ -53,13 +62,13 @@
       </Directory>
     </Directory>
   </Fragment>
-  
+
   <Fragment>
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-      <Component Id="procrun.exe" Guid="*">
-        <File Id="procrun.exe" Name="procrun.exe" Source="$(var.Mediaserver_TargetDir)procrun.exe" />
-		<File Id="install_service.bat" Name="install_service.bat" Source="$(var.Mediaserver_TargetDir)install_service.bat" />
-		<File Id="uninstall_service.bat" Name="uninstall_service.bat" Source="$(var.Mediaserver_TargetDir)uninstall_service.bat" />
+      <Component Id="prunsrv.exe" Guid="*">
+        <File Id="prunsrv.exe" Name="prunsrv.exe" Source="$(env.CommonsDaemonDir)\amd64\prunsrv.exe" />
+		<File Id="install_service.bat" Name="install_service.bat" Source="$(var.ProcrunScriptsDir)install_service.bat" />
+		<File Id="uninstall_service.bat" Name="uninstall_service.bat" Source="$(var.ProcrunScriptsDir)uninstall_service.bat" />
       </Component>
 	  
 	  <ComponentGroupRef Id="RepoGroup"/>
