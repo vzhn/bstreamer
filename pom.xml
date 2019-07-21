@@ -394,11 +394,11 @@
                                     <goal>copy-resources</goal>
                                 </goals>
                                 <configuration>
-                                    <outputDirectory>${basedir}/target/appassembler</outputDirectory>
+                                    <outputDirectory>${basedir}/target/wix</outputDirectory>
                                     <escapeWindowsPaths>false</escapeWindowsPaths>
                                     <resources>
                                         <resource>
-                                            <directory>src/procrun</directory>
+                                            <directory>src/wix</directory>
                                             <filtering>true</filtering>
                                         </resource>
                                     </resources>

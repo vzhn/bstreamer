@@ -5,7 +5,7 @@
 <?define Version = "0.3" ?>
 <?define CabName = "Mediaserver.cab" ?>
 <?define UpgradeCode = "{3ffd2739-6044-4c6a-9893-c538eef66ffb}" ?>
-<?define ProcrunScriptsDir="src\procrun\"?>
+<?define WixScriptsDir="target\wix\"?>
 
 <?ifndef env.CommonsDaemonDir ?>
 	<?error CommonsDaemonDir environment variable must be defined ?>
@@ -67,8 +67,8 @@
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="prunsrv.exe" Guid="*">
         <File Id="prunsrv.exe" Name="prunsrv.exe" Source="$(env.CommonsDaemonDir)\amd64\prunsrv.exe" />
-		<File Id="install_service.bat" Name="install_service.bat" Source="$(var.ProcrunScriptsDir)install_service.bat" />
-		<File Id="uninstall_service.bat" Name="uninstall_service.bat" Source="$(var.ProcrunScriptsDir)uninstall_service.bat" />
+		<File Id="install_service.bat" Name="install_service.bat" Source="$(var.WixScriptsDir)install_service.bat" />
+		<File Id="uninstall_service.bat" Name="uninstall_service.bat" Source="$(var.WixScriptsDir)uninstall_service.bat" />
       </Component>
 	  
 	  <ComponentGroupRef Id="RepoGroup"/>
