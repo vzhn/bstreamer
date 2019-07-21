@@ -12,6 +12,7 @@
         <mediaserver.user>mediaserver</mediaserver.user>
         <mediaserver.group>mediaserver</mediaserver.group>
         <mediaserver.home>/usr/local/mediaserver</mediaserver.home>
+        <ffmpeg.arch>linux-x86_64</ffmpeg.arch>
     </properties>
     <build>
         <plugins>
@@ -44,9 +45,8 @@
                             <overWriteIfNewer>true</overWriteIfNewer>
                         </configuration>
                     </execution>
-                </executions>
+                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>appassembler-maven-plugin</artifactId>
@@ -83,7 +83,7 @@
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>ffmpeg</artifactId>
             <version>4.1-1.4.4</version>
-            <classifier>linux-x86_64</classifier>
+            <classifier>${ffmpeg.arch}</classifier>
         </dependency>
         <dependency>
             <groupId>commons-daemon</groupId>
@@ -352,6 +352,59 @@
                                 </mapping>
                             </mappings>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>windows-x86_64</id>
+            <properties>
+                <ffmpeg.arch>windows-x86_64</ffmpeg.arch>
+                <mediaserver.home>C:\opt\mediaserver</mediaserver.home>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>build-classpath</goal>
+                                </goals>
+                                <configuration>
+                                    <outputProperty>maven.compile.classpath</outputProperty>
+                                    <fileSeparator>\</fileSeparator>
+                                    <pathSeparator>;</pathSeparator>
+                                    <prefix>repo</prefix>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-resources</id>
+                                <!-- here the phase you need -->
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${basedir}/target/appassembler</outputDirectory>
+                                    <escapeWindowsPaths>false</escapeWindowsPaths>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/procrun</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
