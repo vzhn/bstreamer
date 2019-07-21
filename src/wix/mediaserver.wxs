@@ -12,7 +12,6 @@
 <?endif ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-
     <Product Name='$(var.Name)'
       Manufacturer="$(var.Manufacturer)"
       Id='*'
