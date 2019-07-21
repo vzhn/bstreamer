@@ -1,4 +1,4 @@
-set SERVICE_NAME=Mediaserver2
+set SERVICE_NAME=Mediaserver
 set PR_INSTALL=${mediaserver.home}\procrun.exe
 
 REM Service log configuration
