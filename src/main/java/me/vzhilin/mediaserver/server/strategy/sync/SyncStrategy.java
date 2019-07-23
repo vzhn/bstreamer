@@ -1,12 +1,11 @@
 package me.vzhilin.mediaserver.server.strategy.sync;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.ChannelMatchers;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.conf.PropertyMap;
@@ -25,6 +24,9 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 
 public final class SyncStrategy implements StreamingStrategy {
+    public final static AttributeKey<int[]> WRITABLE = AttributeKey.valueOf("WRITABLE");
+    public final static int[] WRITABLE_COUNT = new int[1];
+
     private final static Logger LOG = Logger.getLogger(SyncStrategy.class);
 
     private final ChannelGroup group;
@@ -35,8 +37,10 @@ public final class SyncStrategy implements StreamingStrategy {
     private final ServerContext context;
     private final ExecutorService executor;
     private final BufferedPacketSource.BufferingLimits limits;
+    private final GroupWritabilityMonitor groupWritabilityMonitor;
 
     private BufferedPacketSource buffered;
+    private BufferedPacketSource.BufferedMediaPacket delayedFrame;
 
     public SyncStrategy(ServerContext context, ExecutorService executor, PropertyMap sourceConfig) {
         String sourceName = sourceConfig.getValue(CommonSourceAttributes.NAME);
@@ -53,11 +57,27 @@ public final class SyncStrategy implements StreamingStrategy {
         int packetLimit = props.getInt(SyncStrategyAttributes.LIMIT_PACKETS);
         int timeLimit = props.getInt(SyncStrategyAttributes.LIMIT_TIME);
         limits = new BufferedPacketSource.BufferingLimits(sizeLimit, packetLimit, timeLimit);
+
+        groupWritabilityMonitor = new GroupWritabilityMonitor();
+    }
+
+    private void onGroupWritable() {
+        System.err.println("writable!");
+        if (delayedFrame != null) {
+            BufferedPacketSource.BufferedMediaPacket local = delayedFrame;
+            delayedFrame = null;
+            send(local);
+        }
+    }
+
+    private void onGroupNotWritable() {
+        System.err.println("not writable!");
     }
 
     @Override
     public void attachContext(ChannelHandlerContext ctx) {
         Channel ch = ctx.channel();
+
         boolean wasFirst = group.isEmpty();
         group.add(ch);
         ch.closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
@@ -66,6 +86,8 @@ public final class SyncStrategy implements StreamingStrategy {
         }
 
         statOnAttach(wasFirst);
+        ch.pipeline().addLast("writability_monitor", groupWritabilityMonitor);
+        groupWritabilityMonitor.channelRegistered(ctx);
     }
 
     @Override
@@ -74,7 +96,6 @@ public final class SyncStrategy implements StreamingStrategy {
         if (wasLast) {
             stopPlaying();
         }
-
         statOnDetach(wasLast);
     }
 
@@ -99,6 +120,9 @@ public final class SyncStrategy implements StreamingStrategy {
     private void stopPlaying() {
         try {
             buffered.stop();
+            if (delayedFrame != null) {
+                delayedFrame.drain().getPayload().release();
+            }
         } catch (IOException e) {
             LOG.error(e, e);
         }
@@ -112,7 +136,6 @@ public final class SyncStrategy implements StreamingStrategy {
         } else {
             groupStat = stat.getGroupStatistics(sourceConfig);
         }
-
         groupStat.incClientCount();
     }
 
@@ -124,34 +147,76 @@ public final class SyncStrategy implements StreamingStrategy {
         }
     }
 
-    private void send(InterleavedFrame frame) {
-        final int connectedClients = group.size();
-        ByteBuf payload = frame.getPayload();
-        if (connectedClients == 0) {
-            payload.release();
-        } else
-        if (connectedClients > 1) {
-            payload.retain(connectedClients - 1);
+    private void send(BufferedPacketSource.BufferedMediaPacket buffered) {
+        if (groupWritabilityMonitor.isWritable()) {
+            final int channels = group.size();
+            InterleavedFrame interleaved = buffered.drain();
+            ByteBuf payload = interleaved.getPayload();
+            if (channels == 0) {
+                payload.release();
+                return;
+            } else
+            if (channels > 1) {
+                payload.retain(channels - 1);
+            }
+            group.writeAndFlush(interleaved, ChannelMatchers.all(), true);
+            stat.onSend(1, (long) payload.readableBytes() * channels);
+        } else {
+            System.err.println("overflow!");
+            delayedFrame = buffered;
         }
-        group.writeAndFlush(frame, ChannelMatchers.all(), true);
-        stat.onSend(1, (long) payload.readableBytes() * connectedClients);
     }
 
-    private boolean isChannelsWritable() {
-        int[] notWritable = new int[1];
-        group.forEach(channel -> {
-            if (!channel.isWritable()) {
-                ++notWritable[0];
-            }
-        });
+    @ChannelHandler.Sharable
+    private final class GroupWritabilityMonitor extends ChannelInboundHandlerAdapter {
+        private int notWritable = 0;
 
-        return notWritable[0] == 0;
+        @Override
+        public void channelRegistered(ChannelHandlerContext ctx) {
+            if (!ctx.channel().isWritable()) {
+                incNotWritable();
+            }
+        }
+
+        @Override
+        public void channelUnregistered(ChannelHandlerContext ctx) {
+            if (!ctx.channel().isWritable()) {
+                decNotWritable();
+            }
+        }
+
+        @Override
+        public void channelWritabilityChanged(ChannelHandlerContext ctx) {
+            if (ctx.channel().isWritable()) {
+                decNotWritable();
+            } else {
+                incNotWritable();
+            }
+        }
+
+        private void incNotWritable() {
+            ++notWritable;
+            if (notWritable == 1) {
+                onGroupNotWritable();
+            }
+        }
+
+        private void decNotWritable() {
+            --notWritable;
+            if (notWritable == 0) {
+                onGroupWritable();
+            }
+        }
+
+        public boolean isWritable() {
+            return notWritable == 0;
+        }
     }
 
     private final class PacketListener implements BufferedPacketSource.BufferedMediaPacketListener {
         @Override
         public void next(BufferedPacketSource.BufferedMediaPacket bufferedMediaPacket) {
-            executor.execute(() -> send(bufferedMediaPacket.drain()));
+            executor.execute(() -> send(bufferedMediaPacket));
         }
 
         @Override

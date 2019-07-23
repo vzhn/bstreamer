@@ -133,4 +133,11 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
         cause.printStackTrace();
         ctx.close();
     }
+
+    @Override
+    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
+        super.channelWritabilityChanged(ctx);
+
+
+    }
 }

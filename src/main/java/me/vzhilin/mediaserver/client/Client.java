@@ -32,7 +32,7 @@ public class Client {
         Bootstrap b = bootstrap
             .group(workerGroup)
             .channel(EpollSocketChannel.class)
-            .attr(AttributeKey.<String>valueOf("url"), "rtsp://localhost:5000/picture?width=640")
+            .attr(AttributeKey.<String>valueOf("url"), "rtsp://localhost:5000/file/simpsons_video.mkv")
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) {
@@ -48,7 +48,7 @@ public class Client {
         TotalStatistics ss = new TotalStatistics();
         ss.onStart();
 
-        for (int i = 0; i < 1 * 1024; i++) {
+        for (int i = 0; i < 4 * 1024; i++) {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             btstrp.attr(STAT, stat);

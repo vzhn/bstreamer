@@ -31,7 +31,7 @@ public class BufferedPacketSource {
                                 BufferingLimits limits) {
         this.limits = limits;
         this.unbuffered = unbuffered;
-        // fixme bind scheduled executor to each buffered source
+        // fixme bind scheduled executor to buffered source
         this.executor = Executors.newScheduledThreadPool(4);
         this.listener = listener;
         task = new Task();
@@ -63,11 +63,15 @@ public class BufferedPacketSource {
         private ScheduledFuture<?> advanceFuture = null;
 
         private void advance(long dtsMillis) {
+            if (closed) {
+                return;
+            }
             long timeMillis = System.currentTimeMillis();
             if (dtsMillis == Long.MIN_VALUE) {
                 dtsMillis = 0;
             }
             long delay = (startTimeMillis - timeMillis) - (startDtsMillis - dtsMillis);
+            System.err.println("delay = " + delay);
             // TODO handle the situation when delay is negative
             advanceFuture = executor.schedule(this, delay, TimeUnit.MILLISECONDS);
         }
