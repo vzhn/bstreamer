@@ -1,4 +1,4 @@
-package me.vzhilin.mediaserver.media.file;
+package me.vzhilin.mediaserver.media.impl.file;
 
 import io.netty.buffer.ByteBuf;
 

@@ -1,4 +1,4 @@
-package me.vzhilin.mediaserver.media.picture;
+package me.vzhilin.mediaserver.media.impl.picture;
 
 import org.bytedeco.javacpp.avcodec;
 import org.bytedeco.javacpp.avutil;

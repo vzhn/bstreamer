@@ -3,8 +3,8 @@ package me.vzhilin.mediaserver.util;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import me.vzhilin.mediaserver.InterleavedFrame;
-import me.vzhilin.mediaserver.media.MediaPacketSource;
-import me.vzhilin.mediaserver.media.file.MediaPacket;
+import me.vzhilin.mediaserver.media.PullSource;
+import me.vzhilin.mediaserver.media.impl.file.MediaPacket;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 
 import java.io.IOException;
@@ -14,10 +14,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 public class BufferedPacketSource {
-    private final MediaPacketSource unbuffered;
+    private final PullSource unbuffered;
     private final ScheduledExecutorService executor;
     private final BufferedMediaPacketListener listener;
     private final Task task;
@@ -26,7 +25,7 @@ public class BufferedPacketSource {
     private boolean started;
     private boolean stopped;
 
-    public BufferedPacketSource(MediaPacketSource unbuffered,
+    public BufferedPacketSource(PullSource unbuffered,
                                 BufferedMediaPacketListener listener,
                                 BufferingLimits limits) {
         this.limits = limits;

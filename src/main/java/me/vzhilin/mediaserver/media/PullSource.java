@@ -1,12 +1,12 @@
 package me.vzhilin.mediaserver.media;
 
-import me.vzhilin.mediaserver.media.file.MediaPacket;
-import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.impl.file.MediaPacket;
+import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
 
 import java.io.Closeable;
 import java.util.Iterator;
 
-public interface MediaPacketSource extends Iterator<MediaPacket>, Closeable {
+public interface PullSource extends Iterator<MediaPacket>, Closeable {
     /**
      * @return media description
      */

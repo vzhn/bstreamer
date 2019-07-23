@@ -1,6 +1,6 @@
-package me.vzhilin.mediaserver.media.file;
+package me.vzhilin.mediaserver.media.impl.file;
 
-import me.vzhilin.mediaserver.media.MediaPacketSource;
+import me.vzhilin.mediaserver.media.PullSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,8 +10,8 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ForkJoinPool;
 
-public class BufferedMediaPacketSource implements MediaPacketSource {
-    private final MediaPacketSource unbufferedSource;
+public class BufferedMediaPacketSource implements PullSource {
+    private final PullSource unbufferedSource;
     private final ForkJoinPool pool;
     private final Queue<MediaPacket> packetQueue = new LinkedList<>();
     private final static TaskResult EOF = new TaskResult(null);
@@ -23,7 +23,7 @@ public class BufferedMediaPacketSource implements MediaPacketSource {
     private int populateCount;
     private boolean started;
 
-    public BufferedMediaPacketSource(MediaPacketSource unbufferedSource, int bufferSize) {
+    public BufferedMediaPacketSource(PullSource unbufferedSource, int bufferSize) {
         this.unbufferedSource = unbufferedSource;
         this.pool = ForkJoinPool.commonPool();
         taskResultQueue = new ArrayBlockingQueue<>(bufferSize);

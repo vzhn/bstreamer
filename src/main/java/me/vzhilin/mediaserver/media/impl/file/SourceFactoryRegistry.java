@@ -1,6 +1,6 @@
-package me.vzhilin.mediaserver.media.file;
+package me.vzhilin.mediaserver.media.impl.file;
 
-import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
+import me.vzhilin.mediaserver.media.impl.MediaPacketSourceFactory;
 
 import java.util.HashMap;
 import java.util.Map;

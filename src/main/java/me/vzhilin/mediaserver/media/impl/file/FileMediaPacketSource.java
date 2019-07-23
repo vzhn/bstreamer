@@ -1,12 +1,11 @@
-package me.vzhilin.mediaserver.media.file;
+package me.vzhilin.mediaserver.media.impl.file;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.media.CommonSourceAttributes;
-import me.vzhilin.mediaserver.media.MediaPacketSource;
+import me.vzhilin.mediaserver.media.impl.CommonSourceAttributes;
+import me.vzhilin.mediaserver.media.PullSource;
 import me.vzhilin.mediaserver.util.AVCCExtradataParser;
-import me.vzhilin.mediaserver.util.FFmpeg;
 import org.bytedeco.javacpp.*;
 
 import java.io.File;
@@ -18,7 +17,7 @@ import java.util.Queue;
 import static org.bytedeco.javacpp.avcodec.*;
 import static org.bytedeco.javacpp.avformat.*;
 
-public class FileMediaPacketSource implements MediaPacketSource {
+public class FileMediaPacketSource implements PullSource {
     private boolean wasClosed;
     private MediaPacketSourceDescription desc;
     private Queue<MediaPacket> packetQueue = new LinkedList<>();

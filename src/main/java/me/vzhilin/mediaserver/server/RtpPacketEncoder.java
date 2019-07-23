@@ -5,8 +5,8 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import me.vzhilin.mediaserver.media.file.MediaPacket;
-import me.vzhilin.mediaserver.media.file.RtpPacket;
+import me.vzhilin.mediaserver.media.impl.file.MediaPacket;
+import me.vzhilin.mediaserver.media.impl.file.RtpPacket;
 
 class RtpPacketEncoder extends ChannelOutboundHandlerAdapter {
     private final int MTU = 64000;

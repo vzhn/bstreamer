@@ -1,10 +1,10 @@
-package me.vzhilin.mediaserver.media.picture;
+package me.vzhilin.mediaserver.media.impl.picture;
 
 import io.netty.buffer.Unpooled;
 import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.media.MediaPacketSource;
-import me.vzhilin.mediaserver.media.file.MediaPacket;
-import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.PullSource;
+import me.vzhilin.mediaserver.media.impl.file.MediaPacket;
+import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.ServerContext;
 import me.vzhilin.mediaserver.server.stat.GroupStatistics;
 import org.bytedeco.javacpp.DoublePointer;
@@ -23,7 +23,7 @@ import static org.bytedeco.javacpp.avcodec.*;
 import static org.bytedeco.javacpp.avutil.*;
 import static org.bytedeco.javacpp.swscale.*;
 
-public abstract class AbstractPictureSource implements MediaPacketSource {
+public abstract class AbstractPictureSource implements PullSource {
     private final H264CodecParameters codecParameters;
     private final ServerContext context;
     private final PropertyMap properties;

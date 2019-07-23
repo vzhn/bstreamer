@@ -1,4 +1,4 @@
-package me.vzhilin.mediaserver.media.picture;
+package me.vzhilin.mediaserver.media.impl.picture;
 
 public class PictureSourceAttributes {
     public static final String PICTURE_WIDTH                = "width";

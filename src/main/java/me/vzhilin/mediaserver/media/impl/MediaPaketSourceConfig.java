@@ -1,4 +1,4 @@
-package me.vzhilin.mediaserver.media;
+package me.vzhilin.mediaserver.media.impl;
 
 import me.vzhilin.mediaserver.conf.PropertyMap;
 

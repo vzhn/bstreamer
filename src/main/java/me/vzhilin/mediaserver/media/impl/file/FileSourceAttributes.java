@@ -1,4 +1,4 @@
-package me.vzhilin.mediaserver.media.file;
+package me.vzhilin.mediaserver.media.impl.file;
 
 public class FileSourceAttributes {
     public final static String DIR = "dir";

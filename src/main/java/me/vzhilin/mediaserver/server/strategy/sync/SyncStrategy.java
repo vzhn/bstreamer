@@ -8,10 +8,10 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.AttributeKey;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.media.CommonSourceAttributes;
-import me.vzhilin.mediaserver.media.MediaPacketSource;
-import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
-import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.media.impl.CommonSourceAttributes;
+import me.vzhilin.mediaserver.media.PullSource;
+import me.vzhilin.mediaserver.media.impl.MediaPacketSourceFactory;
+import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.ServerContext;
 import me.vzhilin.mediaserver.server.stat.GroupStatistics;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
@@ -101,7 +101,7 @@ public final class SyncStrategy implements StreamingStrategy {
 
     @Override
     public MediaPacketSourceDescription describe() {
-        MediaPacketSource src = sourceFactory.newSource(context, sourceConfig);
+        PullSource src = sourceFactory.newSource(context, sourceConfig);
         MediaPacketSourceDescription desc = src.getDesc();
         try {
             src.close();

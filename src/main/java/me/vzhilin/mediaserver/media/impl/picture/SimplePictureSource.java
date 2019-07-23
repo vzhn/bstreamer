@@ -1,4 +1,4 @@
-package me.vzhilin.mediaserver.media.picture;
+package me.vzhilin.mediaserver.media.impl.picture;
 
 import com.codahale.metrics.Meter;
 import me.vzhilin.mediaserver.conf.PropertyMap;

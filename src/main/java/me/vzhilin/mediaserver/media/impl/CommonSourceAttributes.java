@@ -1,4 +1,4 @@
-package me.vzhilin.mediaserver.media;
+package me.vzhilin.mediaserver.media.impl;
 
 public class CommonSourceAttributes {
     public final static String NAME = "name";

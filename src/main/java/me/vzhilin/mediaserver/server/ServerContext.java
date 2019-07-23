@@ -2,8 +2,8 @@ package me.vzhilin.mediaserver.server;
 
 import io.netty.channel.EventLoopGroup;
 import me.vzhilin.mediaserver.conf.Config;
-import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
-import me.vzhilin.mediaserver.media.file.SourceFactoryRegistry;
+import me.vzhilin.mediaserver.media.impl.MediaPacketSourceFactory;
+import me.vzhilin.mediaserver.media.impl.file.SourceFactoryRegistry;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactory;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactoryRegistry;

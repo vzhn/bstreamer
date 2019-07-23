@@ -1,15 +1,15 @@
-package me.vzhilin.mediaserver.media.file;
+package me.vzhilin.mediaserver.media.impl.file;
 
 import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.media.MediaPacketSource;
-import me.vzhilin.mediaserver.media.MediaPacketSourceFactory;
+import me.vzhilin.mediaserver.media.PullSource;
+import me.vzhilin.mediaserver.media.impl.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.server.ServerContext;
 
 import java.io.IOException;
 
 public class FileSourceFactory implements MediaPacketSourceFactory {
     @Override
-    public MediaPacketSource newSource(ServerContext c, PropertyMap sourceProperties) {
+    public PullSource newSource(ServerContext c, PropertyMap sourceProperties) {
         try {
             return new FileMediaPacketSource(sourceProperties);
         } catch (IOException e) {
