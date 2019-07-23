@@ -6,7 +6,6 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.ChannelMatchers;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.CommonSourceAttributes;
@@ -21,7 +20,8 @@ import me.vzhilin.mediaserver.util.BufferedPacketSource;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class SyncStrategy implements StreamingStrategy {
     public final static AttributeKey<int[]> WRITABLE = AttributeKey.valueOf("WRITABLE");
@@ -35,20 +35,20 @@ public final class SyncStrategy implements StreamingStrategy {
     private final ServerStatistics stat;
     private final PacketListener packetListener;
     private final ServerContext context;
-    private final ExecutorService executor;
+    private final EventLoopGroup executor;
     private final BufferedPacketSource.BufferingLimits limits;
     private final GroupWritabilityMonitor groupWritabilityMonitor;
 
     private BufferedPacketSource buffered;
     private BufferedPacketSource.BufferedMediaPacket delayedFrame;
 
-    public SyncStrategy(ServerContext context, ExecutorService executor, PropertyMap sourceConfig) {
+    public SyncStrategy(ServerContext context, EventLoopGroup executor, PropertyMap sourceConfig) {
         String sourceName = sourceConfig.getValue(CommonSourceAttributes.NAME);
         this.executor = executor;
         this.context = context;
         this.sourceConfig = sourceConfig;
         this.sourceFactory = context.getSourceFactory(sourceName);
-        this.group = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+        this.group = new DefaultChannelGroup(executor.next());
         this.stat = context.getStat();
         packetListener = new PacketListener();
 
@@ -169,47 +169,42 @@ public final class SyncStrategy implements StreamingStrategy {
 
     @ChannelHandler.Sharable
     private final class GroupWritabilityMonitor extends ChannelInboundHandlerAdapter {
-        private int notWritable = 0;
+        private Set<ChannelHandlerContext> notWritable = new HashSet<>();
 
         @Override
         public void channelRegistered(ChannelHandlerContext ctx) {
             if (!ctx.channel().isWritable()) {
-                incNotWritable();
+                incNotWritable(ctx);
             }
         }
 
         @Override
         public void channelUnregistered(ChannelHandlerContext ctx) {
-            if (!ctx.channel().isWritable()) {
-                decNotWritable();
-            }
+            decNotWritable(ctx);
         }
 
         @Override
         public void channelWritabilityChanged(ChannelHandlerContext ctx) {
             if (ctx.channel().isWritable()) {
-                decNotWritable();
+                decNotWritable(ctx);
             } else {
-                incNotWritable();
+                incNotWritable(ctx);
             }
         }
 
-        private void incNotWritable() {
-            ++notWritable;
-            if (notWritable == 1) {
+        private void incNotWritable(ChannelHandlerContext ctx) {
+            if (notWritable.isEmpty() & notWritable.add(ctx))
                 onGroupNotWritable();
             }
-        }
 
-        private void decNotWritable() {
-            --notWritable;
-            if (notWritable == 0) {
+        private void decNotWritable(ChannelHandlerContext ctx) {
+            if (notWritable.remove(ctx) & notWritable.isEmpty()) {
                 onGroupWritable();
             }
         }
 
         public boolean isWritable() {
-            return notWritable == 0;
+            return notWritable.isEmpty();
         }
     }
 

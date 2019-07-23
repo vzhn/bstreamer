@@ -1,5 +1,6 @@
 package me.vzhilin.mediaserver.server.strategy.sync;
 
+import io.netty.channel.EventLoopGroup;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.ServerContext;
@@ -13,9 +14,9 @@ import java.util.concurrent.ExecutorService;
 public class SyncStrategyFactory implements StreamingStrategyFactory {
     private final Map<PropertyMap, SyncStrategy> filenameToStrategy = new HashMap<>();
     private final ServerContext context;
-    private final ExecutorService executor;
+    private final EventLoopGroup executor;
 
-    public SyncStrategyFactory(ServerContext context, ExecutorService executor) {
+    public SyncStrategyFactory(ServerContext context, EventLoopGroup executor) {
         this.context = context;
         this.executor = executor;
     }
