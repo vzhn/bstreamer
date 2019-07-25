@@ -147,7 +147,6 @@ public final class PropertyMap {
                     break;
             }
         }
-
         return stack.pop();
     }
 
@@ -163,7 +162,7 @@ public final class PropertyMap {
                 for (int i = 0; i < e.depth; i++) {
                     sb.append("  ");
                 }
-                sb.append(e.label + ":\n");
+                sb.append(e.label).append(":\n");
             }
             for (Map.Entry<String, Object> entry: e.map.properties.entrySet()) {
                 Object value = entry.getValue();
