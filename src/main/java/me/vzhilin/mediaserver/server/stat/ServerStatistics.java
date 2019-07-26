@@ -1,99 +1,44 @@
 package me.vzhilin.mediaserver.server.stat;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.exporter.HTTPServer;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public final class ServerStatistics {
     private final Map<PropertyMap, GroupStatistics> groupStats = new HashMap<>();
+    private final GroupStatistics totalStats = new GroupStatistics();
 
-    private final MetricRegistry registry;
-    private final Meter throughputMeter;
-    private final Counter lagMillis;
+    public ServerStatistics() { }
 
-    private int clientCount;
-    private int groupCount;
-
-    private final TimeSeries ts = new TimeSeries(60, TimeUnit.SECONDS);
-
-    public ServerStatistics() {
-        MetricRegistry registry = new MetricRegistry();
-        this.registry = registry;
-        this.throughputMeter = registry.meter("throughput");
-        this.lagMillis = registry.counter("lagMillis");
-
-        CollectorRegistry.defaultRegistry.register(new DropwizardExports(registry));
+    public void openConn(PropertyMap key) {
+        get(key).openConn();
+        totalStats.openConn();
     }
 
-    private void startPrometheusServer() {
-        try {
-            HTTPServer server = new HTTPServer(1234);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void closeConn(PropertyMap key) {
+        get(key).closeConn();
+        totalStats.closeConn();
     }
 
-    public synchronized GroupStatistics getGroupStatistics(PropertyMap properties) {
-        return groupStats.get(properties);
+    public void incByteCount(PropertyMap key, int bytes) {
+        get(key).incByteCount(bytes);
+        totalStats.incByteCount(bytes);
     }
 
-    public synchronized GroupStatistics addGroupStatistics(PropertyMap properties) {
-        if (!groupStats.containsKey(properties)) {
-            ++groupCount;
-            GroupStatistics groupStatistics = new GroupStatistics(this);
-            groupStats.put(properties, groupStatistics);
-            return groupStatistics;
+    public void incLateCount(PropertyMap key) {
+        get(key).incLateCount();
+        totalStats.incLateCount();
+    }
+
+    public GroupStatistics get(PropertyMap key) {
+        GroupStatistics gs;
+        if (!groupStats.containsKey(key)) {
+            gs = new GroupStatistics();
+            groupStats.put(key, gs);
         } else {
-            return groupStats.get(properties);
+            gs = groupStats.get(key);
         }
-
-    }
-
-    public synchronized void removeGroupStatistics(PropertyMap properties) {
-        --groupCount;
-        groupStats.remove(properties);
-    }
-
-    public Meter getThroughputMeter() {
-        return throughputMeter;
-    }
-
-    public Counter getLagMillis() {
-        return lagMillis;
-    }
-
-    public synchronized int getClientCount() {
-        return clientCount;
-    }
-
-    public synchronized int getGroupCount() {
-        return groupCount;
-    }
-
-    public synchronized void incClientCount() {
-        ++clientCount;
-    }
-
-    public synchronized void decClientCount() {
-        --clientCount;
-    }
-
-    public void onSend(int npackets, long size) {
-        throughputMeter.mark(8 * size);
-        ts.put(npackets, size);
-    }
-
-    public synchronized void drainTs(List<TimeSeries.TimeSeriesEntry> ts) {
-        this.ts.drain(ts);
+        return gs;
     }
 }

@@ -1,25 +1,28 @@
 package me.vzhilin.mediaserver.server.stat;
 
+import me.vzhilin.mediaserver.util.metric.PeriodCounter;
+
 public final class GroupStatistics {
-    private final ServerStatistics serverStatistics;
-    private int clientCount;
+    private final PeriodCounter lateCounter = new PeriodCounter();
+    private final PeriodCounter byteCounter = new PeriodCounter();
+    private final PeriodCounter connOpenCounter = new PeriodCounter();
+    private final PeriodCounter connCloseCounter = new PeriodCounter();
 
-    public GroupStatistics(ServerStatistics serverStatistics) {
-        this.serverStatistics = serverStatistics;
+    public GroupStatistics() { }
+
+    public void openConn() {
+        connOpenCounter.inc(System.currentTimeMillis(), 1);
     }
 
-    public int getClientCount() {
-        return clientCount;
+    public void closeConn() {
+        connCloseCounter.inc(System.currentTimeMillis(), 1);
     }
 
-    public void incClientCount() {
-        serverStatistics.incClientCount();
-        ++clientCount;
-
+    public void incByteCount(int bytes) {
+        byteCounter.inc(System.currentTimeMillis(), bytes);
     }
 
-    public void decClientCount() {
-        serverStatistics.decClientCount();
-        --clientCount;
+    public void incLateCount() {
+        lateCounter.inc(System.currentTimeMillis(), 1);
     }
 }

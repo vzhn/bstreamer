@@ -11,14 +11,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class LastPeriodCounter {
+public class PeriodCounter {
     private final Record /* last */ minute;
     private final Record /* last */ hour;
     private final Record /* last */ day;
     private final Record /* last */ week;
     private final List<Record> records = new ArrayList<>();
 
-    public LastPeriodCounter() {
+    public PeriodCounter() {
         minute = new Record(60, 1, TimeUnit.SECONDS);
         hour = new Record(60, 1, TimeUnit.MINUTES);
         day = new Record(24, 1, TimeUnit.HOURS);
@@ -76,7 +76,7 @@ public class LastPeriodCounter {
             sampleToDate = sample -> sample.asDate(startMillis, tickDurationMillis);
         }
 
-        public void inc(long timeMillis, int c) {
+        public synchronized void inc(long timeMillis, int c) {
             if (startMillis == Long.MIN_VALUE) {
                 startMillis = timeMillis;
             }
@@ -92,12 +92,12 @@ public class LastPeriodCounter {
             }
         }
 
-        public void start(long timeMillis) {
+        public synchronized void start(long timeMillis) {
             this.deque.clear();
             this.startMillis = timeMillis;
         }
 
-        public Snapshot snapshot() {
+        public synchronized Snapshot snapshot() {
             List<DateSample> dateSamples = deque.stream().map(sampleToDate).collect(Collectors.toList());
             return new Snapshot(period, periodUnit, dateSamples);
         }

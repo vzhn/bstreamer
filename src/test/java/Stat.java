@@ -1,4 +1,4 @@
-import me.vzhilin.mediaserver.util.metric.LastPeriodCounter;
+import me.vzhilin.mediaserver.util.metric.PeriodCounter;
 
 public class Stat {
     public static void main(String... argv) {
@@ -6,7 +6,7 @@ public class Stat {
     }
 
     private void start() {
-        LastPeriodCounter c = new LastPeriodCounter();
+        PeriodCounter c = new PeriodCounter();
 
         int k = 0;
         while (k ++ < 100000000) {

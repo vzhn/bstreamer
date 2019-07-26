@@ -204,7 +204,7 @@ public abstract class AbstractPictureSource implements PullSource {
 
     protected synchronized GroupStatistics getGroupStatistics() {
         if (this.groupStatistics == null) {
-            this.groupStatistics = context.getStat().getGroupStatistics(properties);
+            this.groupStatistics = context.getStat().get(properties);
         }
         return groupStatistics;
     }

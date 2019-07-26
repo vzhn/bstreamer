@@ -5,15 +5,13 @@ import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.ChannelMatchers;
 import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.util.AttributeKey;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.media.impl.CommonSourceAttributes;
 import me.vzhilin.mediaserver.media.PullSource;
+import me.vzhilin.mediaserver.media.impl.CommonSourceAttributes;
 import me.vzhilin.mediaserver.media.impl.MediaPacketSourceFactory;
 import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.ServerContext;
-import me.vzhilin.mediaserver.server.stat.GroupStatistics;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import me.vzhilin.mediaserver.util.BufferedPacketSource;
@@ -24,9 +22,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public final class SyncStrategy implements StreamingStrategy {
-    public final static AttributeKey<int[]> WRITABLE = AttributeKey.valueOf("WRITABLE");
-    public final static int[] WRITABLE_COUNT = new int[1];
-
     private final static Logger LOG = Logger.getLogger(SyncStrategy.class);
 
     private final ChannelGroup group;
@@ -84,10 +79,9 @@ public final class SyncStrategy implements StreamingStrategy {
         if (wasFirst) {
             startPlaying();
         }
-
-        statOnAttach(wasFirst);
         ch.pipeline().addLast("writability_monitor", groupWritabilityMonitor);
         groupWritabilityMonitor.channelRegistered(ctx);
+        stat.openConn(sourceConfig);
     }
 
     @Override
@@ -96,7 +90,7 @@ public final class SyncStrategy implements StreamingStrategy {
         if (wasLast) {
             stopPlaying();
         }
-        statOnDetach(wasLast);
+        stat.closeConn(sourceConfig);
     }
 
     @Override
@@ -112,7 +106,6 @@ public final class SyncStrategy implements StreamingStrategy {
     }
 
     private void startPlaying() {
-        stat.addGroupStatistics(sourceConfig);
         buffered = new BufferedPacketSource(sourceFactory.newSource(context, sourceConfig), packetListener, limits);
         buffered.start();
     }
@@ -129,24 +122,6 @@ public final class SyncStrategy implements StreamingStrategy {
         group.close();
     }
 
-    private void statOnAttach(boolean wasFirst) {
-        GroupStatistics groupStat;
-        if (wasFirst) {
-            groupStat = stat.addGroupStatistics(sourceConfig);
-        } else {
-            groupStat = stat.getGroupStatistics(sourceConfig);
-        }
-        groupStat.incClientCount();
-    }
-
-    private void statOnDetach(boolean wasLast) {
-        GroupStatistics groupStat = stat.getGroupStatistics(sourceConfig);
-        groupStat.decClientCount();
-        if (wasLast) {
-            stat.removeGroupStatistics(sourceConfig);
-        }
-    }
-
     private void send(BufferedPacketSource.BufferedMediaPacket buffered) {
         if (groupWritabilityMonitor.isWritable()) {
             final int channels = group.size();
@@ -160,7 +135,7 @@ public final class SyncStrategy implements StreamingStrategy {
                 payload.retain(channels - 1);
             }
             group.writeAndFlush(interleaved, ChannelMatchers.all(), true);
-            stat.onSend(1, (long) payload.readableBytes() * channels);
+            stat.incByteCount(sourceConfig, payload.readableBytes() * channels);
         } else {
             System.err.println("overflow!");
             delayedFrame = buffered;

@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 
 public class SimplePictureSource extends AbstractPictureSource {
     private final ServerStatistics stat;
-    private final List<TimeSeries.TimeSeriesEntry> ts;
+//    private final List<TimeSeries.TimeSeriesEntry> ts;
     private final Chart chart;
 
     private final int padding = 5;
@@ -34,16 +34,16 @@ public class SimplePictureSource extends AbstractPictureSource {
     public SimplePictureSource(ServerContext context, PropertyMap properties) {
         super(context, properties);
         stat = context.getStat();
-        ts = new ArrayList<>();
+//        ts = new ArrayList<>();
         this.chart = new Chart(stat);
     }
 
     @Override
     protected void drawPicture(BufferedImage image)  {
-        ts.clear();
-        stat.drainTs(ts);
-        BufferedImage bi = chart.createChart(chart.createDataset(ts)).createBufferedImage(image.getWidth(), image.getHeight());
-        Meter meter = stat.getThroughputMeter();;
+//        ts.clear();
+//        stat.drainTs(ts);
+        BufferedImage bi = null; //chart.createChart(chart.createDataset(ts)).createBufferedImage(image.getWidth(), image.getHeight());
+//        Meter meter = stat.getThroughputMeter();;
         Graphics2D gc = (Graphics2D) image.getGraphics();
         gc.drawImage(bi, 0, 0, null);
         gc.setColor(Color.BLACK);
@@ -53,7 +53,7 @@ public class SimplePictureSource extends AbstractPictureSource {
         int y = 50;
         int x = image.getWidth() - 250 - 2 * padding;
 
-        drawStat(meter, gc, x, y);
+        drawStat(null, gc, x, y);
         gc.dispose();
     }
 
@@ -66,13 +66,13 @@ public class SimplePictureSource extends AbstractPictureSource {
         gc.clearRect(x - padding, y - padding, 200 + 2 * padding, 4 * height + 2 * padding);
 
         y += height;
-        gc.drawString("client_count: " + groupStat.getClientCount(), x, y);
+        gc.drawString("client_count: " + 0, x, y);
         y += height;
 
-        gc.drawString("group_count: " + stat.getGroupCount(), x, y);
+        gc.drawString("group_count: " + 0, x, y);
         y += height;
 
-        gc.drawString("total_client_count: " + stat.getClientCount(), x, y);
+        gc.drawString("total_client_count: " + 0, x, y);
         y += height;
 
         gc.drawString(String.format("total throughupt: %s", humanReadableByteCount((long) meter.getOneMinuteRate(), false)), x, y);
