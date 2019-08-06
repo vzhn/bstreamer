@@ -18,6 +18,8 @@ public class PeriodCounter {
     private final Record /* last */ week;
     private final List<Record> records = new ArrayList<>();
 
+    private long totalCounter;
+
     public PeriodCounter() {
         minute = new Record(60, 1, TimeUnit.SECONDS);
         hour = new Record(60, 1, TimeUnit.MINUTES);
@@ -31,19 +33,19 @@ public class PeriodCounter {
     }
 
     public Snapshot getMinute() {
-        return minute.snapshot();
+        return minute.snapshot(System.currentTimeMillis());
     }
 
     public Snapshot getHour() {
-        return hour.snapshot();
+        return hour.snapshot(System.currentTimeMillis());
     }
 
     public Snapshot getDay() {
-        return day.snapshot();
+        return day.snapshot(System.currentTimeMillis());
     }
 
     public Snapshot getWeek() {
-        return week.snapshot();
+        return week.snapshot(System.currentTimeMillis());
     }
 
     public void start(long startTimeMillis) {
@@ -53,8 +55,17 @@ public class PeriodCounter {
     }
 
     public void inc(long timeMillis, int c) {
+        synchronized (this) {
+            totalCounter += c;
+        }
         for (int i = 0; i < records.size(); i++) {
             records.get(i).inc(timeMillis, c);
+        }
+    }
+
+    public long total() {
+        synchronized (this) {
+            return totalCounter;
         }
     }
 
@@ -82,13 +93,22 @@ public class PeriodCounter {
             }
             final long deltaMillis = timeMillis - startMillis;
             long ticks = periodUnit.convert(deltaMillis, TimeUnit.MILLISECONDS) / period;
-            if (!deque.isEmpty() && deque.getLast().ticks == ticks) {
-                deque.getLast().inc(c);
-            } else {
-                while (deque.size() >= maxSize) {
-                    deque.removeFirst();
-                }
+            if (deque.isEmpty()) {
                 deque.addLast(new Sample(ticks, c));
+            } else {
+                Sample last = deque.getLast();
+                final long lastTicks = last.getTicks();
+                if (last.ticks == ticks) {
+                    last.inc(c);
+                } else {
+                    for (int i = 1; i < maxSize && i < (ticks - lastTicks); i++) {
+                        deque.addLast(new Sample(lastTicks + i, 0));
+                    }
+                    while (deque.size() >= maxSize) {
+                        deque.removeFirst();
+                    }
+                    deque.addLast(new Sample(ticks, c));
+                }
             }
         }
 
@@ -97,7 +117,8 @@ public class PeriodCounter {
             this.startMillis = timeMillis;
         }
 
-        public synchronized Snapshot snapshot() {
+        public synchronized Snapshot snapshot(long timeMillis) {
+            inc(timeMillis, 0);
             List<DateSample> dateSamples = deque.stream().map(sampleToDate).collect(Collectors.toList());
             return new Snapshot(period, periodUnit, dateSamples);
         }
@@ -105,9 +126,9 @@ public class PeriodCounter {
 
     private static class Sample {
         private final long ticks;
-        private int c;
+        private long c;
 
-        public Sample(long ticks, int c) {
+        public Sample(long ticks, long c) {
             this.ticks = ticks;
             this.c = c;
         }
@@ -120,14 +141,14 @@ public class PeriodCounter {
             return ticks;
         }
 
-        public int getC() {
+        public long getCount() {
             return c;
         }
 
         public DateSample asDate(long startMillis, long tickDurationMillis) {
-            Instant instant = Instant.ofEpochMilli(startMillis).plusMillis(tickDurationMillis);
+            Instant instant = Instant.ofEpochMilli(startMillis).plusMillis(ticks * tickDurationMillis);
             LocalDateTime time = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
-            return new DateSample(time, ticks);
+            return new DateSample(time, c);
         }
     }
 
@@ -141,7 +162,7 @@ public class PeriodCounter {
         }
     }
 
-    private static class Snapshot {
+    public static class Snapshot {
         private final List<DateSample> samples;
         private final int period;
         private final TimeUnit periodUnit;
@@ -150,6 +171,27 @@ public class PeriodCounter {
             this.period = period;
             this.periodUnit = periodUnit;
             this.samples = samples;
+        }
+
+        private DateSample getLastEntireSample() {
+            if (samples.size() >= 2) {
+                return samples.get(samples.size() - 2);
+            } else {
+                return null;
+            }
+        }
+
+        public long getLastEntireSampleCount() {
+            DateSample s = getLastEntireSample();
+            return s == null ? 0 : s.count;
+        }
+
+        public long getLastSampleCount() {
+            if (!samples.isEmpty()) {
+                return samples.get(0).count;
+            } else {
+                return 0;
+            }
         }
     }
 }

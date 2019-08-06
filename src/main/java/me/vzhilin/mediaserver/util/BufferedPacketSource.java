@@ -48,6 +48,7 @@ public class BufferedPacketSource {
             stopped = true;
             synchronized (task) {
                 task.close();
+                executor.shutdown();
                 unbuffered.close();
             }
         }
@@ -70,7 +71,6 @@ public class BufferedPacketSource {
                 dtsMillis = 0;
             }
             long delay = (startTimeMillis - timeMillis) - (startDtsMillis - dtsMillis);
-            System.err.println("delay = " + delay);
             // TODO handle the situation when delay is negative
             advanceFuture = executor.schedule(this, delay, TimeUnit.MILLISECONDS);
         }

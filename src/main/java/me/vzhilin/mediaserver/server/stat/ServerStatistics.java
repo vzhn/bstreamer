@@ -12,13 +12,13 @@ public final class ServerStatistics {
     public ServerStatistics() { }
 
     public void openConn(PropertyMap key) {
-        get(key).openConn();
-        totalStats.openConn();
+        get(key).incOpenConn();
+        totalStats.incOpenConn();
     }
 
     public void closeConn(PropertyMap key) {
-        get(key).closeConn();
-        totalStats.closeConn();
+        get(key).incCloseConn();
+        totalStats.incCloseConn();
     }
 
     public void incByteCount(PropertyMap key, int bytes) {
@@ -40,5 +40,9 @@ public final class ServerStatistics {
             gs = groupStats.get(key);
         }
         return gs;
+    }
+
+    public GroupStatistics getTotal() {
+        return totalStats;
     }
 }

@@ -57,8 +57,8 @@ public final class SyncStrategy implements StreamingStrategy {
     }
 
     private void onGroupWritable() {
-        System.err.println("writable!");
-        if (delayedFrame != null) {
+//        System.err.println("writable!");
+        if (delayedFrame != null && !group.isEmpty()) {
             BufferedPacketSource.BufferedMediaPacket local = delayedFrame;
             delayedFrame = null;
             send(local);
@@ -66,7 +66,7 @@ public final class SyncStrategy implements StreamingStrategy {
     }
 
     private void onGroupNotWritable() {
-        System.err.println("not writable!");
+//        System.err.println("not writable!");
     }
 
     @Override
@@ -134,10 +134,11 @@ public final class SyncStrategy implements StreamingStrategy {
             if (channels > 1) {
                 payload.retain(channels - 1);
             }
+//            System.err.println("write!");
             group.writeAndFlush(interleaved, ChannelMatchers.all(), true);
             stat.incByteCount(sourceConfig, payload.readableBytes() * channels);
         } else {
-            System.err.println("overflow!");
+            stat.incLateCount(sourceConfig);
             delayedFrame = buffered;
         }
     }
@@ -170,6 +171,7 @@ public final class SyncStrategy implements StreamingStrategy {
         private void incNotWritable(ChannelHandlerContext ctx) {
             if (notWritable.isEmpty() & notWritable.add(ctx))
                 onGroupNotWritable();
+//                System.err.println(notWritable.size());
             }
 
         private void decNotWritable(ChannelHandlerContext ctx) {

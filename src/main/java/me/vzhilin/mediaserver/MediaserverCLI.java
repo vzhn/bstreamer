@@ -1,8 +1,12 @@
 package me.vzhilin.mediaserver;
 
+import io.netty.channel.EventLoopGroup;
 import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.PropertyMap;
+import me.vzhilin.mediaserver.server.ConsoleReporter;
 import me.vzhilin.mediaserver.server.RtspServer;
+import me.vzhilin.mediaserver.server.ServerContext;
+import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
 
@@ -10,12 +14,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
 
 public class MediaserverCLI {
     private final CommandLine cmd;
     private final Options options;
 
     public static void main(String... argv) throws IOException, ParseException {
+        System.err.println("pid = " + ManagementFactory.getRuntimeMXBean().getName());
+
         BasicConfigurator.configure();
         MediaserverCLI mediaserver = new MediaserverCLI(argv);
         mediaserver.start();
@@ -49,7 +56,15 @@ public class MediaserverCLI {
             PropertyMap yaml = PropertyMap.parseYaml(is);
             Config config = new Config(yaml);
             RtspServer server = new RtspServer(config);
+            startConsoleReporter(server);
             server.start();
         }
+    }
+
+    private void startConsoleReporter(RtspServer server) {
+        ServerContext sc = server.getServerContext();
+        ServerStatistics stat = sc.getStat();
+        EventLoopGroup exec = sc.getScheduledExecutor();
+        new ConsoleReporter(stat, exec).start();
     }
 }

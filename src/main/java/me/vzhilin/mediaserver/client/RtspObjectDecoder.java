@@ -24,9 +24,8 @@ package me.vzhilin.mediaserver.client;
 // CS_OFF: JavadocMethod
 // CS_OFF: NoWhitespaceAfter
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -34,25 +33,12 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.DecoderResult;
 import io.netty.handler.codec.PrematureChannelClosureException;
 import io.netty.handler.codec.TooLongFrameException;
-import io.netty.handler.codec.http.DefaultHttpContent;
-import io.netty.handler.codec.http.DefaultLastHttpContent;
-import io.netty.handler.codec.http.HttpConstants;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpExpectationFailedEvent;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMessage;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpRequestDecoder;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpUtil;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.http.*;
 import io.netty.util.ByteProcessor;
 import io.netty.util.internal.AppendableCharSequence;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Decodes {@link ByteBuf}s into {@link HttpMessage}s and
@@ -146,6 +132,7 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
 
     private LastHttpContent trailer;
     private InterleavedHeader interleavedHeader;
+    private CompositeByteBuf interleavedPayload;
 
     /**
      * The internal state of {@link RtspObjectDecoder}.
@@ -222,6 +209,8 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
         this.validateHeaders = validateHeaders;
     }
 
+
+
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> out) throws Exception {
         if (resetRequested) {
@@ -235,16 +224,18 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
                 return;
             } else {
                 currentState = State.READ_INTERLEAVED_DATA;
+                interleavedPayload = ctx.alloc().compositeBuffer();
             }
         }
         case READ_INTERLEAVED_DATA: {
             while (currentState == State.READ_INTERLEAVED_DATA) {
-                if (interleavedHeader.getLength() > buffer.readableBytes()) {
+                int remaining = interleavedHeader.getLength() - interleavedPayload.readableBytes();
+                interleavedPayload.addComponent(true, buffer.readRetainedSlice(Math.min(buffer.readableBytes(), remaining)));
+
+                if (interleavedPayload.readableBytes() < interleavedHeader.getLength()) {
                     return;
                 }
-
-                ByteBuf payload = buffer.readRetainedSlice(interleavedHeader.getLength());
-                out.add(new InterleavedPacket(interleavedHeader.getChannel(), payload));
+                out.add(new InterleavedPacket(interleavedHeader.getChannel(), interleavedPayload));
 
                 if (!isInterleaved(buffer)) {
                     currentState = State.SKIP_CONTROL_CHARS;
@@ -254,6 +245,7 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
                         currentState = State.READ_INTERLEAVED_HEADER;
                     } else {
                         currentState = State.READ_INTERLEAVED_DATA;
+                        interleavedPayload = ctx.alloc().compositeBuffer();
                     }
                 }
             }
@@ -263,6 +255,13 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
         case SKIP_CONTROL_CHARS: {
             if (isInterleaved(buffer)) {
                 currentState = State.READ_INTERLEAVED_HEADER;
+                interleavedHeader = interleavedHeaderParser.parse(buffer);
+                if (interleavedHeader == null) {
+                    return;
+                } else {
+                    currentState = State.READ_INTERLEAVED_DATA;
+                    interleavedPayload = ctx.alloc().compositeBuffer();
+                }
                 return;
             }
             if (!skipControlCharacters(buffer)) {
@@ -951,35 +950,19 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
         }
     }
 
-    private static final class InterleavedHeaderParser implements ByteProcessor {
+    private static final class InterleavedHeaderParser {
         private final byte[] header = new byte[4];
         private int pos = 0;
 
-        @Override public boolean process(byte value) throws Exception {
-            if (pos == 0 && ((char) value) != '$') {
-                throw new IllegalStateException();
-            }
-            if (pos < 4) {
-                header[pos++] = value;
-            }
-
-            return pos < 4;
-        }
-
         public InterleavedHeader parse(ByteBuf buffer) {
-            final int oldPos = pos;
-            pos = 0;
-            int i = buffer.forEachByte(this);
-            if (i == -1) {
-                pos = oldPos;
-                return null;
-            }
-            buffer.readerIndex(i + 1);
-            boolean isEnd = pos == 4;
-            if (isEnd) {
+            int len = Math.min(4 - pos, buffer.readableBytes());
+            buffer.readBytes(header, pos, len);
+            pos += len;
+            if (pos == 4) {
                 pos = 0;
+                return new InterleavedHeader(header);
             }
-            return isEnd ? new InterleavedHeader(header) : null;
+            return null;
         }
     }
 }

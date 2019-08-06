@@ -10,11 +10,11 @@ public final class GroupStatistics {
 
     public GroupStatistics() { }
 
-    public void openConn() {
+    public void incOpenConn() {
         connOpenCounter.inc(System.currentTimeMillis(), 1);
     }
 
-    public void closeConn() {
+    public void incCloseConn() {
         connCloseCounter.inc(System.currentTimeMillis(), 1);
     }
 
@@ -24,5 +24,21 @@ public final class GroupStatistics {
 
     public void incLateCount() {
         lateCounter.inc(System.currentTimeMillis(), 1);
+    }
+
+    public PeriodCounter getLate() {
+        return lateCounter;
+    }
+
+    public PeriodCounter getBytes() {
+        return byteCounter;
+    }
+
+    public PeriodCounter getConnOpen() {
+        return connOpenCounter;
+    }
+
+    public PeriodCounter getConnClose() {
+        return connCloseCounter;
     }
 }

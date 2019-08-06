@@ -6,6 +6,7 @@ import me.vzhilin.mediaserver.server.ServerContext;
 import me.vzhilin.mediaserver.server.stat.GroupStatistics;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.stat.TimeSeries;
+import me.vzhilin.mediaserver.util.HumanReadable;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
@@ -75,7 +76,7 @@ public class SimplePictureSource extends AbstractPictureSource {
         gc.drawString("total_client_count: " + 0, x, y);
         y += height;
 
-        gc.drawString(String.format("total throughupt: %s", humanReadableByteCount((long) meter.getOneMinuteRate(), false)), x, y);
+        gc.drawString(String.format("total throughupt: %s", HumanReadable.humanReadableByteCount((long) meter.getOneMinuteRate(), false)), x, y);
     }
 
     private final static class Chart {
@@ -130,13 +131,5 @@ public class SimplePictureSource extends AbstractPictureSource {
             chart.setTitle(new TextTitle(title, serif));
             return chart;
         }
-    }
-
-    public static String humanReadableByteCount(long bytes, boolean si) {
-        int unit = si ? 1000 : 1024;
-        if (bytes < unit) return bytes + " B";
-        int exp = (int) (Math.log(bytes) / Math.log(unit));
-        String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp-1) + (si ? "" : "i");
-        return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
     }
 }

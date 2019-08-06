@@ -20,7 +20,7 @@ public class ConnectionStatistics {
         disconnectedTs = System.currentTimeMillis();
     }
 
-    public void onRead(int bytes) {
+    public synchronized void onRead(int bytes) {
         size += bytes;
 
         ss.onRead(bytes);
@@ -28,5 +28,12 @@ public class ConnectionStatistics {
 
     public long getSize() {
         return size;
+    }
+
+    @Override
+    public synchronized String toString() {
+        return "ConnectionStatistics{" +
+                "size=" + size +
+                '}';
     }
 }

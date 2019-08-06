@@ -29,7 +29,11 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace(System.err);
         ctx.close();
+        if (cause instanceof OutOfMemoryError) {
+            System.exit(1);
+        }
     }
 
     @Override
