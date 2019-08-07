@@ -80,7 +80,8 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
                     break;
 
                 case PLAY:
-                    ctx.channel().pipeline().addLast(new SimpleChannelInboundHandler<InterleavedPacket>() {
+                    ChannelPipeline pipeline = ctx.channel().pipeline();
+                    pipeline.addLast(new SimpleChannelInboundHandler<InterleavedPacket>() {
                         @Override
                         protected void channelRead0(ChannelHandlerContext ctx, InterleavedPacket msg)  {
                             ByteBuf payload = msg.getPayload();
@@ -88,6 +89,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
                             payload.release();
                         }
                     });
+//                    pipeline.remove("http_codec");
                     break;
             }
         }

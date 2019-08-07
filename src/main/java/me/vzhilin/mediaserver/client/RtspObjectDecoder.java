@@ -209,8 +209,6 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
         this.validateHeaders = validateHeaders;
     }
 
-
-
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> out) throws Exception {
         if (resetRequested) {
@@ -228,28 +226,7 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
             }
         }
         case READ_INTERLEAVED_DATA: {
-            while (currentState == State.READ_INTERLEAVED_DATA) {
-                int remaining = interleavedHeader.getLength() - interleavedPayload.readableBytes();
-                interleavedPayload.addComponent(true, buffer.readRetainedSlice(Math.min(buffer.readableBytes(), remaining)));
-
-                if (interleavedPayload.readableBytes() < interleavedHeader.getLength()) {
-                    return;
-                }
-                out.add(new InterleavedPacket(interleavedHeader.getChannel(), interleavedPayload));
-
-                if (!isInterleaved(buffer)) {
-                    currentState = State.SKIP_CONTROL_CHARS;
-                } else {
-                    interleavedHeader = interleavedHeaderParser.parse(buffer);
-                    if (interleavedHeader == null) {
-                        currentState = State.READ_INTERLEAVED_HEADER;
-                    } else {
-                        currentState = State.READ_INTERLEAVED_DATA;
-                        interleavedPayload = ctx.alloc().compositeBuffer();
-                    }
-                }
-            }
-
+            readInterleaved(ctx, buffer, out);
             break;
         }
         case SKIP_CONTROL_CHARS: {
@@ -261,6 +238,7 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
                 } else {
                     currentState = State.READ_INTERLEAVED_DATA;
                     interleavedPayload = ctx.alloc().compositeBuffer();
+                    readInterleaved(ctx, buffer, out);
                 }
                 return;
             }
@@ -459,6 +437,30 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
             }
             break;
         }
+        }
+    }
+
+    private void readInterleaved(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> out) {
+        while (currentState == State.READ_INTERLEAVED_DATA) {
+            int remaining = interleavedHeader.getLength() - interleavedPayload.readableBytes();
+            interleavedPayload.addComponent(true, buffer.readRetainedSlice(Math.min(buffer.readableBytes(), remaining)));
+
+            if (interleavedPayload.readableBytes() < interleavedHeader.getLength()) {
+                return;
+            }
+            out.add(new InterleavedPacket(interleavedHeader.getChannel(), interleavedPayload));
+
+            if (!isInterleaved(buffer)) {
+                currentState = State.SKIP_CONTROL_CHARS;
+            } else {
+                interleavedHeader = interleavedHeaderParser.parse(buffer);
+                if (interleavedHeader == null) {
+                    currentState = State.READ_INTERLEAVED_HEADER;
+                } else {
+                    currentState = State.READ_INTERLEAVED_DATA;
+                    interleavedPayload = ctx.alloc().compositeBuffer();
+                }
+            }
         }
     }
 
@@ -929,8 +931,8 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
     }
 
     private static final class InterleavedHeader {
-        private int channel;
-        private int length;
+        private final int channel;
+        private final int length;
 
         public InterleavedHeader(byte[] header) {
             char magic = (char) header[0];
@@ -939,6 +941,9 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
             }
             this.channel = header[1] & 0xFF;
             this.length = ((header[2] & 0xff) << 8) + (header[3] & 0xff);
+            if (length == 43261) {
+                System.err.println("!");
+            }
         }
 
         public int getLength() {
@@ -954,13 +959,20 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
         private final byte[] header = new byte[4];
         private int pos = 0;
 
+        private long counter = 0;
+        private long totalLen = 0;
+
         public InterleavedHeader parse(ByteBuf buffer) {
             int len = Math.min(4 - pos, buffer.readableBytes());
             buffer.readBytes(header, pos, len);
             pos += len;
             if (pos == 4) {
                 pos = 0;
-                return new InterleavedHeader(header);
+
+                InterleavedHeader interleavedHeader = new InterleavedHeader(header);
+                ++counter;
+                totalLen += interleavedHeader.length;
+                return interleavedHeader;
             }
             return null;
         }

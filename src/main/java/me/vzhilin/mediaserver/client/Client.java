@@ -13,6 +13,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
+import io.netty.handler.codec.http.HttpRequestEncoder;
+import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.util.AttributeKey;
 import org.apache.log4j.BasicConfigurator;
 
@@ -25,7 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class Client {
     public static final AttributeKey<ConnectionStatistics> STAT = AttributeKey.valueOf("stat");
-    private static final String inetHost = "127.0.0.1";
+    private static final String inetHost = "localhost";
+    public static final int INET_PORT = 5000;
 
     public static void main(String... argv) {
         Client client = new Client();
@@ -60,8 +63,10 @@ public class Client {
                             super.channelRead(ctx, msg);
                         }
                     });
+
+
                     pipeline.addLast(rtspInterleavedDecoder);
-                    pipeline.addLast(new HttpClientCodec());
+                    pipeline.addLast("http_codec", new HttpRequestEncoder());
                     pipeline.addLast(new ClientHandler());
                 }
             });
@@ -69,11 +74,11 @@ public class Client {
         TotalStatistics ss = new TotalStatistics();
         ss.onStart();
 
-        for (int i = 0; i < 10 * 2000; i++) {
+        for (int i = 0; i < 1; i++) {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             btstrp.attr(STAT, stat);
-            ChannelFuture future = btstrp.connect(inetHost, 5000);
+            ChannelFuture future = btstrp.connect(inetHost, INET_PORT);
             bindListener(btstrp, future);
         }
 
@@ -124,7 +129,7 @@ public class Client {
                 stat.onDisconnected();
 
                 if (!future.channel().eventLoop().isShuttingDown()) {
-                    ChannelFuture connectFuture = b.connect(inetHost, 5000);
+                    ChannelFuture connectFuture = b.connect(inetHost, INET_PORT);
                     connectFuture.addListener(connectListener);
                     connectFuture.channel().closeFuture().addListener(this);
                 }

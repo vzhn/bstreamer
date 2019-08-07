@@ -76,7 +76,7 @@ public final class SyncStrategy implements StreamingStrategy {
         boolean wasFirst = group.isEmpty();
         group.add(ch);
         ch.closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
-        if (wasFirst) {
+        if (group.size() == 1) {
             startPlaying();
         }
         ch.pipeline().addLast("writability_monitor", groupWritabilityMonitor);
@@ -122,7 +122,11 @@ public final class SyncStrategy implements StreamingStrategy {
         group.close();
     }
 
+    int c = 0;
     private void send(BufferedPacketSource.BufferedMediaPacket buffered) {
+        if (c++ > 1) {
+            return;
+        }
         if (groupWritabilityMonitor.isWritable()) {
             final int channels = group.size();
             InterleavedFrame interleaved = buffered.drain();
@@ -169,18 +173,28 @@ public final class SyncStrategy implements StreamingStrategy {
         }
 
         private void incNotWritable(ChannelHandlerContext ctx) {
-            if (notWritable.isEmpty() & notWritable.add(ctx))
+            boolean unwritable;
+            synchronized (this) {
+                unwritable = notWritable.isEmpty() & notWritable.add(ctx);
+            }
+
+            if (unwritable)
                 onGroupNotWritable();
 //                System.err.println(notWritable.size());
             }
 
         private void decNotWritable(ChannelHandlerContext ctx) {
-            if (notWritable.remove(ctx) & notWritable.isEmpty()) {
+            boolean writable;
+            synchronized (this) {
+                writable = notWritable.remove(ctx) & notWritable.isEmpty();
+            }
+
+            if (writable) {
                 onGroupWritable();
             }
         }
 
-        public boolean isWritable() {
+        public synchronized boolean isWritable() {
             return notWritable.isEmpty();
         }
     }

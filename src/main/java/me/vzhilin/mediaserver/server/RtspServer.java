@@ -76,6 +76,7 @@ public class RtspServer {
                 .childAttr(RtspServerAttributes.CONTEXT, serverContext)
                 .option(ChannelOption.SO_REUSEADDR, true)
                 .option(ChannelOption.SO_BACKLOG, 20000)
+                .childOption(ChannelOption.SO_LINGER, 0)
                 .childOption(ChannelOption.SO_KEEPALIVE, true);
         if (sndbuf > 0) {
             bootstrap.childOption(ChannelOption.SO_SNDBUF, sndbuf);
