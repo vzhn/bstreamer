@@ -1,9 +1,9 @@
 network:
   port: 5000
-  sndbuf: 256000
+  sndbuf: 512000
   watermarks:
-    high: 128000
-    low: 64000
+    high: 512000
+    low: 256000
 strategy:
   sync:
     limits:

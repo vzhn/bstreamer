@@ -76,7 +76,7 @@ public final class SyncStrategy implements StreamingStrategy {
         boolean wasFirst = group.isEmpty();
         group.add(ch);
         ch.closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
-        if (group.size() == 1) {
+        if (group.size() == 20 * 1000) {
             startPlaying();
         }
         ch.pipeline().addLast("writability_monitor", groupWritabilityMonitor);
@@ -124,9 +124,6 @@ public final class SyncStrategy implements StreamingStrategy {
 
     int c = 0;
     private void send(BufferedPacketSource.BufferedMediaPacket buffered) {
-        if (c++ > 1) {
-            return;
-        }
         if (groupWritabilityMonitor.isWritable()) {
             final int channels = group.size();
             InterleavedFrame interleaved = buffered.drain();
@@ -139,8 +136,9 @@ public final class SyncStrategy implements StreamingStrategy {
                 payload.retain(channels - 1);
             }
 //            System.err.println("write!");
+            int bytes = payload.readableBytes() * channels;
+            stat.incByteCount(sourceConfig, bytes);
             group.writeAndFlush(interleaved, ChannelMatchers.all(), true);
-            stat.incByteCount(sourceConfig, payload.readableBytes() * channels);
         } else {
             stat.incLateCount(sourceConfig);
             delayedFrame = buffered;

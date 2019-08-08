@@ -85,7 +85,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<HttpObject> {
                         @Override
                         protected void channelRead0(ChannelHandlerContext ctx, InterleavedPacket msg)  {
                             ByteBuf payload = msg.getPayload();
-                            statistics.onRead(payload.readableBytes());
+                            statistics.onRead(payload.readableBytes() + 4);
                             payload.release();
                         }
                     });

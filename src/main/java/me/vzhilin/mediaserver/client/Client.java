@@ -44,7 +44,7 @@ public class Client {
         BasicConfigurator.configure();
         Bootstrap bootstrap = new Bootstrap();
 
-        EventLoopGroup workerGroup = new EpollEventLoopGroup(1);
+        EventLoopGroup workerGroup = new EpollEventLoopGroup(4);
         Bootstrap b = bootstrap
             .group(workerGroup)
             .channel(EpollSocketChannel.class)
@@ -74,7 +74,7 @@ public class Client {
         TotalStatistics ss = new TotalStatistics();
         ss.onStart();
 
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 20 * 1000; i++) {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             btstrp.attr(STAT, stat);
