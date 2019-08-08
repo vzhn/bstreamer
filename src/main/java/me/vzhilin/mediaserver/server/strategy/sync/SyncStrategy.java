@@ -135,8 +135,9 @@ public final class SyncStrategy implements StreamingStrategy {
                 payload.retain(channels - 1);
             }
 //            System.err.println("write!");
+            int bytes = payload.readableBytes() * channels;
+            stat.incByteCount(sourceConfig, bytes);
             group.writeAndFlush(interleaved, ChannelMatchers.all(), true);
-            stat.incByteCount(sourceConfig, payload.readableBytes() * channels);
         } else {
             stat.incLateCount(sourceConfig);
             delayedFrame = buffered;
