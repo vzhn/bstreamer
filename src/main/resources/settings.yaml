@@ -7,7 +7,7 @@ network:
 strategy:
   sync:
     limits:
-      packets: 10
+      packets: 1
       size: 512000
       time: 200
 source:

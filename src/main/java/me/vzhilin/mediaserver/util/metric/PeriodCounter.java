@@ -54,7 +54,7 @@ public class PeriodCounter {
         }
     }
 
-    public void inc(long timeMillis, int c) {
+    public void inc(long timeMillis, long c) {
         synchronized (this) {
             totalCounter += c;
         }
@@ -87,7 +87,7 @@ public class PeriodCounter {
             sampleToDate = sample -> sample.asDate(startMillis, tickDurationMillis);
         }
 
-        public synchronized void inc(long timeMillis, int c) {
+        public synchronized void inc(long timeMillis, long c) {
             if (startMillis == Long.MIN_VALUE) {
                 startMillis = timeMillis;
             }
@@ -133,7 +133,7 @@ public class PeriodCounter {
             this.c = c;
         }
 
-        public void inc(int v) {
+        public void inc(long v) {
             this.c += v;
         }
 

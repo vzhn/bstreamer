@@ -41,17 +41,19 @@ public class Client {
 
     public void start() {
         AtomicLong counter = new AtomicLong(0);
+        TotalStatistics ss = new TotalStatistics();
 
         System.err.println("pid = " + ManagementFactory.getRuntimeMXBean().getName());
 
         BasicConfigurator.configure();
         Bootstrap bootstrap = new Bootstrap();
 
-        EventLoopGroup workerGroup = new EpollEventLoopGroup(4);
+        EventLoopGroup workerGroup = new EpollEventLoopGroup(1);
         Bootstrap b = bootstrap
             .group(workerGroup)
             .channel(EpollSocketChannel.class)
-            .option(ChannelOption.SO_RCVBUF, 256 * 1024)
+            .option(EpollChannelOption.EPOLL_MODE, EpollMode.LEVEL_TRIGGERED)
+            .option(ChannelOption.SO_RCVBUF, 1024 * 1024)
             .attr(AttributeKey.<String>valueOf("url"), "rtsp://localhost:5000/file/simpsons_video.mkv")
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
@@ -59,25 +61,25 @@ public class Client {
                     ChannelPipeline pipeline = ch.pipeline();
                     RtspInterleavedDecoder rtspInterleavedDecoder = new RtspInterleavedDecoder(1024, 1024, 64 * 1024);
                     rtspInterleavedDecoder.setCumulator(RtspInterleavedDecoder.COMPOSITE_CUMULATOR);
-                    pipeline.addLast(new ChannelInboundHandlerAdapter() {
+                    pipeline.addFirst(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-                            counter.addAndGet(((ByteBuf) msg).readableBytes());
                             super.channelRead(ctx, msg);
+                            if (ss.getSize() > 3173926728L) {
+//                                System.err.println(msg);
+                            }
+
                         }
                     });
-
-
                     pipeline.addLast(rtspInterleavedDecoder);
                     pipeline.addLast("http_codec", new HttpRequestEncoder());
                     pipeline.addLast(new ClientHandler());
                 }
             });
 
-        TotalStatistics ss = new TotalStatistics();
         ss.onStart();
 
-        for (int i = 0; i < 20 * 1000; i++) {
+        for (int i = 0; i < 10 * 1000; i++) {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             btstrp.attr(STAT, stat);
@@ -93,17 +95,16 @@ public class Client {
             public void run() {
                 TotalStatistics.Snapshot s = ss.snapshot();
                 if (prev != null) {
-
-                    System.err.println(counter.get() + " " + s.diff(prev));
-
                     List<BufferPoolMXBean> pools = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
+                    String cap = "";
                     for (BufferPoolMXBean pool : pools) {
-                        System.out.println(pool.getName());
-                        System.out.println(pool.getCount());
-                        System.out.println("memory used " + HumanReadable.humanReadableByteCount(pool.getMemoryUsed(), false));
-                        System.out.println("total capacity " + HumanReadable.humanReadableByteCount(pool.getMemoryUsed(), false));
-                        System.out.println();
+                        if ("mapped".equals(pool.getName())) {
+                            continue;
+                        }
+                        cap = HumanReadable.humanReadableByteCount(pool.getMemoryUsed(), false);
+                        break;
                     }
+                    System.err.println(ss.getSize() + " " + s.diff(prev) + " " + cap);
                 }
                 prev = s;
             }

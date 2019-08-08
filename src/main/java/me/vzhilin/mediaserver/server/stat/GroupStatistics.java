@@ -18,7 +18,7 @@ public final class GroupStatistics {
         connCloseCounter.inc(System.currentTimeMillis(), 1);
     }
 
-    public void incByteCount(int bytes) {
+    public void incByteCount(long bytes) {
         byteCounter.inc(System.currentTimeMillis(), bytes);
     }
 

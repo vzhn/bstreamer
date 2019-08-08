@@ -21,7 +21,7 @@ public final class ServerStatistics {
         totalStats.incCloseConn();
     }
 
-    public void incByteCount(PropertyMap key, int bytes) {
+    public void incByteCount(PropertyMap key, long bytes) {
         get(key).incByteCount(bytes);
         totalStats.incByteCount(bytes);
     }

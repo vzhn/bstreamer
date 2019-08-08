@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import me.vzhilin.mediaserver.media.impl.file.MediaPacket;
 
 public class RtpEncoder {
-    private static final int MTU = 64000;
+    private static final int MTU = 1000;
     private long seqNo = 0;
 
     public void encode(ByteBuf buffer, MediaPacket pkt, long rtpTimestamp) {
