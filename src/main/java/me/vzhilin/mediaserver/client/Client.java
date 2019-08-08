@@ -16,10 +16,13 @@ import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpRequestEncoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.util.AttributeKey;
+import me.vzhilin.mediaserver.util.HumanReadable;
 import org.apache.log4j.BasicConfigurator;
 
 import javax.management.MXBean;
+import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +51,7 @@ public class Client {
         Bootstrap b = bootstrap
             .group(workerGroup)
             .channel(EpollSocketChannel.class)
-            .option(ChannelOption.SO_RCVBUF, 512 * 1024)
+            .option(ChannelOption.SO_RCVBUF, 256 * 1024)
             .attr(AttributeKey.<String>valueOf("url"), "rtsp://localhost:5000/file/simpsons_video.mkv")
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
@@ -91,7 +94,16 @@ public class Client {
                 TotalStatistics.Snapshot s = ss.snapshot();
                 if (prev != null) {
 
-                    System.err.println(counter.get() + " " + s.diff(prev) + " " + Runtime.getRuntime().freeMemory());
+                    System.err.println(counter.get() + " " + s.diff(prev));
+
+                    List<BufferPoolMXBean> pools = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
+                    for (BufferPoolMXBean pool : pools) {
+                        System.out.println(pool.getName());
+                        System.out.println(pool.getCount());
+                        System.out.println("memory used " + HumanReadable.humanReadableByteCount(pool.getMemoryUsed(), false));
+                        System.out.println("total capacity " + HumanReadable.humanReadableByteCount(pool.getMemoryUsed(), false));
+                        System.out.println();
+                    }
                 }
                 prev = s;
             }
