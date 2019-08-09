@@ -1,14 +1,14 @@
 network:
   port: 5000
-  sndbuf: 512000
+  sndbuf: 131072
   watermarks:
-    high: 512000
-    low: 256000
+    high: 131072
+    low: 65536
 strategy:
   sync:
     limits:
-      packets: 1
-      size: 512000
+      packets: 10
+      size: 131072
       time: 200
 source:
   file:

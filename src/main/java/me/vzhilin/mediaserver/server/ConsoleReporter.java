@@ -61,7 +61,7 @@ public class ConsoleReporter {
 
             LocalDateTime now = LocalDateTime.now();
 
-            String mesg = String.format("\rC %d [+%d:-%d] L %d [%d:%d:%d] %d %s %d:%d:%d",
+            String mesg = String.format("\rC %d [+%d:-%d] L %d [%d:%d:%d] %d %s %02d:%02d:%02d",
                     c, op, cl, lagTotal, lagMinute, lagHour, lagDay, bytes.total(), sBytes,
                     now.getHour(), now.getMinute(), now.getSecond());
             sb.append(mesg);

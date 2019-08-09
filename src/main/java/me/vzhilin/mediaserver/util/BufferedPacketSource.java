@@ -15,7 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class BufferedPacketSource {
+public final class BufferedPacketSource {
     private final PullSource unbuffered;
     private final ScheduledExecutorService executor;
     private final BufferedMediaPacketListener listener;

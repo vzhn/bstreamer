@@ -72,11 +72,9 @@ public final class SyncStrategy implements StreamingStrategy {
     @Override
     public void attachContext(ChannelHandlerContext ctx) {
         Channel ch = ctx.channel();
-
-        boolean wasFirst = group.isEmpty();
-        group.add(ch);
         ch.closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
-        if (group.size() == 10 * 1000) {
+        group.add(ch);
+        if (group.size() == 1) {
             startPlaying();
         }
         ch.pipeline().addLast("writability_monitor", groupWritabilityMonitor);
@@ -134,18 +132,9 @@ public final class SyncStrategy implements StreamingStrategy {
             if (channels > 1) {
                 payload.retain(channels - 1);
             }
-//            System.err.println("write!");
             long bytes = (long) payload.readableBytes() * channels;
             stat.incByteCount(sourceConfig, bytes);
             group.writeAndFlush(interleaved, ChannelMatchers.all(), true);
-//            if (stat.getTotal().getBytes().total() > 1000_000_000L) {
-//                try {
-//                    System.err.println("SLEEP");
-//                    Thread.sleep(1000);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
 
         } else {
             stat.incLateCount(sourceConfig);
@@ -186,7 +175,6 @@ public final class SyncStrategy implements StreamingStrategy {
 
             if (unwritable)
                 onGroupNotWritable();
-//                System.err.println(notWritable.size());
             }
 
         private void decNotWritable(ChannelHandlerContext ctx) {

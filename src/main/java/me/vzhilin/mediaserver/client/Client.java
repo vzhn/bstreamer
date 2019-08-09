@@ -1,25 +1,17 @@
 package me.vzhilin.mediaserver.client;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.epoll.EpollChannelOption;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollMode;
 import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpRequestEncoder;
-import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.util.AttributeKey;
 import me.vzhilin.mediaserver.util.HumanReadable;
 import org.apache.log4j.BasicConfigurator;
 
-import javax.management.MXBean;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.List;
@@ -48,12 +40,12 @@ public class Client {
         BasicConfigurator.configure();
         Bootstrap bootstrap = new Bootstrap();
 
-        EventLoopGroup workerGroup = new EpollEventLoopGroup(1);
+        EventLoopGroup workerGroup = new EpollEventLoopGroup(4);
         Bootstrap b = bootstrap
             .group(workerGroup)
             .channel(EpollSocketChannel.class)
             .option(EpollChannelOption.EPOLL_MODE, EpollMode.LEVEL_TRIGGERED)
-            .option(ChannelOption.SO_RCVBUF, 1024 * 1024)
+            .option(ChannelOption.SO_RCVBUF, 131072)
             .attr(AttributeKey.<String>valueOf("url"), "rtsp://localhost:5000/file/simpsons_video.mkv")
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
@@ -61,16 +53,6 @@ public class Client {
                     ChannelPipeline pipeline = ch.pipeline();
                     RtspInterleavedDecoder rtspInterleavedDecoder = new RtspInterleavedDecoder(1024, 1024, 64 * 1024);
                     rtspInterleavedDecoder.setCumulator(RtspInterleavedDecoder.COMPOSITE_CUMULATOR);
-                    pipeline.addFirst(new ChannelInboundHandlerAdapter() {
-                        @Override
-                        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-                            super.channelRead(ctx, msg);
-                            if (ss.getSize() > 3173926728L) {
-//                                System.err.println(msg);
-                            }
-
-                        }
-                    });
                     pipeline.addLast(rtspInterleavedDecoder);
                     pipeline.addLast("http_codec", new HttpRequestEncoder());
                     pipeline.addLast(new ClientHandler());
@@ -79,7 +61,7 @@ public class Client {
 
         ss.onStart();
 
-        for (int i = 0; i < 10 * 1000; i++) {
+        for (int i = 0; i < 4 * 1000; i++) {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             btstrp.attr(STAT, stat);
@@ -109,19 +91,6 @@ public class Client {
                 prev = s;
             }
         }, 1, 1, TimeUnit.SECONDS);
-//        exec.schedule(
-//            new Runnable() {
-//                @Override
-//                public void run() {
-//                    ss.onShutdown();
-//                    System.err.println(ss);
-//                    System.err.println(ss.getSize());
-//
-//                    workerGroup.shutdownGracefully().syncUninterruptibly();
-//                    exec.shutdownNow();
-//                }
-//            }
-//        , 500 * 1000, TimeUnit.SECONDS);
     }
 
     private void bindListener(Bootstrap b, ChannelFuture connectFuture) {
