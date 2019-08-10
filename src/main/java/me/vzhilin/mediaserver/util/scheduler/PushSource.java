@@ -4,6 +4,7 @@ import me.vzhilin.mediaserver.media.PullSource;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 
 public final class PushSource {
     private final PullSource pullSource;
@@ -14,12 +15,13 @@ public final class PushSource {
     private boolean stopped;
 
     public PushSource(PullSource pullSource,
-                      PushListener listener,
                       BufferingLimits limits,
-                      ScheduledExecutorService pullExecutor) {
+                      ScheduledExecutorService pullExecutor,
+                      Consumer<PushedPacket> onNext,
+                      Runnable onEnd) {
         this.pullSource = pullSource;
         this.pullExecutor = pullExecutor;
-        task = new PushTask(pullSource, limits, pullExecutor, listener);
+        task = new PushTask(pullSource, limits, pullExecutor, onNext, onEnd);
     }
 
     public void start() {

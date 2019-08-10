@@ -12,12 +12,14 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 final class PushTask implements Runnable {
     private final BufferingLimits limits;
     private final PullSource unbuffered;
     private final ScheduledExecutorService executor;
-    private final PushListener listener;
+    private final Consumer<PushedPacket> onNext;
+    private final Runnable onEnd;
 
     private boolean started;
     private boolean finished;
@@ -29,13 +31,15 @@ final class PushTask implements Runnable {
     private long lastDts;
 
     PushTask(PullSource pullSource,
-            BufferingLimits limits,
-            ScheduledExecutorService executor,
-            PushListener listener) {
+             BufferingLimits limits,
+             ScheduledExecutorService executor,
+             Consumer<PushedPacket> onNext,
+             Runnable onEnd) {
         this.limits = limits;
         this.unbuffered = pullSource;
         this.executor = executor;
-        this.listener = listener;
+        this.onNext = onNext;
+        this.onEnd = onEnd;
     }
 
     private void pushNext() {
@@ -74,11 +78,10 @@ final class PushTask implements Runnable {
                 lastDts = Math.max(0, pkt.getDts());
             }
         }
-        System.err.println(ps.size());
         if (!ps.isEmpty()) {
-            listener.next(new PushedPacket(this::pushNext, encodeInterleavedFrames(ps)));
+            onNext.accept(new PushedPacket(this::pushNext, encodeInterleavedFrames(ps)));
         } else {
-            listener.end();
+            onEnd.run();
         }
     }
 

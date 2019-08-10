@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import me.vzhilin.mediaserver.media.impl.file.MediaPacket;
 
 public class RtpEncoder {
-    private static final int MTU = 1000;
+    private static final int MTU = 65536;
     private long seqNo = 0;
 
     public void encode(ByteBuf buffer, MediaPacket pkt, long rtpTimestamp) {
@@ -39,7 +39,6 @@ public class RtpEncoder {
         ByteBuf payload = pkt.getPayload().duplicate();
 
         // interleaved header
-//        ByteBuf bb = PooledByteBufAllocator.DEFAULT.buffer(12 + 4, 12 + 4);
         writeInterleavedHeader(buffer, payload.readableBytes() + 12);
 
         // RTP header
@@ -59,11 +58,8 @@ public class RtpEncoder {
         int numberOfPackets = (sz - 2) / (MTU - 18) + 1;
 
         byte firstByte = payload.readByte();
-        int fuIndicator = firstByte & 0xff;
-        fuIndicator &= 0b11100000;
-        fuIndicator += 28;
-
-        int fuHeader = firstByte & 0xff;
+        int fuIndicator = firstByte & 0b11100000 | 28;
+        int fuHeader    = firstByte & 0xff;
         int offset = 1;
         for (int i = 0; i < numberOfPackets; ++i) {
             fuHeader &= 0b00011111;
