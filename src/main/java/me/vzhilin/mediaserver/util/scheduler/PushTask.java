@@ -74,6 +74,7 @@ final class PushTask implements Runnable {
                 lastDts = Math.max(0, pkt.getDts());
             }
         }
+        System.err.println(ps.size());
         if (!ps.isEmpty()) {
             listener.next(new PushedPacket(this::pushNext, encodeInterleavedFrames(ps)));
         } else {

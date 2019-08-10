@@ -59,10 +59,10 @@ public final class SyncStrategy implements StreamingStrategy {
         int timeLimit = props.getInt(SyncStrategyAttributes.LIMIT_TIME);
         limits = new BufferingLimits(sizeLimit, packetLimit, timeLimit);
 
-        groupWritabilityMonitor = new GroupWritabilityMonitor();
+        groupWritabilityMonitor = new GroupWritabilityMonitor(this::onWritable, this::onUnwritable);
     }
 
-    private void onGroupWritable() {
+    private void onWritable() {
         if (delayedFrame != null && !group.isEmpty()) {
             PushedPacket local = delayedFrame;
             delayedFrame = null;
@@ -70,15 +70,15 @@ public final class SyncStrategy implements StreamingStrategy {
         }
     }
 
-    private void onGroupNotWritable() {
-    }
+    private void onUnwritable() { }
 
     @Override
     public void attachContext(ChannelHandlerContext ctx) {
         Channel ch = ctx.channel();
         ch.closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
-        group.add(ch);
         ch.pipeline().addLast("writability_monitor", groupWritabilityMonitor);
+
+        group.add(ch);
         groupWritabilityMonitor.channelRegistered(ctx);
         stat.openConn(sourceConfig);
         if (group.size() == 1) {
@@ -88,7 +88,7 @@ public final class SyncStrategy implements StreamingStrategy {
 
     @Override
     public void detachContext(ChannelHandlerContext context) {
-        boolean wasLast = group.isEmpty();
+        boolean wasLast = group.remove(context.channel()) & group.isEmpty();
         if (wasLast) {
             stopPlaying();
         }
@@ -147,52 +147,68 @@ public final class SyncStrategy implements StreamingStrategy {
     }
 
     @ChannelHandler.Sharable
-    private final class GroupWritabilityMonitor extends ChannelInboundHandlerAdapter {
-        private Set<ChannelHandlerContext> notWritable = new HashSet<>();
+    private final static class GroupWritabilityMonitor extends ChannelInboundHandlerAdapter {
+        private final Runnable onWritable;
+        private final Runnable onUnwritable;
+        private Set<ChannelHandlerContext> unwritable = new HashSet<>();
+        private volatile boolean writable;
+        private int totalChannels;
+
+        private GroupWritabilityMonitor(Runnable onWritable, Runnable onUnwritable) {
+            this.onWritable = onWritable;
+            this.onUnwritable = onUnwritable;
+        }
 
         @Override
         public void channelRegistered(ChannelHandlerContext ctx) {
+            ++totalChannels;
             if (!ctx.channel().isWritable()) {
-                incNotWritable(ctx);
+                addToUnwritable(ctx);
+            } else {
+                if (!writable && unwritable.isEmpty()) {
+                    writable = true;
+                    onUnwritable.run();
+                }
             }
         }
 
         @Override
         public void channelUnregistered(ChannelHandlerContext ctx) {
-            decNotWritable(ctx);
+            --totalChannels;
+            removeFromUnwritable(ctx);
+            if (totalChannels == 0 && writable) {
+                writable = false;
+                onUnwritable.run();
+            }
         }
 
         @Override
         public void channelWritabilityChanged(ChannelHandlerContext ctx) {
             if (ctx.channel().isWritable()) {
-                decNotWritable(ctx);
+                removeFromUnwritable(ctx);
             } else {
-                incNotWritable(ctx);
+                addToUnwritable(ctx);
             }
         }
 
-        private void incNotWritable(ChannelHandlerContext ctx) {
-            boolean unwritable;
-            synchronized (this) {
-                unwritable = notWritable.isEmpty() & notWritable.add(ctx);
-            }
-            if (unwritable)
-                onGroupNotWritable();
-            }
-
-        private void decNotWritable(ChannelHandlerContext ctx) {
-            boolean writable;
-            synchronized (this) {
-                writable = notWritable.remove(ctx) & notWritable.isEmpty();
-            }
-
+        private void addToUnwritable(ChannelHandlerContext ctx) {
+            unwritable.add(ctx);
             if (writable) {
-                onGroupWritable();
+                writable = false;
+                onUnwritable.run();
             }
         }
 
-        public synchronized boolean isWritable() {
-            return notWritable.isEmpty();
+        private void removeFromUnwritable(ChannelHandlerContext ctx) {
+            unwritable.remove(ctx);
+            if (!writable && unwritable.isEmpty()) {
+                writable = true;
+                onWritable.run();
+            }
+        }
+
+        private boolean isWritable() {
+            return writable;
         }
     }
 
