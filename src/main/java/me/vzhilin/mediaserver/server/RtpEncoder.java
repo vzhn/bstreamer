@@ -91,13 +91,12 @@ public class RtpEncoder {
         }
     }
 
-    public int estimateSize(MediaPacket pkt) {
-        int sz = pkt.getPayload().readableBytes();
-        if (sz + 16 > MTU) {
-            int numberOfPackets = (sz - 2) / (MTU - 18) + 1;
-            return numberOfPackets * (12 + 2 + 4) + sz;
+    public int estimateSize(int payloadSize) {
+        if (payloadSize + 16 > MTU) {
+            int numberOfPackets = (payloadSize - 2) / (MTU - 18) + 1;
+            return numberOfPackets * (12 + 2 + 4) + payloadSize;
         } else {
-            return sz + 16;
+            return payloadSize + 16;
         }
     }
 }

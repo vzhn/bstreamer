@@ -14,12 +14,16 @@ import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.ServerContext;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
-import me.vzhilin.mediaserver.util.BufferedPacketSource;
+import me.vzhilin.mediaserver.util.scheduler.BufferingLimits;
+import me.vzhilin.mediaserver.util.scheduler.PushSource;
+import me.vzhilin.mediaserver.util.scheduler.PushedPacket;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public final class SyncStrategy implements StreamingStrategy {
     private final static Logger LOG = Logger.getLogger(SyncStrategy.class);
@@ -28,45 +32,45 @@ public final class SyncStrategy implements StreamingStrategy {
     private final PropertyMap sourceConfig;
     private final MediaPacketSourceFactory sourceFactory;
     private final ServerStatistics stat;
-    private final PacketListener packetListener;
+    private final PushListener packetListener;
     private final ServerContext context;
     private final EventLoopGroup executor;
-    private final BufferedPacketSource.BufferingLimits limits;
+    private final BufferingLimits limits;
     private final GroupWritabilityMonitor groupWritabilityMonitor;
+    private final ScheduledExecutorService workerExecutor;
 
-    private BufferedPacketSource buffered;
-    private BufferedPacketSource.BufferedMediaPacket delayedFrame;
+    private PushSource buffered;
+    private PushedPacket delayedFrame;
 
     public SyncStrategy(ServerContext context, EventLoopGroup executor, PropertyMap sourceConfig) {
         String sourceName = sourceConfig.getValue(CommonSourceAttributes.NAME);
+        this.workerExecutor = Executors.newScheduledThreadPool(4);
         this.executor = executor;
         this.context = context;
         this.sourceConfig = sourceConfig;
         this.sourceFactory = context.getSourceFactory(sourceName);
         this.group = new DefaultChannelGroup(executor.next());
         this.stat = context.getStat();
-        packetListener = new PacketListener();
+        packetListener = new PushListener();
 
         PropertyMap props = context.getConfig().getStrategyConfig("sync");
         int sizeLimit = props.getInt(SyncStrategyAttributes.LIMIT_SIZE);
         int packetLimit = props.getInt(SyncStrategyAttributes.LIMIT_PACKETS);
         int timeLimit = props.getInt(SyncStrategyAttributes.LIMIT_TIME);
-        limits = new BufferedPacketSource.BufferingLimits(sizeLimit, packetLimit, timeLimit);
+        limits = new BufferingLimits(sizeLimit, packetLimit, timeLimit);
 
         groupWritabilityMonitor = new GroupWritabilityMonitor();
     }
 
     private void onGroupWritable() {
-//        System.err.println("writable!");
         if (delayedFrame != null && !group.isEmpty()) {
-            BufferedPacketSource.BufferedMediaPacket local = delayedFrame;
+            PushedPacket local = delayedFrame;
             delayedFrame = null;
             send(local);
         }
     }
 
     private void onGroupNotWritable() {
-//        System.err.println("not writable!");
     }
 
     @Override
@@ -74,12 +78,12 @@ public final class SyncStrategy implements StreamingStrategy {
         Channel ch = ctx.channel();
         ch.closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
         group.add(ch);
-        if (group.size() == 1) {
-            startPlaying();
-        }
         ch.pipeline().addLast("writability_monitor", groupWritabilityMonitor);
         groupWritabilityMonitor.channelRegistered(ctx);
         stat.openConn(sourceConfig);
+        if (group.size() == 1) {
+            startPlaying();
+        }
     }
 
     @Override
@@ -104,7 +108,8 @@ public final class SyncStrategy implements StreamingStrategy {
     }
 
     private void startPlaying() {
-        buffered = new BufferedPacketSource(sourceFactory.newSource(context, sourceConfig), packetListener, limits);
+        PullSource pullSource = sourceFactory.newSource(context, sourceConfig);
+        buffered = new PushSource(pullSource, packetListener, limits, workerExecutor);
         buffered.start();
     }
 
@@ -120,7 +125,7 @@ public final class SyncStrategy implements StreamingStrategy {
         group.close();
     }
 
-    private void send(BufferedPacketSource.BufferedMediaPacket buffered) {
+    private void send(PushedPacket buffered) {
         if (groupWritabilityMonitor.isWritable()) {
             final int channels = group.size();
             InterleavedFrame interleaved = buffered.drain();
@@ -135,7 +140,6 @@ public final class SyncStrategy implements StreamingStrategy {
             long bytes = (long) payload.readableBytes() * channels;
             stat.incByteCount(sourceConfig, bytes);
             group.writeAndFlush(interleaved, ChannelMatchers.all(), true);
-
         } else {
             stat.incLateCount(sourceConfig);
             delayedFrame = buffered;
@@ -172,7 +176,6 @@ public final class SyncStrategy implements StreamingStrategy {
             synchronized (this) {
                 unwritable = notWritable.isEmpty() & notWritable.add(ctx);
             }
-
             if (unwritable)
                 onGroupNotWritable();
             }
@@ -193,10 +196,10 @@ public final class SyncStrategy implements StreamingStrategy {
         }
     }
 
-    private final class PacketListener implements BufferedPacketSource.BufferedMediaPacketListener {
+    private final class PushListener implements me.vzhilin.mediaserver.util.scheduler.PushListener {
         @Override
-        public void next(BufferedPacketSource.BufferedMediaPacket bufferedMediaPacket) {
-            executor.execute(() -> send(bufferedMediaPacket));
+        public void next(PushedPacket scheduledMediaPacket) {
+            executor.execute(() -> send(scheduledMediaPacket));
         }
 
         @Override
