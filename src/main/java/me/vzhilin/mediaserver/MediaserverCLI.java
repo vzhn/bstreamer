@@ -15,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class MediaserverCLI {
     private final CommandLine cmd;
@@ -64,7 +65,7 @@ public class MediaserverCLI {
     private void startConsoleReporter(RtspServer server) {
         ServerContext sc = server.getServerContext();
         ServerStatistics stat = sc.getStat();
-        EventLoopGroup exec = sc.getScheduledExecutor();
+        ScheduledExecutorService exec = sc.getScheduledExecutor();
         new ConsoleReporter(stat, exec).start();
     }
 }

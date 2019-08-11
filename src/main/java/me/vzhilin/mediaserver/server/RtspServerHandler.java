@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
@@ -43,17 +44,15 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
                 break;
             case "DESCRIBE": {
                 RtspUriParser uri = new RtspUriParser(request.uri());
-
                 if (uri.pathItems() < 1) {
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 } else {
-                    response = description(uri, getStreamingStrategy(uri).describe());
+                    response = description(uri, getStreamingStrategy(ctx.channel().eventLoop(), uri).describe());
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 }
-
                 break;
             }
             case "SETUP": {
@@ -71,7 +70,7 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 } else {
-                    getStreamingStrategy(uri).attachContext(ctx);
+                    getStreamingStrategy(ctx.channel().eventLoop(), uri).attachContext(ctx);
 
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
@@ -88,7 +87,7 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
         }
     }
 
-    private StreamingStrategy getStreamingStrategy(RtspUriParser uri) {
+    private StreamingStrategy getStreamingStrategy(EventLoop loop, RtspUriParser uri) {
         String strategyName = uri.getParam("mode", "sync");
         String source = uri.pathItem(0);
         String extra = uri.pathItem(1);
@@ -98,7 +97,7 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
         mpsc.putAll(uri.allParameters());
         StreamingStrategyFactory strategyFactory = context.getStreamingStrategyFactory(strategyName);
 
-        return strategyFactory.getStrategy(mpsc);
+        return strategyFactory.getStrategy(loop, mpsc);
     }
 
     private FullHttpResponse description(RtspUriParser uri, MediaPacketSourceDescription description) {
@@ -124,7 +123,6 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
         response.headers().add(HttpHeaderNames.CONTENT_LENGTH, payload.readableBytes());
         response.headers().add(HttpHeaderNames.CONTENT_BASE, uri.getUri());
         response.headers().add(HttpHeaderNames.CONTENT_TYPE, "application/sdp");
-
         return response;
     }
 
@@ -132,12 +130,5 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         cause.printStackTrace();
         ctx.close();
-    }
-
-    @Override
-    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
-        super.channelWritabilityChanged(ctx);
-
-
     }
 }

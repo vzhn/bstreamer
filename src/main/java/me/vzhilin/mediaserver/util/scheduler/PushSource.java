@@ -1,43 +1,52 @@
 package me.vzhilin.mediaserver.util.scheduler;
 
+import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.PullSource;
+import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
 
-import java.io.IOException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public final class PushSource {
-    private final PullSource pullSource;
     private final ScheduledExecutorService pullExecutor;
     private final PushTask task;
+    private final PropertyMap props;
 
-    private boolean started;
-    private boolean stopped;
+    private int subscribers;
+    private Future<?> pushTaskFuture;
 
-    public PushSource(PullSource pullSource,
-                      BufferingLimits limits,
+    public PushSource(Supplier<PullSource> pullSourceSupplier,
+                      PropertyMap props,
                       ScheduledExecutorService pullExecutor,
-                      Consumer<PushedPacket> onNext,
-                      Runnable onEnd) {
-        this.pullSource = pullSource;
+                      BufferingLimits limits) {
         this.pullExecutor = pullExecutor;
-        task = new PushTask(pullSource, limits, pullExecutor, onNext, onEnd);
+        this.props = props;
+        task = new PushTask(pullSourceSupplier, limits, pullExecutor);
     }
 
-    public void start() {
-        if (!started) {
-            started = true;
-            pullExecutor.execute(task);
-        }
+    public MediaPacketSourceDescription describe() {
+        return task.describe();
     }
 
-    public void stop() throws IOException {
-        if (!stopped) {
-            stopped = true;
-            synchronized (task) {
-                task.finish();
-                pullSource.close();
+    public PushSourceSession subscribe(PushTaskSubscriber sub) {
+        synchronized (this) {
+            PushTaskSession s = task.subscribe(sub);
+            if (++subscribers == 1) {
+                pushTaskFuture = pullExecutor.submit(task);
             }
+            return new PushSourceSession(() -> {
+                s.close();
+                synchronized (PushSource.this) {
+                    if (--subscribers == 0) {
+                        pushTaskFuture.cancel(false);
+                    }
+                }
+            });
         }
+    }
+
+    public PropertyMap getProps() {
+        return props;
     }
 }

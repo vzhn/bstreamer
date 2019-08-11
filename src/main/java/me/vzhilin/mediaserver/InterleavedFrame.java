@@ -12,4 +12,18 @@ public final class InterleavedFrame {
     public ByteBuf getPayload() {
         return buffer;
     }
+
+    public int getSize() {
+        return buffer.readableBytes();
+    }
+
+    public void release() {
+        buffer.release();
+    }
+
+    public void retain(int count) {
+        if (count != 0) {
+            buffer.retain(count);
+        }
+    }
 }

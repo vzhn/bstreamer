@@ -5,12 +5,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
-import io.netty.channel.epoll.EpollChannelOption;
 import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.epoll.EpollMode;
 import io.netty.channel.epoll.EpollServerSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.NetworkAttributes;
 import me.vzhilin.mediaserver.conf.PropertyMap;
@@ -19,6 +15,8 @@ import me.vzhilin.mediaserver.media.impl.picture.SimplePictureSourceFactory;
 import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.Executors;
 
 import static org.bytedeco.javacpp.avutil.AV_LOG_ERROR;
 import static org.bytedeco.javacpp.avutil.av_log_set_level;
@@ -41,8 +39,8 @@ public class RtspServer {
         this.serverContext = new ServerContext(config);
         this.serverContext.registerSourceFactory("picture", new SimplePictureSourceFactory());
         this.serverContext.registerSourceFactory("file", new FileSourceFactory());
-        this.serverContext.registerSyncStrategy("sync", new SyncStrategyFactory(serverContext, workerGroup));
-        this.serverContext.setScheduledExecutor(workerGroup);
+        this.serverContext.registerSyncStrategy("sync", new SyncStrategyFactory(serverContext));
+        this.serverContext.setScheduledExecutor(Executors.newSingleThreadScheduledExecutor());
     }
 
     public ServerContext getServerContext() {

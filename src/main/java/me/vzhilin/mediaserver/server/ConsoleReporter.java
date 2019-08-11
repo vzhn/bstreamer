@@ -1,29 +1,27 @@
 package me.vzhilin.mediaserver.server;
 
-import io.netty.channel.EventLoopGroup;
 import me.vzhilin.mediaserver.server.stat.GroupStatistics;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.util.HumanReadable;
 import me.vzhilin.mediaserver.util.metric.PeriodCounter;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ConsoleReporter {
-    private final EventLoopGroup exec;
+    private final ScheduledExecutorService exec;
     private Runnable reporter;
     private ScheduledFuture<?> reporterFuture;
 
-    public ConsoleReporter(ServerStatistics stat, EventLoopGroup exec) {
+    public ConsoleReporter(ServerStatistics stat, ScheduledExecutorService exec) {
         this.exec = exec;
         reporter = new Reporter(stat.getTotal());
     }
 
     public void start() {
-        reporterFuture = Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(reporter, 1, 1, TimeUnit.SECONDS);
+        reporterFuture = exec.scheduleAtFixedRate(reporter, 1, 1, TimeUnit.SECONDS);
     }
 
     public void stop() {

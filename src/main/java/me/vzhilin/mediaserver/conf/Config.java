@@ -1,5 +1,8 @@
 package me.vzhilin.mediaserver.conf;
 
+import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyAttributes;
+import me.vzhilin.mediaserver.util.scheduler.BufferingLimits;
+
 public class Config {
     private final PropertyMap properties;
 
@@ -23,5 +26,13 @@ public class Config {
     @Override
     public String toString() {
         return properties.toString();
+    }
+
+    public BufferingLimits getBufferingLimits() {
+        PropertyMap syncProperties = properties.getMap("strategy").getMap("sync");
+        int sizeLimit = syncProperties.getInt(SyncStrategyAttributes.LIMIT_SIZE);
+        int packetLimit = syncProperties.getInt(SyncStrategyAttributes.LIMIT_PACKETS);
+        int timeLimit = syncProperties.getInt(SyncStrategyAttributes.LIMIT_TIME);
+        return new BufferingLimits(sizeLimit, packetLimit, timeLimit);
     }
 }

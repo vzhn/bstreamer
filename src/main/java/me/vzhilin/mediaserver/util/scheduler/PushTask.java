@@ -5,21 +5,22 @@ import io.netty.buffer.PooledByteBufAllocator;
 import me.vzhilin.mediaserver.InterleavedFrame;
 import me.vzhilin.mediaserver.media.PullSource;
 import me.vzhilin.mediaserver.media.impl.file.MediaPacket;
+import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 final class PushTask implements Runnable {
     private final BufferingLimits limits;
-    private final PullSource unbuffered;
     private final ScheduledExecutorService executor;
-    private final Consumer<PushedPacket> onNext;
-    private final Runnable onEnd;
+    private PullSource unbuffered;
+    private final Supplier<PullSource> sourceSupplier;
 
     private boolean started;
     private boolean finished;
@@ -30,16 +31,57 @@ final class PushTask implements Runnable {
 
     private long lastDts;
 
-    PushTask(PullSource pullSource,
+    private List<PushTaskSubscriber> subs = new ArrayList<>();
+    private MediaPacketSourceDescription desc;
+
+    PushTask(Supplier<PullSource> pullSource,
              BufferingLimits limits,
-             ScheduledExecutorService executor,
-             Consumer<PushedPacket> onNext,
-             Runnable onEnd) {
+             ScheduledExecutorService executor) {
         this.limits = limits;
-        this.unbuffered = pullSource;
+        this.sourceSupplier = pullSource;
         this.executor = executor;
-        this.onNext = onNext;
-        this.onEnd = onEnd;
+    }
+
+    public MediaPacketSourceDescription describe() {
+        synchronized (this) {
+            if (desc == null) {
+                PullSource pullSource = sourceSupplier.get();
+                desc = pullSource.getDesc();
+                try {
+                    pullSource.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            return desc;
+        }
+    }
+
+    public PushTaskSession subscribe(PushTaskSubscriber sub) {
+        synchronized (this) {
+            boolean wasEmpty = subs.isEmpty();
+            subs.add(sub);
+
+            if (wasEmpty) {
+                startTimeMillis = System.currentTimeMillis();
+                unbuffered = sourceSupplier.get();
+            }
+        }
+
+        return new PushTaskSession(() -> unsubscribe(sub));
+    }
+
+    private void unsubscribe(PushTaskSubscriber sub) {
+        synchronized (this) {
+            if (subs.remove(sub) && subs.isEmpty()) {
+                try {
+                    unbuffered.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 
     private void pushNext() {
@@ -54,10 +96,16 @@ final class PushTask implements Runnable {
         }
     }
 
+    private final List<PushTaskSubscriber> localSubs = new ArrayList<>();
+
     @Override
     public void run() {
         List<MediaPacket> ps = new ArrayList<>();
+
         synchronized (this) {
+            localSubs.clear();
+            localSubs.addAll(subs);
+
             if (finished) {
                 return;
             }
@@ -78,10 +126,18 @@ final class PushTask implements Runnable {
                 lastDts = Math.max(0, pkt.getDts());
             }
         }
-        if (!ps.isEmpty()) {
-            onNext.accept(new PushedPacket(this::pushNext, encodeInterleavedFrames(ps)));
-        } else {
-            onEnd.run();
+
+        boolean endReached = ps.isEmpty();
+        int subsCount = localSubs.size();
+        InterleavedFrame packet = encodeInterleavedFrames(ps);
+        packet.retain(subsCount - 1);
+        PushedPacket pp = new PushedPacket(this::pushNext, packet, subsCount);
+        for (PushTaskSubscriber sub : localSubs) {
+            if (endReached) {
+                sub.onEnd();
+            } else {
+                sub.onNext(pp);
+            }
         }
     }
 
