@@ -10,10 +10,9 @@ import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 public class SyncStrategyFactory implements StreamingStrategyFactory {
-    private final Map<EventLoopGroup, Map<PropertyMap, SyncStrategy>> filenameToStrategy = new HashMap<>();
+    private final Map<EventLoopGroup, Map<PropertyMap, GroupStreamer>> filenameToStrategy = new HashMap<>();
     private final ServerContext context;
 
     public SyncStrategyFactory(ServerContext context) {
@@ -25,7 +24,7 @@ public class SyncStrategyFactory implements StreamingStrategyFactory {
         synchronized (this) {
             return filenameToStrategy
                     .computeIfAbsent(eventLoop, el -> new HashMap<>())
-                    .computeIfAbsent(sourceConfig, sc -> new SyncStrategy(context, eventLoop, context.getSource(sourceConfig)));
+                    .computeIfAbsent(sourceConfig, sc -> new GroupStreamer(context, eventLoop, context.getSource(sourceConfig)));
         }
     }
 

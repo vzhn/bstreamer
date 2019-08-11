@@ -1,6 +1,5 @@
 package me.vzhilin.mediaserver.server.strategy.sync;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -20,8 +19,8 @@ import me.vzhilin.mediaserver.util.scheduler.PushTaskSubscriber;
 import me.vzhilin.mediaserver.util.scheduler.PushedPacket;
 import org.apache.log4j.Logger;
 
-public final class SyncStrategy implements StreamingStrategy {
-    private final static Logger LOG = Logger.getLogger(SyncStrategy.class);
+public final class GroupStreamer implements StreamingStrategy {
+    private final static Logger LOG = Logger.getLogger(GroupStreamer.class);
 
     private final ChannelGroup group;
     private final PropertyMap sourceConfig;
@@ -34,7 +33,7 @@ public final class SyncStrategy implements StreamingStrategy {
     private PushedPacket delayedPacket;
     private PushSourceSession pushSession;
 
-    public SyncStrategy(ServerContext context, EventLoopGroup loopGroup, PushSource source) {
+    public GroupStreamer(ServerContext context, EventLoopGroup loopGroup, PushSource source) {
         this.pushSource = source;
         this.sourceConfig = source.getProps();
         this.loopGroup = loopGroup;
@@ -45,12 +44,12 @@ public final class SyncStrategy implements StreamingStrategy {
         sub = new PushTaskSubscriber() {
             @Override
             public void onNext(PushedPacket pp) {
-                SyncStrategy.this.onNext(pp);
+                GroupStreamer.this.onNext(pp);
             }
 
             @Override
             public void onEnd() {
-                SyncStrategy.this.onEnd();
+                GroupStreamer.this.onEnd();
             }
         };
     }
