@@ -49,7 +49,8 @@ public class Client {
                 @Override
                 protected void initChannel(SocketChannel ch) {
                     ChannelPipeline pipeline = ch.pipeline();
-                    RtspInterleavedDecoder rtspInterleavedDecoder = new RtspInterleavedDecoder(1024, 1024, 64 * 1024);
+                    RtspInterleavedDecoder rtspInterleavedDecoder =
+                        new RtspInterleavedDecoder(1024, 1024, 64 * 1024);
                     rtspInterleavedDecoder.setCumulator(RtspInterleavedDecoder.COMPOSITE_CUMULATOR);
                     pipeline.addLast(rtspInterleavedDecoder);
                     pipeline.addLast("http_codec", new HttpRequestEncoder());

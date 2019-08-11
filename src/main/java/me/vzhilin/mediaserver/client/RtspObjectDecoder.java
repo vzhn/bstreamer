@@ -25,7 +25,6 @@ package me.vzhilin.mediaserver.client;
 // CS_OFF: NoWhitespaceAfter
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -38,7 +37,6 @@ import io.netty.util.ByteProcessor;
 import io.netty.util.internal.AppendableCharSequence;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Decodes {@link ByteBuf}s into {@link HttpMessage}s and
@@ -941,9 +939,6 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
             }
             this.channel = header[1] & 0xFF;
             this.length = ((header[2] & 0xff) << 8) + (header[3] & 0xff);
-            if (length == 43261) {
-//                System.err.println("!");
-            }
         }
 
         public int getLength() {
@@ -957,10 +952,7 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
 
     private static final class InterleavedHeaderParser {
         private final byte[] header = new byte[4];
-        private int pos = 0;
-
-        private long counter = 0;
-        private long totalLen = 0;
+        private byte pos = 0;
 
         public InterleavedHeader parse(ByteBuf buffer) {
             int len = Math.min(4 - pos, buffer.readableBytes());
@@ -968,11 +960,7 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
             pos += len;
             if (pos == 4) {
                 pos = 0;
-
-                InterleavedHeader interleavedHeader = new InterleavedHeader(header);
-                ++counter;
-                totalLen += (long) interleavedHeader.length;
-                return interleavedHeader;
+                return new InterleavedHeader(header);
             }
             return null;
         }
