@@ -43,7 +43,6 @@ public class Client {
         Bootstrap b = bootstrap
             .group(workerGroup)
             .channel(EpollSocketChannel.class)
-            .option(EpollChannelOption.EPOLL_MODE, EpollMode.LEVEL_TRIGGERED)
             .option(ChannelOption.SO_RCVBUF, 131072)
             .attr(AttributeKey.<String>valueOf("url"), "rtsp://localhost:5000/file/simpsons_video.mkv")
             .handler(new ChannelInitializer<SocketChannel>() {
