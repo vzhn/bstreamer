@@ -954,7 +954,7 @@ public abstract class RtspObjectDecoder extends ByteToMessageDecoder {
         private final byte[] header = new byte[4];
         private byte pos = 0;
 
-        public InterleavedHeader parse(ByteBuf buffer) {
+        private InterleavedHeader parse(ByteBuf buffer) {
             int len = Math.min(4 - pos, buffer.readableBytes());
             buffer.readBytes(header, pos, len);
             pos += len;
