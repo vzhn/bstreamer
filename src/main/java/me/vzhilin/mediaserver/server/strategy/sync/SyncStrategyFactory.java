@@ -27,9 +27,4 @@ public class SyncStrategyFactory implements StreamingStrategyFactory {
                     .computeIfAbsent(sourceConfig, sc -> new GroupStreamer(context, eventLoop, context.getSource(sourceConfig)));
         }
     }
-
-    @Override
-    public MediaPacketSourceDescription describe(EventLoop eventLoop, PropertyMap sourceConfig) {
-        return getStrategy(eventLoop, sourceConfig).describe();
-    }
 }
