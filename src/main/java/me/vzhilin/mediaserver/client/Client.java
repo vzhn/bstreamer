@@ -6,7 +6,6 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpRequestEncoder;
 import io.netty.handler.codec.rtsp.RtspEncoder;
 import io.netty.util.AttributeKey;
 import me.vzhilin.mediaserver.client.rtsp.NettyRtspChannelHandler;
@@ -65,6 +64,7 @@ public class Client {
                     pipeline.addLast(new SimpleChannelInboundHandler<InterleavedPacket>() {
                         @Override
                         protected void channelRead0(ChannelHandlerContext ctx, InterleavedPacket msg) {
+                            ss.onRead(msg.getPayload().readableBytes());
                             msg.getPayload().release();
                         }
                     });
@@ -73,7 +73,7 @@ public class Client {
 
         ss.onStart();
 
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 4 * 1000; i++) {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             btstrp.attr(STAT, stat);
@@ -81,6 +81,10 @@ public class Client {
             bindListener(btstrp, future);
         }
 
+        startReporter(ss);
+    }
+
+    private void startReporter(TotalStatistics ss) {
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
         exec.scheduleAtFixedRate(new Runnable() {
             private TotalStatistics.Snapshot prev;
@@ -95,10 +99,11 @@ public class Client {
                         if ("mapped".equals(pool.getName())) {
                             continue;
                         }
-                        cap = HumanReadable.humanReadableByteCount(pool.getMemoryUsed(), false);
+                        long directMemoryUsed = pool.getMemoryUsed();
+                        cap = HumanReadable.humanReadableByteCount(directMemoryUsed, false);
                         break;
                     }
-                    System.err.println(ss.getSize() + " " + s.diff(prev) + " " + cap);
+                    System.err.print("\r" + ss.getSize() + " " + s.diff(prev) + " " + cap);
                 }
                 prev = s;
             }

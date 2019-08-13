@@ -3,7 +3,6 @@ package me.vzhilin.mediaserver.client;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.netty.buffer.ByteBuf;
 import me.vzhilin.mediaserver.client.rtsp.RtspCallback;
 import me.vzhilin.mediaserver.client.rtsp.RtspConnection;
 import me.vzhilin.mediaserver.client.rtsp.RtspConnectionHandler;
@@ -21,10 +20,6 @@ class DefaultConnectionHandler implements RtspConnectionHandler {
 
     @Override
     public void onDisconnected() {
-
-    }
-
-    public void onNextPayload(ByteBuf payload) {
 
     }
 
@@ -51,7 +46,7 @@ class DefaultConnectionHandler implements RtspConnectionHandler {
             String control = concat(mesg.getContentBase(), media.getControl());
 
             RtspConnection connection = getConnection();
-            connection.setup(control, new DefaultSetupCallback(connection, media), DefaultConnectionHandler.this::onNextPayload, true);
+            connection.setup(control, new DefaultSetupCallback(connection, media));
         }
 
         private String concat(String contentBase, String control) {

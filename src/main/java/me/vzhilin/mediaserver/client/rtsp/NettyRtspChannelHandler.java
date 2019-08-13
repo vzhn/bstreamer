@@ -102,11 +102,7 @@ public final class NettyRtspChannelHandler extends SimpleChannelInboundHandler<F
     }
 
     @Override
-    public void setup(String controlUrl,
-            final RtspCallback<SetupReply> cb,
-            final Consumer<ByteBuf> rtpConsumer,
-            final boolean isInterleaved) {
-
+    public void setup(String controlUrl, final RtspCallback<SetupReply> cb) {
         int requestCseq = cseq++;
         cseqToHandler.put(requestCseq, new SetupReplyHandler(cb));
 
@@ -114,14 +110,10 @@ public final class NettyRtspChannelHandler extends SimpleChannelInboundHandler<F
         HttpHeaders headers = setupRequest.headers();
         headers.add(RtspHeaders.Names.CSEQ, requestCseq);
 
-        if (isInterleaved) {
-            int rtpChannel = 0;
-            int rtcpChannel = rtpChannel + 1;
-            headers.add(RtspHeaders.Names.TRANSPORT, String.format("RTP/AVP/TCP;unicast;interleaved=%d-%d", rtpChannel, rtcpChannel));
-            ctx.writeAndFlush(setupRequest);
-        } else {
-            // TODO ERROR
-        }
+        int rtpChannel = 0;
+        int rtcpChannel = rtpChannel + 1;
+        headers.add(RtspHeaders.Names.TRANSPORT, String.format("RTP/AVP/TCP;unicast;interleaved=%d-%d", rtpChannel, rtcpChannel));
+        ctx.writeAndFlush(setupRequest);
     }
 
     @Override
