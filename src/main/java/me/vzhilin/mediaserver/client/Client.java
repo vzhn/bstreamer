@@ -20,65 +20,67 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class Client {
     public static final AttributeKey<ConnectionStatistics> STAT = AttributeKey.valueOf("stat");
+    public static final AttributeKey<Bootstrap> BOOTSTRAP = AttributeKey.valueOf("bootstrap");
     private static final String inetHost = "localhost";
     public static final int INET_PORT = 5000;
+    private final Bootstrap b;
+    private final TotalStatistics ss;
 
-    public static void main(String... argv) {
-        Client client = new Client();
-        client.start();
-    }
+    private final ChannelFutureListener onConnected = future -> {
+        ConnectionStatistics stat = future.channel().attr(STAT).get();
+        stat.onConnected();
+    };
 
-    public void start() {
-        AtomicLong counter = new AtomicLong(0);
-        TotalStatistics ss = new TotalStatistics();
+    private final ChannelFutureListener onClosed = new ChannelFutureListener() {
+        @Override
+        public void operationComplete(ChannelFuture future) {
+            Channel channel = future.channel();
+            ConnectionStatistics stat = channel.attr(STAT).get();
+            Bootstrap b = channel.attr(BOOTSTRAP).get();
+            stat.onDisconnected();
 
-        System.err.println("pid = " + ManagementFactory.getRuntimeMXBean().getName());
+            if (!channel.eventLoop().isShuttingDown()) {
+                ChannelFuture connectFuture = b.connect(inetHost, INET_PORT);
+                connectFuture.addListener(onConnected);
+                connectFuture.channel().closeFuture().addListener(this);
+            }
+        }
+    };
 
-        BasicConfigurator.configure();
+    public Client(String[] argv) {
         Bootstrap bootstrap = new Bootstrap();
-
+        ss = new TotalStatistics();
         RtspConnectionHandler handler = new DefaultConnectionHandler();
 
         EventLoopGroup workerGroup = new EpollEventLoopGroup(4);
         String url = "rtsp://localhost:5000/file/simpsons_video.mkv";
-        Bootstrap b = bootstrap
+        b = bootstrap
             .group(workerGroup)
             .channel(EpollSocketChannel.class)
             .option(ChannelOption.SO_RCVBUF, 131072)
             .attr(AttributeKey.<String>valueOf("url"), url)
-            .handler(new ChannelInitializer<SocketChannel>() {
-                @Override
-                protected void initChannel(SocketChannel ch) {
-                    ChannelPipeline pipeline = ch.pipeline();
-                    RtspInterleavedDecoder rtspInterleavedDecoder =
-                        new RtspInterleavedDecoder(1024, 1024, 64 * 1024);
-                    rtspInterleavedDecoder.setCumulator(RtspInterleavedDecoder.COMPOSITE_CUMULATOR);
-                    pipeline.addLast(rtspInterleavedDecoder);
-                    pipeline.addLast("http_codec", new RtspEncoder());
-                    pipeline.addLast(new HttpObjectAggregator(104857));
-                    pipeline.addLast(new NettyRtspChannelHandler(URI.create(url), handler));
-                    pipeline.addLast(new SimpleChannelInboundHandler<InterleavedPacket>() {
-                        @Override
-                        protected void channelRead0(ChannelHandlerContext ctx, InterleavedPacket msg) {
-                            ss.onRead(msg.getPayload().readableBytes());
-                            msg.getPayload().release();
-                        }
-                    });
-                }
-            });
+            .handler(new ClientChannelInitializer(url, handler));
+    }
 
-        ss.onStart();
+    public static void main(String... argv) {
+        Client client = new Client(argv);
+        client.start();
+    }
 
+    public void start() {
+        System.err.println("pid = " + ManagementFactory.getRuntimeMXBean().getName());
+
+        BasicConfigurator.configure();
         for (int i = 0; i < 4 * 1000; i++) {
             ConnectionStatistics stat = ss.newStat();
             Bootstrap btstrp = b.clone();
             btstrp.attr(STAT, stat);
-            ChannelFuture future = btstrp.connect(inetHost, INET_PORT);
-            bindListener(btstrp, future);
+            btstrp.attr(BOOTSTRAP, btstrp);
+
+            bindListener(btstrp.connect(inetHost, INET_PORT));
         }
 
         startReporter(ss);
@@ -110,31 +112,37 @@ public class Client {
         }, 1, 1, TimeUnit.SECONDS);
     }
 
-    private void bindListener(Bootstrap b, ChannelFuture connectFuture) {
-        ChannelFutureListener connectListener = new ChannelFutureListener() {
-
-            @Override
-            public void operationComplete(ChannelFuture future) {
-                ConnectionStatistics stat = future.channel().attr(STAT).get();
-                stat.onConnected();
-            }
-        };
-        connectFuture.addListener(connectListener);
-
-        ChannelFutureListener closeListener = new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) {
-                ConnectionStatistics stat = future.channel().attr(STAT).get();
-                stat.onDisconnected();
-
-                if (!future.channel().eventLoop().isShuttingDown()) {
-                    ChannelFuture connectFuture = b.connect(inetHost, INET_PORT);
-                    connectFuture.addListener(connectListener);
-                    connectFuture.channel().closeFuture().addListener(this);
-                }
-            }
-        };
-        connectFuture.channel().closeFuture().addListener(closeListener);
+    private void bindListener(ChannelFuture connectFuture) {
+        connectFuture.addListener(onConnected);
+        connectFuture.channel().closeFuture().addListener(onClosed);
     }
 
+    private class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
+        private final String url;
+        private final RtspConnectionHandler handler;
+
+        private ClientChannelInitializer(String url, RtspConnectionHandler handler) {
+            this.url = url;
+            this.handler = handler;
+        }
+
+        @Override
+        protected void initChannel(SocketChannel ch) {
+            ChannelPipeline pipeline = ch.pipeline();
+            RtspInterleavedDecoder rtspInterleavedDecoder =
+                    new RtspInterleavedDecoder(1024, 1024, 64 * 1024);
+            rtspInterleavedDecoder.setCumulator(RtspInterleavedDecoder.COMPOSITE_CUMULATOR);
+            pipeline.addLast(rtspInterleavedDecoder);
+            pipeline.addLast("http_codec", new RtspEncoder());
+            pipeline.addLast(new HttpObjectAggregator(104857));
+            pipeline.addLast(new NettyRtspChannelHandler(URI.create(url), handler));
+            pipeline.addLast(new SimpleChannelInboundHandler<InterleavedPacket>() {
+                @Override
+                protected void channelRead0(ChannelHandlerContext ctx, InterleavedPacket msg) {
+                    ss.onRead(msg.getPayload().readableBytes());
+                    msg.getPayload().release();
+                }
+            });
+        }
+    }
 }
