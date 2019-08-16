@@ -59,7 +59,7 @@ public final class PropertyMap {
         return properties.containsKey(key);
     }
 
-    public String getValue(String key) {
+    public Object getObject(String key) {
         String[] parts = key.split("\\.");
         PropertyMap mp = this;
         if (parts.length > 1) {
@@ -74,6 +74,10 @@ public final class PropertyMap {
         } else {
             return (String) mp.properties.get(parts[0]);
         }
+    }
+
+    public String getString(String key) {
+        return (String) getObject(key);
     }
 
     public PropertyMap getMap(String key) {
@@ -93,8 +97,8 @@ public final class PropertyMap {
         }
     }
 
-    public String getValue(String key, String defaultValue) {
-        String v = getValue(key);
+    public String getString(String key, String defaultValue) {
+        String v = getString(key);
         if (v == null) {
             return defaultValue;
         } else {
@@ -173,12 +177,17 @@ public final class PropertyMap {
     }
 
     public int getInt(String key) {
-        return Integer.parseInt(getValue(key));
+        return Integer.parseInt(getString(key));
     }
 
     public void putAll(Map<String, String> params) {
         params.forEach(this::put);
     }
+
+    public List<PropertyMap> getArray(String name) {
+        return (List<PropertyMap>) getObject(name);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

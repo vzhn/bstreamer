@@ -25,8 +25,8 @@ public class FileMediaPacketSource implements PullSource {
     private AVFormatContext pAvfmtCtx;
 
     public FileMediaPacketSource(PropertyMap sourceProperties) throws IOException {
-        File dir = new File(sourceProperties.getValue(FileSourceAttributes.DIR));
-        File videoFile = new File(dir, sourceProperties.getValue(CommonSourceAttributes.EXTRA));
+        File dir = new File(sourceProperties.getString(FileSourceAttributes.DIR));
+        File videoFile = new File(dir, sourceProperties.getString(CommonSourceAttributes.EXTRA));
         if (videoFile.exists()) {
             open(videoFile);
         } else {

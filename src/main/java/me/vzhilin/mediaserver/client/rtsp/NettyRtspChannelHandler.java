@@ -1,11 +1,6 @@
 package me.vzhilin.mediaserver.client.rtsp;
 //CS_OFF:IllegalThrows
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -16,7 +11,6 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
-import io.netty.handler.codec.rtsp.RtspHeaders;
 import io.netty.handler.codec.rtsp.RtspMethods;
 import io.netty.handler.codec.rtsp.RtspVersions;
 import io.netty.util.CharsetUtil;
@@ -27,49 +21,35 @@ import me.vzhilin.mediaserver.client.rtsp.messages.SetupReply;
 import me.vzhilin.mediaserver.client.rtsp.messages.sdp.SdpMessage;
 import me.vzhilin.mediaserver.client.rtsp.messages.sdp.SdpParser;
 
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 public final class NettyRtspChannelHandler extends SimpleChannelInboundHandler<FullHttpResponse> implements RtspConnection {
     private final RtspConnectionHandler connectionHandler;
-    private final URI uri;
     private ChannelHandlerContext ctx;
 
     private int cseq = 1;
-    private Map<Integer, ReplyHandler> cseqToHandler = new HashMap<>();
+    private Map<Integer, ReplyHandler> cseqToReplyHandler = new HashMap<>();
 
-    /**
-     * Обработчик команд RTSP
-     * @param uri адрес подключения
-     * @param connectionHandler RtspConnectionHandler
-     */
-    public NettyRtspChannelHandler(URI uri, RtspConnectionHandler connectionHandler) {
-        this.uri = uri;
+    public NettyRtspChannelHandler(RtspConnectionHandler connectionHandler) {
         this.connectionHandler = connectionHandler;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         this.ctx = ctx;
-        /*
-         * Подключение установлено
-         */
         connectionHandler.onConnected(this);
         super.channelActive(ctx);
-    }
-
-    /**
-     * @return URI
-     */
-    private URI getUri() {
-        return uri;
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         connectionHandler.onDisconnected();
-
-        for (ReplyHandler unprocessed: cseqToHandler.values()) {
+        for (ReplyHandler unprocessed : cseqToReplyHandler.values()) {
             unprocessed.onError();
         }
-
         super.channelInactive(ctx);
     }
 
@@ -80,56 +60,56 @@ public final class NettyRtspChannelHandler extends SimpleChannelInboundHandler<F
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse msg) {
-        int replyCseq = Integer.parseInt(msg.headers().get(RtspHeaders.Names.CSEQ));
-        ReplyHandler handler = cseqToHandler.remove(replyCseq);
+        int replyCseq = Integer.parseInt(msg.headers().get(RtspHeaderNames.CSEQ));
+        ReplyHandler handler = cseqToReplyHandler.remove(replyCseq);
         if (HttpResponseStatus.OK.equals(msg.status())) {
             handler.read(ctx, msg);
         } else {
-            handler.onError();// FIXME сообщение об ошибке
+            handler.onError();
         }
     }
 
     @Override
-    public void describe(final RtspCallback<DescribeReply> cb) {
+    public void describe(URI uri, final RtspCallback<DescribeReply> cb) {
         int requestCseq = cseq++;
-        cseqToHandler.put(requestCseq, new DescribeReplyHandler(cb));
-        DefaultFullHttpRequest request = new DefaultFullHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.DESCRIBE, getUri().toString());
-        request.headers().add(RtspHeaders.Names.CSEQ, requestCseq);
+        cseqToReplyHandler.put(requestCseq, new DescribeReplyHandler(cb));
+        DefaultFullHttpRequest request = new DefaultFullHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.DESCRIBE, uri.toString());
+        request.headers().add(RtspHeaderNames.CSEQ, requestCseq);
         ctx.writeAndFlush(request);
     }
 
     @Override
-    public void setup(String controlUrl, final RtspCallback<SetupReply> cb) {
+    public void setup(URI uri, final RtspCallback<SetupReply> cb) {
         int requestCseq = cseq++;
-        cseqToHandler.put(requestCseq, new SetupReplyHandler(cb));
+        cseqToReplyHandler.put(requestCseq, new SetupReplyHandler(cb));
 
-        DefaultFullHttpRequest setupRequest = new DefaultFullHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.SETUP, controlUrl);
+        DefaultFullHttpRequest setupRequest = new DefaultFullHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.SETUP, uri.toString());
         HttpHeaders headers = setupRequest.headers();
-        headers.add(RtspHeaders.Names.CSEQ, requestCseq);
+        headers.add(RtspHeaderNames.CSEQ, requestCseq);
 
         int rtpChannel = 0;
         int rtcpChannel = rtpChannel + 1;
-        headers.add(RtspHeaders.Names.TRANSPORT, String.format("RTP/AVP/TCP;unicast;interleaved=%d-%d", rtpChannel, rtcpChannel));
+        headers.add(RtspHeaderNames.TRANSPORT, String.format("RTP/AVP/TCP;unicast;interleaved=%d-%d", rtpChannel, rtcpChannel));
         ctx.writeAndFlush(setupRequest);
     }
 
     @Override
-    public void getParameter(String session, RtspCallback<GetParameterReply> cb) {
+    public void getParameter(URI uri, String session, RtspCallback<GetParameterReply> cb) {
         int requestCseq = cseq++;
-        cseqToHandler.put(requestCseq, new GetParameterReplyHandler());
+        cseqToReplyHandler.put(requestCseq, new GetParameterReplyHandler());
 
         DefaultFullHttpRequest getParameterRequest =
-            new DefaultFullHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.GET_PARAMETER, getUri().toString());
+            new DefaultFullHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.GET_PARAMETER, uri.toString());
 
-        getParameterRequest.headers().add(RtspHeaders.Names.CSEQ, requestCseq);
-        getParameterRequest.headers().add(RtspHeaders.Names.SESSION, session);
+        getParameterRequest.headers().add(RtspHeaderNames.CSEQ, requestCseq);
+        getParameterRequest.headers().add(RtspHeaderNames.SESSION, session);
         ctx.writeAndFlush(getParameterRequest);
     }
 
     @Override
-    public void setParameter(String session, Map<String, String> parameters) {
+    public void setParameter(URI uri, String session, Map<String, String> parameters) {
         int requestCseq = cseq++;
-        cseqToHandler.put(requestCseq, new SetParameterReplyHandler());
+        cseqToReplyHandler.put(requestCseq, new SetParameterReplyHandler());
 
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<String, String> e: parameters.entrySet()) {
@@ -143,26 +123,26 @@ public final class NettyRtspChannelHandler extends SimpleChannelInboundHandler<F
         ByteBuf content = PooledByteBufAllocator.DEFAULT.buffer(bytes.length);
         content.writeBytes(bytes);
         DefaultFullHttpRequest setParameterRequest =
-            new DefaultFullHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.SET_PARAMETER, getUri().toString(), content);
+            new DefaultFullHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.SET_PARAMETER, uri.toString(), content);
 
         HttpHeaders headers = setParameterRequest.headers();
-        headers.add(RtspHeaders.Names.CSEQ, requestCseq);
-        headers.add(RtspHeaders.Names.SESSION, session);
-        headers.add(RtspHeaders.Names.CONTENT_LENGTH, content.readableBytes());
-        headers.add(RtspHeaders.Names.CONTENT_TYPE, "text/parameters");
+        headers.add(RtspHeaderNames.CSEQ, requestCseq);
+        headers.add(RtspHeaderNames.SESSION, session);
+        headers.add(RtspHeaderNames.CONTENT_LENGTH, content.readableBytes());
+        headers.add(RtspHeaderNames.CONTENT_TYPE, "text/parameters");
         ctx.writeAndFlush(setParameterRequest);
     }
 
     @Override
-    public void play(String session, final RtspCallback<PlayReply> cb) {
+    public void play(URI uri, String session, final RtspCallback<PlayReply> cb) {
         int requestCseq = cseq++;
-        cseqToHandler.put(requestCseq, new PlayReplyHandler(cb));
-        DefaultFullHttpRequest playRequest = new DefaultFullHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.PLAY, getUri() + "/");
-        playRequest.headers().add(RtspHeaders.Names.CSEQ, requestCseq);
-        playRequest.headers().add(RtspHeaders.Names.SESSION, session);
+        cseqToReplyHandler.put(requestCseq, new PlayReplyHandler(cb));
+        DefaultFullHttpRequest playRequest = new DefaultFullHttpRequest(RtspVersions.RTSP_1_0, RtspMethods.PLAY, uri + "/");
+        playRequest.headers().add(RtspHeaderNames.CSEQ, requestCseq);
+        playRequest.headers().add(RtspHeaderNames.SESSION, session);
         ctx.writeAndFlush(playRequest);
 
-        ctx.executor().schedule(new KeepAliveTask(ctx.channel(), session), 55, TimeUnit.SECONDS);
+        ctx.executor().schedule(new KeepAliveTask(ctx.channel(), uri, session), 55, TimeUnit.SECONDS);
     }
 
     @Override
@@ -255,6 +235,7 @@ public final class NettyRtspChannelHandler extends SimpleChannelInboundHandler<F
     private final class KeepAliveTask implements Runnable {
         private final String session;
         private final Channel ch;
+        private final URI uri;
 
         private final RtspCallback<GetParameterReply> emptyCallback = new RtspCallback<GetParameterReply>() {
             @Override
@@ -263,15 +244,16 @@ public final class NettyRtspChannelHandler extends SimpleChannelInboundHandler<F
             public void onError() { }
         };
 
-        private KeepAliveTask(Channel ch, String session) {
+        private KeepAliveTask(Channel ch, URI uri, String session) {
             this.ch = ch;
+            this.uri = uri;
             this.session = session;
         }
 
         @Override
         public void run() {
             if (ch.isActive()) {
-                getParameter(session, emptyCallback);
+                getParameter(uri, session, emptyCallback);
                 ch.eventLoop().schedule(this, 55, TimeUnit.SECONDS);
             }
         }

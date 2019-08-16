@@ -1,5 +1,6 @@
 package me.vzhilin.mediaserver.client;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,10 +13,16 @@ import me.vzhilin.mediaserver.client.rtsp.messages.SetupReply;
 import me.vzhilin.mediaserver.client.rtsp.messages.sdp.Media;
 import me.vzhilin.mediaserver.client.rtsp.messages.sdp.SdpMessage;
 
-class DefaultConnectionHandler implements RtspConnectionHandler {
+final class DefaultConnectionHandler implements RtspConnectionHandler {
+    private final URI uri;
+
+    DefaultConnectionHandler(URI uri) {
+        this.uri = uri;
+    }
+
     @Override
     public void onConnected(RtspConnection connection) {
-        connection.describe(new DefaultDescribeCallback(connection));
+        connection.describe(uri, new DefaultDescribeCallback(connection));
     }
 
     @Override
@@ -46,7 +53,7 @@ class DefaultConnectionHandler implements RtspConnectionHandler {
             String control = concat(mesg.getContentBase(), media.getControl());
 
             RtspConnection connection = getConnection();
-            connection.setup(control, new DefaultSetupCallback(connection, media));
+            connection.setup(URI.create(control), new DefaultSetupCallback(connection, media));
         }
 
         private String concat(String contentBase, String control) {
@@ -71,7 +78,7 @@ class DefaultConnectionHandler implements RtspConnectionHandler {
 
         @Override public void onSuccess(SetupReply mesg) {
             RtspConnection connection = getConnection();
-            connection.play(mesg.getSession(), new DefaultPlayCallback(connection));
+            connection.play(uri, mesg.getSession(), new DefaultPlayCallback(connection));
         }
     }
 
@@ -79,7 +86,7 @@ class DefaultConnectionHandler implements RtspConnectionHandler {
      * PLAY
      */
     private class DefaultPlayCallback extends AbstractCallback<PlayReply> {
-        public DefaultPlayCallback(RtspConnection connection) {
+        private DefaultPlayCallback(RtspConnection connection) {
             super(connection);
         }
 
@@ -93,7 +100,7 @@ class DefaultConnectionHandler implements RtspConnectionHandler {
             this.connection = connection;
         }
 
-        protected RtspConnection getConnection() {
+        RtspConnection getConnection() {
             return connection;
         }
 

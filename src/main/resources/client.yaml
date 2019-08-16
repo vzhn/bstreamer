@@ -1,7 +1,5 @@
 connections:
  - url: rtsp://localhost:5000/file/simpsons_video.mkv
-   n: 1000
-   tag: sample_1
+   n: 2000
  - url: rtsp://localhost:5000/file/simpsons_video.mkv
    n: 2000
-   tag: sample_2

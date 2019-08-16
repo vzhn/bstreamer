@@ -23,7 +23,7 @@ public class MediaPaketSourceConfig {
     }
 
     public String getName() {
-        return properties.getValue(NAME);
+        return properties.getString(NAME);
     }
 
     public void setName(String name) {
@@ -31,7 +31,7 @@ public class MediaPaketSourceConfig {
     }
 
     public File getFileDir() {
-        return new File(properties.getValue(FILE_DIR));
+        return new File(properties.getString(FILE_DIR));
     }
 
     public void setExtra(String extra) {
@@ -39,6 +39,6 @@ public class MediaPaketSourceConfig {
     }
 
     public String getExtra() {
-        return properties.getValue(EXTRA);
+        return properties.getString(EXTRA);
     }
 }

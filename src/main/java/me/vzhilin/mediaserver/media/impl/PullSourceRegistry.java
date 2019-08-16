@@ -22,7 +22,7 @@ public final class PullSourceRegistry {
     }
 
     public PushSource get(ServerContext ctx, PropertyMap config) {
-        String name = config.getValue(CommonSourceAttributes.NAME);
+        String name = config.getString(CommonSourceAttributes.NAME);
         ScheduledExecutorService workers = ctx.getWorkerExecutors();
         Map<PropertyMap, PushSource> sm = sources.computeIfAbsent(name, n -> new HashMap<>());
         Function<PropertyMap, PushSource> mappingFunction = propertyMap -> {

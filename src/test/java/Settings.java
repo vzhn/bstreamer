@@ -1,15 +1,27 @@
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import me.vzhilin.mediaserver.client.conf.ClientConfig;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
 public class Settings {
     @Test
+    public void test2() throws IOException {
+        String path = "/home/vzhilin/IdeaProjects/mediaserver/src/main/resources/client.yaml";
+        ClientConfig cc = ClientConfig.read(new File(path));
+        System.err.println(cc);
+    }
+    @Test
     public void test() throws IOException {
         String path = "/home/vzhilin/IdeaProjects/mediaserver/src/main/resources/settings.yaml";
 
-        PropertyMap pm = PropertyMap.parseYaml(new FileInputStream(path));
+
+
+//        PropertyMap pm = PropertyMap.parseYaml(new FileInputStream(path));
 //
 //
 //        YamlMapping pictureNode = mapping.yamlMapping("source").yamlMapping("picture");
