@@ -37,7 +37,8 @@ public final class PropertyMap {
         return properties.entrySet();
     }
 
-    public void put(String key, String value) {
+
+    public void put(String key, Object value) {
         String[] parts = key.split("\\.");
         PropertyMap mp = this;
         if (parts.length > 1) {
@@ -108,24 +109,29 @@ public final class PropertyMap {
     public static PropertyMap parseYaml(InputStream is) throws IOException {
         YAMLFactory factory = new YAMLFactory();
         YAMLParser parser = factory.createParser(is);
-        Deque<PropertyMap> stack = new LinkedList<>();
+        Deque<Object> stack = new LinkedList<>();
         String label = "";
         JsonToken token;
         while ((token = parser.nextToken()) != null) {
+            Object top = stack.peekFirst();
             switch (token) {
                 case START_OBJECT: {
                     PropertyMap nested = new PropertyMap();
                     if (!stack.isEmpty()) {
-                        PropertyMap first = stack.getFirst();
-                        first.putPropertyMap(label, nested);
+                        if (top instanceof PropertyMap) {
+                            PropertyMap first = (PropertyMap) top;
+                            first.putPropertyMap(label, nested);
+                        } else {
+                            ((List) top).add(nested);
+                        }
                     }
                     stack.push(nested);
                     break;
                 }
                 case END_OBJECT: {
-                    PropertyMap obj = stack.pop();
+                    Object obj = stack.pop();
                     if (stack.isEmpty()) {
-                        return obj;
+                        return (PropertyMap) obj;
                     }
                     break;
                 }
@@ -137,46 +143,33 @@ public final class PropertyMap {
                 case VALUE_NUMBER_FLOAT:
                 case VALUE_TRUE:
                 case VALUE_FALSE:
-                    stack.getFirst().put(label, parser.getText());
+                    if (top instanceof PropertyMap) {
+                        PropertyMap first = (PropertyMap) top;
+                        first.put(label, parser.getText());
+                    } else {
+                        ((List<Object>) top).add(parser.getText());
+                    }
+                    break;
+                case START_ARRAY:
+                    ArrayList<Object> array = new ArrayList<>();
+                    if (top instanceof PropertyMap) {
+                        PropertyMap first = (PropertyMap) top;
+                        first.put(label, array);
+                    } else {
+                        ((List<Object>) top).add(array);
+                    }
+                    stack.push(array);
+                    break;
+                case END_ARRAY:
+                    stack.pop();
                     break;
                 case NOT_AVAILABLE:
                 case VALUE_EMBEDDED_OBJECT:
-                case START_ARRAY:
-                case END_ARRAY:
                 case VALUE_NULL:
                     break;
             }
         }
-        return stack.pop();
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        Deque<Entry> stack = new LinkedList<Entry>();
-        stack.push(new Entry("",this, -1));
-
-        while (!stack.isEmpty()) {
-            Entry e = stack.pop();
-            if (!e.label.isEmpty()) {
-                for (int i = 0; i < e.depth; i++) {
-                    sb.append("  ");
-                }
-                sb.append(e.label).append(":\n");
-            }
-            for (Map.Entry<String, Object> entry: e.map.properties.entrySet()) {
-                Object value = entry.getValue();
-                if (value instanceof PropertyMap) {
-                    stack.push(new Entry(entry.getKey(), (PropertyMap) value, e.depth + 1));
-                } else {
-                    for (int i = 0; i < e.depth + 1; i++) {
-                        sb.append("  ");
-                    }
-                    sb.append(entry.getKey()).append(": ").append(value).append("\n");
-                }
-            }
-        }
-        return sb.toString();
+        return (PropertyMap) stack.pop();
     }
 
     public int getInt(String key) {
@@ -186,18 +179,6 @@ public final class PropertyMap {
     public void putAll(Map<String, String> params) {
         params.forEach(this::put);
     }
-
-    private final static class Entry {
-        private final PropertyMap map;
-        private final int depth;
-        private final String label;
-        private Entry(String label, PropertyMap map, int depth) {
-            this.label = label;
-            this.map = map;
-            this.depth = depth;
-        }
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
