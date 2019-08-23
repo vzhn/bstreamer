@@ -102,6 +102,7 @@ public final class GroupStreamer implements StreamingStrategy {
             pushSession = null;
             if (delayedPacket != null) {
                 delayedPacket.drain().release();
+                delayedPacket = null;
             }
             group.close();
         }
