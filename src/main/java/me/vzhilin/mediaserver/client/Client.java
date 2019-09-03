@@ -94,29 +94,7 @@ public class Client {
     }
 
     private void startReporter(TotalStatistics ss) {
-        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        exec.scheduleAtFixedRate(new Runnable() {
-            private TotalStatistics.Snapshot prev;
-
-            @Override
-            public void run() {
-                TotalStatistics.Snapshot s = ss.snapshot();
-                if (prev != null) {
-                    List<BufferPoolMXBean> pools = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
-                    String cap = "";
-                    for (BufferPoolMXBean pool : pools) {
-                        if ("mapped".equals(pool.getName())) {
-                            continue;
-                        }
-                        long directMemoryUsed = pool.getMemoryUsed();
-                        cap = HumanReadable.humanReadableByteCount(directMemoryUsed, false);
-                        break;
-                    }
-                    System.err.print("\r" + ss.getSize() + " " + s.diff(prev) + " " + cap);
-                }
-                prev = s;
-            }
-        }, 1, 1, TimeUnit.SECONDS);
+        new ClientReporter(ss).start();
     }
 
     private void bindListener(ChannelFuture connectFuture) {
@@ -136,7 +114,7 @@ public class Client {
             rtspInterleavedDecoder.setCumulator(RtspInterleavedDecoder.COMPOSITE_CUMULATOR);
             pipeline.addLast(rtspInterleavedDecoder);
             pipeline.addLast(new RtspEncoder());
-            pipeline.addLast(new HttpObjectAggregator(104857));
+            pipeline.addLast(new HttpObjectAggregator(64 * 1024));
             pipeline.addLast(new NettyRtspChannelHandler(new DefaultConnectionHandler(uri)));
             pipeline.addLast(new SimpleChannelInboundHandler<InterleavedPacket>() {
                 @Override
