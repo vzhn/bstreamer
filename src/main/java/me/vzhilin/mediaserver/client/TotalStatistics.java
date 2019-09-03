@@ -1,28 +1,26 @@
 package me.vzhilin.mediaserver.client;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
 public class TotalStatistics {
     private Set<ConnectionStatistics> stats = new HashSet<>();
-    private long sz;
-    private long tsStart;
-    private long tsEnd;
+    private long totalBytes;
+    private long totalConnections;
 
-    public void onStart() {
-        tsStart = System.currentTimeMillis();
-    }
-
-    public void onShutdown() {
-        tsEnd = System.currentTimeMillis();
-    }
+    private long time = System.currentTimeMillis();
+    private long bytes;
+    private int connected;
+    private int disconnected;
 
     public synchronized void onRead(int bytes) {
-        sz += bytes;
+        this.totalBytes += bytes;
+        this.bytes += bytes;
     }
 
     public synchronized long getSize() {
-        return sz;
+        return totalBytes;
     }
 
     public ConnectionStatistics newStat() {
@@ -31,52 +29,44 @@ public class TotalStatistics {
         return s;
     }
 
-    @Override
-    public String toString() {
-        long deltaMillis = tsEnd - tsStart;
-
-        float mbps = 1e-9f * 8 * sz / deltaMillis * 1000;
-        return String.format("TotalStatistics{gbps=%.2f}", mbps);
+    public synchronized Snapshot snapshot() {
+        long now = System.currentTimeMillis();
+        long deltaTime = now - time;
+        Snapshot snapshot = new Snapshot(this, deltaTime);
+        this.bytes = 0;
+        this.connected = 0;
+        this.disconnected = 0;
+        this.time = now;
+        return snapshot;
     }
 
-    public Snapshot snapshot() {
-        return new Snapshot(sz);
+    public synchronized void incConnections() {
+        ++connected;
+        ++totalConnections;
+    }
+
+    public synchronized void decConnections() {
+        ++disconnected;
+        --totalConnections;
     }
 
     public final static class Snapshot {
-        private final long sz;
-        private final long timestamp;
+        public final long totalBytes;
+        public final long connections;
+        public final long bytes;
+        public final int connected;
+        public final int disconnected;
+        public final Date time;
+        public final long deltaTime;
 
-        public Snapshot(long sz) {
-            this.sz = sz;
-            this.timestamp = System.currentTimeMillis();
-        }
-
-        public Diff diff(Snapshot prev) {
-            return new Diff(sz - prev.sz, timestamp - prev.timestamp);
-        }
-    }
-
-    public final static class Diff {
-        private final long deltaSize;
-        private final long deltaTime;
-        private final float gbps;
-
-        public Diff(long deltaSize, long deltaTime) {
-            this.deltaSize = deltaSize;
+        public Snapshot(TotalStatistics totalStatistics, long deltaTime) {
+            this.totalBytes = totalStatistics.totalBytes;
+            this.connections = totalStatistics.totalConnections;
+            this.bytes = totalStatistics.bytes;
+            this.connected = totalStatistics.connected;
+            this.disconnected = totalStatistics.disconnected;
             this.deltaTime = deltaTime;
-
-            gbps = 1e-9f * 8 * deltaSize / deltaTime * 1000;
-
-        }
-
-        @Override
-        public String toString() {
-            return "Diff{" +
-                    "deltaSize=" + deltaSize +
-                    ", deltaTime=" + deltaTime +
-                    ", gbps=" + gbps +
-                    '}';
+            this.time = new Date();
         }
     }
 }

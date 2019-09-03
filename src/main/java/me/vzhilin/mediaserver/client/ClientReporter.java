@@ -4,6 +4,7 @@ import me.vzhilin.mediaserver.util.HumanReadable;
 
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,15 +36,16 @@ public final class ClientReporter {
     }
 
     private final class ReporterTask implements Runnable {
-        private TotalStatistics.Snapshot prev = stat.snapshot();
-
         @Override
         public void run() {
             TotalStatistics.Snapshot s = stat.snapshot();
-            long directMemoryUsed = directMemoryPool.getMemoryUsed();
-            String cap = HumanReadable.humanReadableByteCount(directMemoryUsed, false);
-            System.err.print("\r" + stat.getSize() + " " + s.diff(prev) + " " + cap);
-            prev = s;
+            String direct = HumanReadable.humanReadableByteCount(directMemoryPool.getMemoryUsed(), false);
+
+            long gbps = 8 * s.bytes / s.deltaTime * 1000;
+            String bandwidth = HumanReadable.humanReadableByteCount(gbps, false);
+            LocalDateTime now = LocalDateTime.now();
+            System.out.printf("\r%d [%d; %d] %s %02d:%02d:%02d",
+                s.connections, s.connected, s.disconnected, bandwidth, now.getHour(), now.getMinute(), now.getSecond());
         }
     }
 }
