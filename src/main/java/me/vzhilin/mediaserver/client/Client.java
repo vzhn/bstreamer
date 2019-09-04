@@ -11,49 +11,32 @@ import io.netty.util.AttributeKey;
 import me.vzhilin.mediaserver.client.conf.ClientConfig;
 import me.vzhilin.mediaserver.client.conf.ConnectionSettings;
 import me.vzhilin.mediaserver.client.rtsp.NettyRtspChannelHandler;
-import me.vzhilin.mediaserver.util.HumanReadable;
 import org.apache.log4j.BasicConfigurator;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class Client {
     private static final AttributeKey<ConnectionStatistics> STAT = AttributeKey.valueOf("stat");
     private static final AttributeKey<Bootstrap> BOOTSTRAP = AttributeKey.valueOf("bootstrap");
     private static final AttributeKey<URI> URL = AttributeKey.valueOf("url");
 
+    private final static ChannelFutureListener ON_CLOSED = new ClosedListener();
+    private final static ChannelFutureListener ON_CONNECTED = new ConnectedListener();
+
     private final Bootstrap b;
     private final TotalStatistics ss;
 
-    private final static ChannelFutureListener ON_CONNECTED = future -> {
-        ConnectionStatistics stat = future.channel().attr(STAT).get();
-        stat.onConnected();
-    };
-
-    private final static ChannelFutureListener ON_CLOSED = new ChannelFutureListener() {
-        @Override
-        public void operationComplete(ChannelFuture future) {
-            Channel channel = future.channel();
-            ConnectionStatistics stat = channel.attr(STAT).get();
-            URI uri = channel.attr(URL).get();
-            Bootstrap b = channel.attr(BOOTSTRAP).get();
-            stat.onDisconnected();
-
-            if (!channel.eventLoop().isShuttingDown()) {
-                ChannelFuture connectFuture = b.connect(uri.getHost(), uri.getPort());
-                connectFuture.addListener(ON_CONNECTED);
-                connectFuture.channel().closeFuture().addListener(this);
-            }
-        }
-    };
     private final ClientConfig conf;
+
+    public static void main(String... argv) throws IOException {
+        BasicConfigurator.configure();
+        ClientConfig conf = ClientConfig.read(new File(argv[0]));
+        Client client = new Client(conf);
+        client.start();
+    }
 
     public Client(ClientConfig conf) {
         this.conf = conf;
@@ -68,13 +51,6 @@ public class Client {
             .handler(new ClientChannelInitializer());
     }
 
-    public static void main(String... argv) throws IOException {
-        BasicConfigurator.configure();
-        ClientConfig conf = ClientConfig.read(new File(argv[0]));
-        Client client = new Client(conf);
-        client.start();
-    }
-
     public void start() {
         System.err.println("pid = " + ManagementFactory.getRuntimeMXBean().getName());
         for (ConnectionSettings conn: conf.getConnections()) {
@@ -85,8 +61,7 @@ public class Client {
                 Bootstrap btstrp = b.clone().attr(STAT, stat);
                 btstrp.attr(BOOTSTRAP, btstrp);
                 btstrp.attr(URL, uri);
-                ChannelFuture connectFuture = btstrp.connect(uri.getHost(), uri.getPort());
-                bindListener(connectFuture);
+                btstrp.connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
             }
         }
 
@@ -97,9 +72,37 @@ public class Client {
         new ClientReporter(ss).start();
     }
 
-    private void bindListener(ChannelFuture connectFuture) {
-        connectFuture.addListener(ON_CONNECTED);
-        connectFuture.channel().closeFuture().addListener(ON_CLOSED);
+    private final static class ConnectedListener implements ChannelFutureListener {
+        @Override
+        public void operationComplete(ChannelFuture future) {
+            if (future.isSuccess()) {
+                Channel channel = future.channel();
+                ConnectionStatistics stat = channel.attr(STAT).get();
+                stat.onConnected();
+                channel.closeFuture()
+                        .addListener((ChannelFutureListener) closeFuture -> stat.onDisconnected())
+                        .addListener(ON_CLOSED);
+            } else {
+                Channel channel = future.channel();
+                if (!channel.eventLoop().isShuttingDown()) {
+                    URI uri = channel.attr(URL).get();
+                    Bootstrap b = channel.attr(BOOTSTRAP).get();
+                    b.connect(uri.getHost(), uri.getPort()).addListener(ConnectedListener.this);
+                }
+            }
+        }
+    }
+
+    private final static class ClosedListener implements ChannelFutureListener {
+        @Override
+        public void operationComplete(ChannelFuture future) {
+            Channel channel = future.channel();
+            if (!channel.eventLoop().isShuttingDown()) {
+                URI uri = channel.attr(URL).get();
+                Bootstrap b = channel.attr(BOOTSTRAP).get();
+                b.connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
+            }
+        }
     }
 
     private final class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
