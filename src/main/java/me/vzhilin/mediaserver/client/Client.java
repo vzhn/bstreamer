@@ -18,14 +18,14 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
+import java.util.List;
 
 public class Client {
     private static final AttributeKey<ConnectionStatistics> STAT = AttributeKey.valueOf("stat");
     public static final AttributeKey<URI> URL = AttributeKey.valueOf("url");
 
-    private final Bootstrap b;
+    private final Bootstrap bootstrap;
     private final TotalStatistics ss;
-    private final ClientConfig conf;
 
     private final ChannelFutureListener ON_CLOSED = new ClosedListener();
     private final ChannelFutureListener ON_CONNECTED = new ConnectedListener();
@@ -34,32 +34,33 @@ public class Client {
         BasicConfigurator.configure();
         ClientConfig conf = ClientConfig.read(new File(argv[0]));
         Client client = new Client(conf);
-        client.start();
+        client.start(conf.getConnections());
     }
 
     public Client(ClientConfig conf) {
-        this.conf = conf;
         this.ss = new TotalStatistics();
 
         NetworkOptions nw = conf.getNetwork();
         final int nThreads = nw.getThreads().orElse(Runtime.getRuntime().availableProcessors() * 2);
-        b = new Bootstrap()
+        bootstrap = new Bootstrap()
             .group(new EpollEventLoopGroup(nThreads))
             .channel(EpollSocketChannel.class);
-        nw.getRcvbuf().ifPresent(rcvbuf -> b.option(ChannelOption.SO_RCVBUF, rcvbuf));
-        b.handler(new ClientChannelInitializer(ss));
+        nw.getRcvbuf().ifPresent(rcvbuf -> bootstrap.option(ChannelOption.SO_RCVBUF, rcvbuf));
+        bootstrap.handler(new ClientChannelInitializer(ss));
     }
 
-    public void start() {
+    public void start(List<ConnectionSettings> connections) {
         System.err.println("pid = " + ManagementFactory.getRuntimeMXBean().getName());
-        for (ConnectionSettings conn: conf.getConnections()) {
+        for (ConnectionSettings conn: connections) {
             URI uri = URI.create(conn.getUrl());
             int n = conn.getN();
             for (int i = 0; i < n; i++) {
                 ConnectionStatistics stat = ss.newStat();
-                Bootstrap btstrp = b.clone().attr(STAT, stat);
-                btstrp.attr(URL, uri);
-                btstrp.connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
+                bootstrap.clone()
+                    .attr(STAT, stat)
+                    .attr(URL, uri)
+                    .connect(uri.getHost(), uri.getPort())
+                    .addListener(ON_CONNECTED);
             }
         }
 
@@ -84,7 +85,7 @@ public class Client {
                 Channel channel = future.channel();
                 if (!channel.eventLoop().isShuttingDown()) {
                     URI uri = channel.attr(URL).get();
-                    b.connect(uri.getHost(), uri.getPort()).addListener(ConnectedListener.this);
+                    bootstrap.connect(uri.getHost(), uri.getPort()).addListener(ConnectedListener.this);
                 }
             }
         }
@@ -96,7 +97,7 @@ public class Client {
             Channel channel = future.channel();
             if (!channel.eventLoop().isShuttingDown()) {
                 URI uri = channel.attr(URL).get();
-                b.connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
+                bootstrap.connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
             }
         }
     }
