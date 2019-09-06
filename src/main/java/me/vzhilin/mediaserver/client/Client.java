@@ -71,6 +71,11 @@ public class Client {
         new ClientReporter(ss).start();
     }
 
+    private void connect(Channel channel) {
+        URI uri = channel.attr(URL).get();
+        bootstrap.connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
+    }
+
     private final class ConnectedListener implements ChannelFutureListener {
         @Override
         public void operationComplete(ChannelFuture future) {
@@ -84,8 +89,7 @@ public class Client {
             } else {
                 Channel channel = future.channel();
                 if (!channel.eventLoop().isShuttingDown()) {
-                    URI uri = channel.attr(URL).get();
-                    bootstrap.connect(uri.getHost(), uri.getPort()).addListener(ConnectedListener.this);
+                    connect(channel);
                 }
             }
         }
@@ -96,8 +100,7 @@ public class Client {
         public void operationComplete(ChannelFuture future) {
             Channel channel = future.channel();
             if (!channel.eventLoop().isShuttingDown()) {
-                URI uri = channel.attr(URL).get();
-                bootstrap.connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
+                connect(channel);
             }
         }
     }
