@@ -1,4 +1,4 @@
-package me.vzhilin.mediaserver.client;
+package me.vzhilin.mediaserver.client.handler;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -13,10 +13,10 @@ import me.vzhilin.mediaserver.client.rtsp.messages.SetupReply;
 import me.vzhilin.mediaserver.client.rtsp.messages.sdp.Media;
 import me.vzhilin.mediaserver.client.rtsp.messages.sdp.SdpMessage;
 
-final class DefaultConnectionHandler implements RtspConnectionHandler {
+final class ClientConnectionHandler implements RtspConnectionHandler {
     private final URI uri;
 
-    DefaultConnectionHandler(URI uri) {
+    ClientConnectionHandler(URI uri) {
         this.uri = uri;
     }
 
