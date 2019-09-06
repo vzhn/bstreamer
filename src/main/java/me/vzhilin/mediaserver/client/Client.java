@@ -1,12 +1,16 @@
 package me.vzhilin.mediaserver.client;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.util.AttributeKey;
 import me.vzhilin.mediaserver.client.conf.ClientConfig;
 import me.vzhilin.mediaserver.client.conf.ConnectionSettings;
+import me.vzhilin.mediaserver.client.conf.NetworkOptions;
 import me.vzhilin.mediaserver.client.handler.ClientChannelInitializer;
 import org.apache.log4j.BasicConfigurator;
 
@@ -17,16 +21,14 @@ import java.net.URI;
 
 public class Client {
     private static final AttributeKey<ConnectionStatistics> STAT = AttributeKey.valueOf("stat");
-    public  static final AttributeKey<Bootstrap> BOOTSTRAP = AttributeKey.valueOf("bootstrap");
     public static final AttributeKey<URI> URL = AttributeKey.valueOf("url");
-
-    private final static ChannelFutureListener ON_CLOSED = new ClosedListener();
-    private final static ChannelFutureListener ON_CONNECTED = new ConnectedListener();
 
     private final Bootstrap b;
     private final TotalStatistics ss;
-
     private final ClientConfig conf;
+
+    private final ChannelFutureListener ON_CLOSED = new ClosedListener();
+    private final ChannelFutureListener ON_CONNECTED = new ConnectedListener();
 
     public static void main(String... argv) throws IOException {
         BasicConfigurator.configure();
@@ -37,15 +39,15 @@ public class Client {
 
     public Client(ClientConfig conf) {
         this.conf = conf;
-        Bootstrap bootstrap = new Bootstrap();
-        ss = new TotalStatistics();
+        this.ss = new TotalStatistics();
 
-        EventLoopGroup workerGroup = new EpollEventLoopGroup(4);
-        b = bootstrap
-            .group(workerGroup)
-            .channel(EpollSocketChannel.class)
-            .option(ChannelOption.SO_RCVBUF, 131072)
-            .handler(new ClientChannelInitializer(ss));
+        NetworkOptions nw = conf.getNetwork();
+        final int nThreads = nw.getThreads().orElse(Runtime.getRuntime().availableProcessors() * 2);
+        b = new Bootstrap()
+            .group(new EpollEventLoopGroup(nThreads))
+            .channel(EpollSocketChannel.class);
+        nw.getRcvbuf().ifPresent(rcvbuf -> b.option(ChannelOption.SO_RCVBUF, rcvbuf));
+        b.handler(new ClientChannelInitializer(ss));
     }
 
     public void start() {
@@ -56,7 +58,6 @@ public class Client {
             for (int i = 0; i < n; i++) {
                 ConnectionStatistics stat = ss.newStat();
                 Bootstrap btstrp = b.clone().attr(STAT, stat);
-                btstrp.attr(BOOTSTRAP, btstrp);
                 btstrp.attr(URL, uri);
                 btstrp.connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
             }
@@ -69,7 +70,7 @@ public class Client {
         new ClientReporter(ss).start();
     }
 
-    private final static class ConnectedListener implements ChannelFutureListener {
+    private final class ConnectedListener implements ChannelFutureListener {
         @Override
         public void operationComplete(ChannelFuture future) {
             if (future.isSuccess()) {
@@ -83,23 +84,20 @@ public class Client {
                 Channel channel = future.channel();
                 if (!channel.eventLoop().isShuttingDown()) {
                     URI uri = channel.attr(URL).get();
-                    Bootstrap b = channel.attr(BOOTSTRAP).get();
                     b.connect(uri.getHost(), uri.getPort()).addListener(ConnectedListener.this);
                 }
             }
         }
     }
 
-    private final static class ClosedListener implements ChannelFutureListener {
+    private final class ClosedListener implements ChannelFutureListener {
         @Override
         public void operationComplete(ChannelFuture future) {
             Channel channel = future.channel();
             if (!channel.eventLoop().isShuttingDown()) {
                 URI uri = channel.attr(URL).get();
-                Bootstrap b = channel.attr(BOOTSTRAP).get();
                 b.connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
             }
         }
     }
-
 }
