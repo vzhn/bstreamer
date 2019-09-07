@@ -1,44 +1,63 @@
 package me.vzhilin.mediaserver.server.stat;
 
-import me.vzhilin.mediaserver.util.metric.PeriodCounter;
-
 public final class GroupStatistics {
-    private final PeriodCounter lateCounter = new PeriodCounter();
-    private final PeriodCounter byteCounter = new PeriodCounter();
-    private final PeriodCounter connOpenCounter = new PeriodCounter();
-    private final PeriodCounter connCloseCounter = new PeriodCounter();
+    private long totalConnections;
+    private long totalBytes;
+    private long totalLateCounter;
+
+    private long lateCounter;
+    private long byteCounter;
+    private long connOpenCounter;
+    private long connCloseCounter;
 
     public GroupStatistics() { }
 
-    public void incOpenConn() {
-        connOpenCounter.inc(System.currentTimeMillis(), 1);
+    public synchronized void incOpenConn() {
+        ++totalConnections;
+        ++connOpenCounter;
     }
 
-    public void incCloseConn() {
-        connCloseCounter.inc(System.currentTimeMillis(), 1);
+    public synchronized void incCloseConn() {
+        --totalConnections;
+        ++connCloseCounter;
     }
 
-    public void incByteCount(long bytes) {
-        byteCounter.inc(System.currentTimeMillis(), bytes);
+    public synchronized void incByteCount(long bytes) {
+        totalBytes += bytes;
+        byteCounter += bytes;
     }
 
-    public void incLateCount() {
-        lateCounter.inc(System.currentTimeMillis(), 1);
+    public synchronized void incLateCount() {
+        ++totalLateCounter;
+        ++lateCounter;
     }
 
-    public PeriodCounter getLate() {
-        return lateCounter;
+    public GroupStatisticsSnapshot snapshot() {
+        GroupStatisticsSnapshot snapshot = new GroupStatisticsSnapshot(this);
+        lateCounter = 0;
+        byteCounter = 0;
+        connOpenCounter = 0;
+        connCloseCounter = 0;
+        return snapshot;
     }
 
-    public PeriodCounter getBytes() {
-        return byteCounter;
-    }
+    public static class GroupStatisticsSnapshot {
+        public final long totalConnections;
+        public final long totalBytes;
+        public final long totalLateCounter;
+        public final long lateCounter;
+        public final long byteCounter;
+        public final long connOpenCounter;
+        public final long connCloseCOunter;
 
-    public PeriodCounter getConnOpen() {
-        return connOpenCounter;
-    }
-
-    public PeriodCounter getConnClose() {
-        return connCloseCounter;
+        public GroupStatisticsSnapshot(GroupStatistics gs) {
+            this.totalConnections = gs.totalConnections;
+            this.totalBytes = gs.totalBytes;
+            this.totalLateCounter = gs.totalLateCounter;
+            this.lateCounter = gs.lateCounter;
+            this.byteCounter = gs.byteCounter;
+            this.connOpenCounter = gs.connOpenCounter;
+            this.connCloseCOunter = gs.connCloseCounter;
+        }
     }
 }
