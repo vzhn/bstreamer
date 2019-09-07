@@ -28,11 +28,11 @@ public final class ClientChannelInitializer extends ChannelInitializer<SocketCha
     protected void initChannel(SocketChannel ch) {
         URI uri = ch.attr(Client.URL).get();
         ChannelPipeline pipeline = ch.pipeline();
-        pipeline.addLast(newInterleavedDecoder());
-        pipeline.addLast(new RtspEncoder());
-        pipeline.addLast(new HttpObjectAggregator(MAX_CONTENT_LENGTH));
-        pipeline.addLast(new NettyRtspChannelHandler(new ClientConnectionHandler(uri)));
-        pipeline.addLast(statisticHandler);
+        pipeline.addLast("rtsp_interleaved_decoder", newInterleavedDecoder());
+        pipeline.addLast("rtsp_encoder", new RtspEncoder());
+        pipeline.addLast("http_object_aggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH));
+        pipeline.addLast("rtsp_connection_handler", new NettyRtspChannelHandler(new ClientConnectionHandler(uri)));
+        pipeline.addLast("statistic", statisticHandler);
 
         if (idleTimeout.isPresent()) {
             Integer timeoutMillis = idleTimeout.get();
