@@ -46,6 +46,7 @@ public class Client {
             .group(new EpollEventLoopGroup(nThreads))
             .channel(EpollSocketChannel.class);
         nw.getRcvbuf().ifPresent(rcvbuf -> bootstrap.option(ChannelOption.SO_RCVBUF, rcvbuf));
+        nw.getConnectTimeout().ifPresent(timeout -> bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout));
         bootstrap.handler(new ClientChannelInitializer(ss));
     }
 
