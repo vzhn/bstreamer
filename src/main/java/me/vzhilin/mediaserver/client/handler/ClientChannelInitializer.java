@@ -13,6 +13,7 @@ import me.vzhilin.mediaserver.client.rtsp.NettyRtspChannelHandler;
 import java.net.URI;
 
 public final class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
+    private static final int MAX_CONTENT_LENGTH = 64 * 1024;
     private final StatisticHandler statisticHandler;
 
     public ClientChannelInitializer(TotalStatistics ss) {
@@ -23,13 +24,16 @@ public final class ClientChannelInitializer extends ChannelInitializer<SocketCha
     protected void initChannel(SocketChannel ch) {
         URI uri = ch.attr(Client.URL).get();
         ChannelPipeline pipeline = ch.pipeline();
-        RtspInterleavedDecoder rtspInterleavedDecoder =
-                new RtspInterleavedDecoder(1024, 1024, 64 * 1024);
-        rtspInterleavedDecoder.setCumulator(RtspInterleavedDecoder.COMPOSITE_CUMULATOR);
-        pipeline.addLast(rtspInterleavedDecoder);
+        pipeline.addLast(newInterleavedDecoder());
         pipeline.addLast(new RtspEncoder());
-        pipeline.addLast(new HttpObjectAggregator(64 * 1024));
+        pipeline.addLast(new HttpObjectAggregator(MAX_CONTENT_LENGTH));
         pipeline.addLast(new NettyRtspChannelHandler(new ClientConnectionHandler(uri)));
         pipeline.addLast(statisticHandler);
+    }
+
+    private RtspInterleavedDecoder newInterleavedDecoder() {
+        RtspInterleavedDecoder decoder = new RtspInterleavedDecoder(1024, 1024, 64 * 1024);
+        decoder.setCumulator(RtspInterleavedDecoder.COMPOSITE_CUMULATOR);
+        return decoder;
     }
 }
