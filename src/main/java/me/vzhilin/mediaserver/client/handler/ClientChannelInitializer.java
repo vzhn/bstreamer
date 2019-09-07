@@ -43,7 +43,7 @@ public final class ClientChannelInitializer extends ChannelInitializer<SocketCha
     }
 
     private RtspInterleavedDecoder newInterleavedDecoder() {
-        RtspInterleavedDecoder decoder = new RtspInterleavedDecoder(1024, 1024, 64 * 1024);
+        RtspInterleavedDecoder decoder = new RtspInterleavedDecoder(1024, 1024, MAX_CONTENT_LENGTH);
         decoder.setCumulator(RtspInterleavedDecoder.COMPOSITE_CUMULATOR);
         return decoder;
     }
