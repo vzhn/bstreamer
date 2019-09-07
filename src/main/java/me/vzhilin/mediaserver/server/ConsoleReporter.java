@@ -41,8 +41,8 @@ public class ConsoleReporter {
             long c = snap.totalConnections;
             long op = snap.connOpenCounter;
             long cl = snap.connCloseCOunter;
-            long lagSecond = snap.lateCounter;
-            long lagTotal = snap.totalLateCounter;
+            long lagSecond = snap.lagCounter;
+            long lagTotal = snap.totalLagCounter;
             String sBytes = HumanReadable.humanReadableByteCount(snap.byteCounter, true);
             LocalDateTime now = LocalDateTime.now();
             String mesg = String.format("\r%02d:%02d:%02d C %d [+%d:-%d] L %d [+%d] %s ",

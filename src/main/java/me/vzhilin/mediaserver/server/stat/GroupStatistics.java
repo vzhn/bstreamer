@@ -3,9 +3,9 @@ package me.vzhilin.mediaserver.server.stat;
 public final class GroupStatistics {
     private long totalConnections;
     private long totalBytes;
-    private long totalLateCounter;
+    private long totalLagCounter;
 
-    private long lateCounter;
+    private long lagCounter;
     private long byteCounter;
     private long connOpenCounter;
     private long connCloseCounter;
@@ -27,14 +27,14 @@ public final class GroupStatistics {
         byteCounter += bytes;
     }
 
-    public synchronized void incLateCount() {
-        ++totalLateCounter;
-        ++lateCounter;
+    public synchronized void incLagCount() {
+        ++totalLagCounter;
+        ++lagCounter;
     }
 
     public GroupStatisticsSnapshot snapshot() {
         GroupStatisticsSnapshot snapshot = new GroupStatisticsSnapshot(this);
-        lateCounter = 0;
+        lagCounter = 0;
         byteCounter = 0;
         connOpenCounter = 0;
         connCloseCounter = 0;
@@ -44,8 +44,8 @@ public final class GroupStatistics {
     public static class GroupStatisticsSnapshot {
         public final long totalConnections;
         public final long totalBytes;
-        public final long totalLateCounter;
-        public final long lateCounter;
+        public final long totalLagCounter;
+        public final long lagCounter;
         public final long byteCounter;
         public final long connOpenCounter;
         public final long connCloseCOunter;
@@ -53,8 +53,8 @@ public final class GroupStatistics {
         public GroupStatisticsSnapshot(GroupStatistics gs) {
             this.totalConnections = gs.totalConnections;
             this.totalBytes = gs.totalBytes;
-            this.totalLateCounter = gs.totalLateCounter;
-            this.lateCounter = gs.lateCounter;
+            this.totalLagCounter = gs.totalLagCounter;
+            this.lagCounter = gs.lagCounter;
             this.byteCounter = gs.byteCounter;
             this.connOpenCounter = gs.connOpenCounter;
             this.connCloseCOunter = gs.connCloseCounter;

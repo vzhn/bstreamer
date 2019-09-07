@@ -27,8 +27,8 @@ public final class ServerStatistics {
     }
 
     public void incLateCount(PropertyMap key) {
-        get(key).incLateCount();
-        totalStats.incLateCount();
+        get(key).incLagCount();
+        totalStats.incLagCount();
     }
 
     public GroupStatistics get(PropertyMap key) {
