@@ -21,7 +21,7 @@ import java.net.URI;
 import java.util.List;
 
 public class Client {
-    private static final AttributeKey<ConnectionStatistics> STAT = AttributeKey.valueOf("stat");
+    public static final AttributeKey<ConnectionStatistics> STAT = AttributeKey.valueOf("stat");
     public static final AttributeKey<URI> URL = AttributeKey.valueOf("url");
 
     private final Bootstrap bootstrap;

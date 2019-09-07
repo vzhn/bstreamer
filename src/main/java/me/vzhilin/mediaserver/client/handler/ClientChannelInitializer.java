@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.rtsp.RtspEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 import me.vzhilin.mediaserver.client.Client;
+import me.vzhilin.mediaserver.client.ConnectionStatistics;
 import me.vzhilin.mediaserver.client.RtspInterleavedDecoder;
 import me.vzhilin.mediaserver.client.rtsp.NettyRtspChannelHandler;
 
@@ -17,22 +18,22 @@ import java.util.concurrent.TimeUnit;
 public final class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
     private static final int MAX_CONTENT_LENGTH = 64 * 1024;
     private final Optional<Integer> idleTimeout;
-    private final StatisticHandler statisticHandler;
 
     public ClientChannelInitializer(Client client) {
-        this.statisticHandler = new StatisticHandler(client.getStatistic());
         this.idleTimeout = client.getConf().getNetwork().getIdleTimeout();
     }
 
     @Override
     protected void initChannel(SocketChannel ch) {
         URI uri = ch.attr(Client.URL).get();
+        ConnectionStatistics connectionStat = ch.attr(Client.STAT).get();
+
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast("rtsp_interleaved_decoder", newInterleavedDecoder());
         pipeline.addLast("rtsp_encoder", new RtspEncoder());
         pipeline.addLast("http_object_aggregator", new HttpObjectAggregator(MAX_CONTENT_LENGTH));
         pipeline.addLast("rtsp_connection_handler", new NettyRtspChannelHandler(new ClientConnectionHandler(uri)));
-        pipeline.addLast("statistic", statisticHandler);
+        pipeline.addLast("statistic", new StatisticHandler(connectionStat));
 
         if (idleTimeout.isPresent()) {
             Integer timeoutMillis = idleTimeout.get();

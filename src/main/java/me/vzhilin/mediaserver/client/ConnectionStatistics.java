@@ -25,4 +25,8 @@ public class ConnectionStatistics {
     public void onDisconnected() {
         ss.decConnections();
     }
+
+    public void onIdleError() {
+        ss.onIdleError();
+    }
 }

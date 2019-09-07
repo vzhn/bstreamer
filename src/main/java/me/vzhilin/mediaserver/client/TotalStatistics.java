@@ -8,9 +8,11 @@ public class TotalStatistics {
     private Set<ConnectionStatistics> stats = new HashSet<>();
     private long totalBytes;
     private long totalConnections;
+    private long totalErrors;
 
     private long time = System.currentTimeMillis();
     private long bytes;
+    private long errors;
     private int connected;
     private int disconnected;
 
@@ -34,6 +36,7 @@ public class TotalStatistics {
         long deltaTime = now - time;
         Snapshot snapshot = new Snapshot(this, deltaTime);
         this.bytes = 0;
+        this.errors = 0;
         this.connected = 0;
         this.disconnected = 0;
         this.time = now;
@@ -50,19 +53,28 @@ public class TotalStatistics {
         --totalConnections;
     }
 
+    public synchronized void onIdleError() {
+        ++errors;
+        ++totalErrors;
+    }
+
     public final static class Snapshot {
         public final long totalBytes;
+        public final long totalErrors;
         public final long connections;
         public final long bytes;
         public final int connected;
         public final int disconnected;
         public final Date time;
         public final long deltaTime;
+        public final long errors;
 
         public Snapshot(TotalStatistics totalStatistics, long deltaTime) {
             this.totalBytes = totalStatistics.totalBytes;
+            this.totalErrors = totalStatistics.totalErrors;
             this.connections = totalStatistics.totalConnections;
             this.bytes = totalStatistics.bytes;
+            this.errors = totalStatistics.errors;
             this.connected = totalStatistics.connected;
             this.disconnected = totalStatistics.disconnected;
             this.deltaTime = deltaTime;
