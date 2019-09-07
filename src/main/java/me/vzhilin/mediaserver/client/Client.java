@@ -25,6 +25,7 @@ public class Client {
     public static final AttributeKey<URI> URL = AttributeKey.valueOf("url");
 
     private final Bootstrap bootstrap;
+    private final ClientConfig conf;
     private final TotalStatistics ss;
 
     private final ChannelFutureListener ON_CLOSED = new ClosedListener();
@@ -39,6 +40,7 @@ public class Client {
 
     public Client(ClientConfig conf) {
         this.ss = new TotalStatistics();
+        this.conf = conf;
 
         NetworkOptions nw = conf.getNetwork();
         final int nThreads = nw.getThreads().orElse(Runtime.getRuntime().availableProcessors() * 2);
@@ -47,7 +49,7 @@ public class Client {
             .channel(EpollSocketChannel.class);
         nw.getRcvbuf().ifPresent(rcvbuf -> bootstrap.option(ChannelOption.SO_RCVBUF, rcvbuf));
         nw.getConnectTimeout().ifPresent(timeout -> bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout));
-        bootstrap.handler(new ClientChannelInitializer(ss));
+        bootstrap.handler(new ClientChannelInitializer(this));
     }
 
     public void start(List<ConnectionSettings> connections) {
@@ -68,13 +70,25 @@ public class Client {
         startReporter(ss);
     }
 
+    public TotalStatistics getStatistic() {
+        return ss;
+    }
+
+    public ClientConfig getConf() {
+        return conf;
+    }
+
     private void startReporter(TotalStatistics ss) {
         new ClientReporter(ss).start();
     }
 
     private void connect(Channel channel) {
         URI uri = channel.attr(URL).get();
-        bootstrap.connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
+        ConnectionStatistics connectionStat = channel.attr(STAT).get();
+        bootstrap
+            .attr(URL, uri)
+            .attr(STAT, connectionStat)
+            .connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
     }
 
     private final class ConnectedListener implements ChannelFutureListener {

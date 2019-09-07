@@ -1,6 +1,8 @@
 network:
   threads: 4
   rcvbuf: 128000
+  connectTimeout: 5000
+  idleTimeout: 5000
 connections:
  - url: rtsp://localhost:5000/file/simpsons_video.mkv
    n: 2000
