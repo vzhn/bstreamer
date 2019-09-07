@@ -44,7 +44,7 @@ public final class ClientReporter {
             long gbps = 8 * s.bytes / s.deltaTime * 1000;
             String bandwidth = HumanReadable.humanReadableByteCount(gbps, false);
             LocalDateTime now = LocalDateTime.now();
-            System.out.printf("\r%02d:%02d:%02d %d [+%d; -%d] E %d [+%d] %s ",
+            System.out.printf("\r%02d:%02d:%02d C %d [+%d; -%d] E %d [+%d] %s ",
                     now.getHour(), now.getMinute(), now.getSecond(),
                     s.connections, s.connected, s.disconnected, s.totalErrors, s.errors, bandwidth);
         }
