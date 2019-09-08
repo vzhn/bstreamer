@@ -103,11 +103,12 @@ public class FileMediaPacketSource implements PullSource {
         return pkt;
     }
 
-    private boolean fillQueue() {
-        while (true) {
+    private void fillQueue() {
+        while (packetQueue.size() < 10) {
             if (av_read_frame(pAvfmtCtx, pk) < 0) {
-                return true;
+                return;
             }
+
             if (pk.stream_index() == desc.getVideoStreamId()) {
                 long pts = pk.pts();
                 long dts = pk.dts();
