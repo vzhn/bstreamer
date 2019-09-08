@@ -9,8 +9,8 @@ import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.RtpEncoder;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -113,6 +113,7 @@ final class PushTask implements Runnable {
             long np = 0;
             long deltaPositionMillis = 0;
             MediaPacket pkt = null;
+            long now = System.currentTimeMillis();
             while (unbuffered.hasNext() &&
                    limits.check(sz, np, deltaPositionMillis)) {
                 pkt = unbuffered.next();
@@ -120,7 +121,7 @@ final class PushTask implements Runnable {
                 ps.add(pkt);
                 sz += pkt.size();
                 np += 1;
-                deltaPositionMillis = (startDtsMillis - pkt.getDts()) - (startTimeMillis - pkt.getPts());
+                deltaPositionMillis = (Math.max(0L, pkt.getDts()) - startDtsMillis) - (now - startTimeMillis);
             }
             if (!ps.isEmpty()) {
                 lastDts = Math.max(0, pkt.getDts());
