@@ -1,5 +1,5 @@
 network:
-  port: 5000
+  bind: ["0.0.0.0:5000"]
   sndbuf: 131072
   watermarks:
     high: 131072

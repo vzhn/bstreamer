@@ -13,6 +13,13 @@ import me.vzhilin.mediaserver.conf.PropertyMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import static org.bytedeco.javacpp.avutil.AV_LOG_ERROR;
 import static org.bytedeco.javacpp.avutil.av_log_set_level;
 
@@ -24,7 +31,7 @@ public class RtspServer {
     private final ServerBootstrap serverBootstrap;
     private final Config serverConfig;
     private final ServerContext serverContext;
-    private ChannelFuture bindFuture;
+    private List<ChannelFuture> bindFutures;
 
     public RtspServer(Config serverConfig) {
         this.serverConfig = serverConfig;
@@ -51,7 +58,6 @@ public class RtspServer {
 
     private void startServer() {
         PropertyMap network = serverConfig.getNetwork();
-        int port = network.getInt(NetworkAttributes.PORT);
         int sndbuf = network.getInt(NetworkAttributes.SNDBUF);
         int lowWatermark = network.getInt(NetworkAttributes.WATERMARKS_LOW);
         int highWatermark = network.getInt(NetworkAttributes.WATERMARKS_HIGH);
@@ -70,12 +76,26 @@ public class RtspServer {
             serverBootstrap.childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark);
         }
         serverBootstrap.childHandler(new RtspServerInitializer());
-        bindFuture = serverBootstrap.bind("0.0.0.0", port).syncUninterruptibly();
+        Collection<SocketAddress> addresses = toSocketAddress(network.getStringArray(NetworkAttributes.BIND));
+
+        bindFutures = addresses.stream()
+                .map(sa -> serverBootstrap.bind(sa).syncUninterruptibly())
+                .collect(Collectors.toList());
+
+    }
+
+    private Collection<SocketAddress> toSocketAddress(List<String> hostAndPort) {
+        return hostAndPort.stream().map((Function<String, SocketAddress>) s -> {
+            int colonPos = s.indexOf(':');
+            String host = s.substring(0, colonPos);
+            int port = Integer.parseInt(s.substring(colonPos+1));
+            return new InetSocketAddress(host, port);
+        }).collect(Collectors.toList());
     }
 
     public void stop() {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
-        bindFuture.channel().close().syncUninterruptibly();
+        bindFutures.forEach(f -> f.channel().close().syncUninterruptibly());
     }
 }

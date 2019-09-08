@@ -70,14 +70,18 @@ public final class PropertyMap {
                 }
                 mp = (PropertyMap) mp.properties.get(k);
             }
-            return (String) mp.properties.get(parts[parts.length-1]);
+            return mp.properties.get(parts[parts.length-1]);
         } else {
-            return (String) mp.properties.get(parts[0]);
+            return mp.properties.get(parts[0]);
         }
     }
 
     public String getString(String key) {
         return (String) getObject(key);
+    }
+
+    public List<String> getStringArray(String key) {
+        return (List<String>) getObject(key);
     }
 
     public PropertyMap getMap(String key) {
