@@ -20,9 +20,9 @@ public class Config {
 
     public BufferingLimits getBufferingLimits() {
         PropertyMap syncProperties = properties.getMap("network").getMap("limits");
-        int sizeLimit = syncProperties.getInt("size");
-        int packetLimit = syncProperties.getInt("packets");
-        int timeLimit = syncProperties.getInt("time");
+        int sizeLimit = syncProperties.getInt("size", 0);
+        int packetLimit = syncProperties.getInt("packets", 0);
+        int timeLimit = syncProperties.getInt("time", 0);
         return new BufferingLimits(sizeLimit, packetLimit, timeLimit);
     }
 

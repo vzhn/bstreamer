@@ -12,8 +12,8 @@ public final class BufferingLimits {
     }
 
     public boolean check(long bytes, long npackets, long timeMillis) {
-        return bytes < this.bytes &&
-               npackets < this.npackets &&
+        return (this.bytes == 0 || bytes < this.bytes) &&
+               (this.npackets == 0 || npackets < this.npackets) &&
                timeMillis < this.timeMillis;
     }
 }

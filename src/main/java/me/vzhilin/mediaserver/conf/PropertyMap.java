@@ -180,6 +180,9 @@ public final class PropertyMap {
         return (PropertyMap) stack.pop();
     }
 
+    public int getInt(String key, int defaultValue) {
+        return hasKey(key) ? getInt(key) : defaultValue;
+    }
     public int getInt(String key) {
         return Integer.parseInt(getString(key));
     }
