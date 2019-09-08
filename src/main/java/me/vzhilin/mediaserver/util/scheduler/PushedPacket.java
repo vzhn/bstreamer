@@ -1,6 +1,6 @@
 package me.vzhilin.mediaserver.util.scheduler;
 
-import me.vzhilin.mediaserver.InterleavedFrame;
+import me.vzhilin.mediaserver.media.InterleavedFrame;
 
 public final class PushedPacket {
     private final InterleavedFrame packet;

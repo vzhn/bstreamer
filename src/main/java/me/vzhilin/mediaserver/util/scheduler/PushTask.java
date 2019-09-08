@@ -2,7 +2,7 @@ package me.vzhilin.mediaserver.util.scheduler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import me.vzhilin.mediaserver.InterleavedFrame;
+import me.vzhilin.mediaserver.media.InterleavedFrame;
 import me.vzhilin.mediaserver.media.PullSource;
 import me.vzhilin.mediaserver.media.impl.file.MediaPacket;
 import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
