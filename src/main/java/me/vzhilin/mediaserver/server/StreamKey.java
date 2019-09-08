@@ -1,7 +1,7 @@
 package me.vzhilin.mediaserver.server;
 
 import io.netty.channel.EventLoop;
-import me.vzhilin.mediaserver.conf.PropertyMap;
+import me.vzhilin.mediaserver.util.PropertyMap;
 
 import java.util.Objects;
 

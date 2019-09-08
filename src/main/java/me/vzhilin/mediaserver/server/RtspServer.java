@@ -7,9 +7,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
-import me.vzhilin.mediaserver.conf.Config;
-import me.vzhilin.mediaserver.conf.NetworkAttributes;
-import me.vzhilin.mediaserver.conf.PropertyMap;
+import me.vzhilin.mediaserver.server.conf.Config;
+import me.vzhilin.mediaserver.server.conf.NetworkAttributes;
+import me.vzhilin.mediaserver.util.PropertyMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

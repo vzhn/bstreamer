@@ -10,11 +10,10 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
-import me.vzhilin.mediaserver.conf.Config;
-import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
+import me.vzhilin.mediaserver.server.conf.Config;
+import me.vzhilin.mediaserver.server.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.strategy.sync.GroupStreamer;
-import me.vzhilin.mediaserver.util.RtspUriParser;
+import me.vzhilin.mediaserver.util.PropertyMap;
 
 import java.util.Base64;
 

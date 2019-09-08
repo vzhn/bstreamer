@@ -1,5 +1,5 @@
 import me.vzhilin.mediaserver.client.conf.ClientConfig;
-import me.vzhilin.mediaserver.conf.PropertyMap;
+import me.vzhilin.mediaserver.util.PropertyMap;
 import org.junit.Test;
 
 import java.io.File;

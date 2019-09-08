@@ -1,11 +1,11 @@
 package me.vzhilin.mediaserver.server;
 
 import io.netty.channel.EventLoop;
-import me.vzhilin.mediaserver.conf.Config;
-import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.media.impl.PullSourceRegistry;
+import me.vzhilin.mediaserver.server.conf.Config;
+import me.vzhilin.mediaserver.server.media.impl.PullSourceRegistry;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import me.vzhilin.mediaserver.server.strategy.sync.GroupStreamer;
+import me.vzhilin.mediaserver.util.PropertyMap;
 
 import java.util.HashMap;
 import java.util.Map;

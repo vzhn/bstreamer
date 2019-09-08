@@ -1,4 +1,4 @@
-import me.vzhilin.mediaserver.util.RtspUriParser;
+import me.vzhilin.mediaserver.server.RtspUriParser;
 import org.junit.Test;
 
 import java.text.ParseException;

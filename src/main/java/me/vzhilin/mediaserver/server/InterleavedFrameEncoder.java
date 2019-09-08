@@ -3,7 +3,7 @@ package me.vzhilin.mediaserver.server;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import me.vzhilin.mediaserver.media.InterleavedFrame;
+import me.vzhilin.mediaserver.server.media.InterleavedFrame;
 
 public class InterleavedFrameEncoder extends ChannelOutboundHandlerAdapter {
     @Override

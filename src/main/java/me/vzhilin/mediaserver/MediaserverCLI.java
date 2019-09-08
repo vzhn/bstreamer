@@ -1,11 +1,11 @@
 package me.vzhilin.mediaserver;
 
-import me.vzhilin.mediaserver.conf.Config;
-import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.server.ConsoleReporter;
 import me.vzhilin.mediaserver.server.RtspServer;
 import me.vzhilin.mediaserver.server.ServerContext;
+import me.vzhilin.mediaserver.server.conf.Config;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
+import me.vzhilin.mediaserver.util.PropertyMap;
 import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
