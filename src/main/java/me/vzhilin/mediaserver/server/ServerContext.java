@@ -16,29 +16,18 @@ public class ServerContext {
     private final ServerStatistics stat;
     private final Config config;
     private final PullSourceRegistry pullSourceRegistry;
-    private ScheduledExecutorService scheduledExecutor;
 
     private final Map<StreamKey, GroupStreamer> streams = new HashMap<>();
 
-    private final ScheduledExecutorService workerExecutors =
-        Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
-
     public ServerContext(Config config) {
         this.config = config;
-        stat = new ServerStatistics();
-        pullSourceRegistry = new PullSourceRegistry(config.getBufferingLimits(), workerExecutors);
+        this.stat = new ServerStatistics();
+        ScheduledExecutorService workerExecutors = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+        this.pullSourceRegistry = new PullSourceRegistry(config.getBufferingLimits(), workerExecutors);
     }
 
     public ServerStatistics getStat() {
         return stat;
-    }
-
-    public void setScheduledExecutor(ScheduledExecutorService scheduledExecutor) {
-        this.scheduledExecutor = scheduledExecutor;
-    }
-
-    public ScheduledExecutorService getScheduledExecutor() {
-        return scheduledExecutor;
     }
 
     public Config getConfig() {

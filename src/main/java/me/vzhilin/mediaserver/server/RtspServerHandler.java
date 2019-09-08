@@ -13,7 +13,7 @@ import io.netty.handler.codec.rtsp.RtspVersions;
 import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
-import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
+import me.vzhilin.mediaserver.server.strategy.sync.GroupStreamer;
 import me.vzhilin.mediaserver.util.RtspUriParser;
 
 import java.util.Base64;
@@ -47,7 +47,7 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 } else {
-                    response = description(uri, getStreamingStrategy(ctx.channel().eventLoop(), uri).describe());
+                    response = description(uri, getStreamerForUrl(ctx.channel().eventLoop(), uri).describe());
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 }
@@ -68,7 +68,7 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 } else {
-                    getStreamingStrategy(ctx.channel().eventLoop(), uri).attachContext(ctx);
+                    getStreamerForUrl(ctx.channel().eventLoop(), uri).attachContext(ctx);
 
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
                     response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
@@ -86,16 +86,15 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
             ctx.writeAndFlush(response);
             break;
         }
-            default:
-                response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
-                response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
-                ctx.writeAndFlush(response);
+        default:
+            response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
+            response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
+            ctx.writeAndFlush(response);
         }
     }
 
-    private StreamingStrategy getStreamingStrategy(EventLoop loop, RtspUriParser uri) {
+    private GroupStreamer getStreamerForUrl(EventLoop loop, RtspUriParser uri) {
         String url = uri.pathItem(0);
-        String extra = uri.pathItem(1);
 
         PropertyMap mpsc = config.getStreamingConfig(url);
         PropertyMap conf = mpsc.getMap("conf");

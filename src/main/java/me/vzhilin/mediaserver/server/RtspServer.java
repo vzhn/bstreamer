@@ -13,8 +13,6 @@ import me.vzhilin.mediaserver.conf.PropertyMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Executors;
-
 import static org.bytedeco.javacpp.avutil.AV_LOG_ERROR;
 import static org.bytedeco.javacpp.avutil.av_log_set_level;
 
@@ -23,18 +21,17 @@ public class RtspServer {
 
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
-    private final ServerBootstrap bootstrap;
-    private final Config config;
+    private final ServerBootstrap serverBootstrap;
+    private final Config serverConfig;
     private final ServerContext serverContext;
-    private ChannelFuture future;
+    private ChannelFuture bindFuture;
 
-    public RtspServer(Config config) {
-        this.config = config;
-        this.bootstrap = new ServerBootstrap();
+    public RtspServer(Config serverConfig) {
+        this.serverConfig = serverConfig;
+        this.serverBootstrap = new ServerBootstrap();
         this.bossGroup = new EpollEventLoopGroup(1);
         this.workerGroup = new EpollEventLoopGroup(1);
-        this.serverContext = new ServerContext(config);
-        this.serverContext.setScheduledExecutor(Executors.newSingleThreadScheduledExecutor());
+        this.serverContext = new ServerContext(serverConfig);
     }
 
     public ServerContext getServerContext() {
@@ -43,7 +40,6 @@ public class RtspServer {
 
     public void start() {
         setupLoglevel();
-        startMetrics();
         startServer();
 
         LOG.info("mediaserver started");
@@ -53,17 +49,13 @@ public class RtspServer {
         av_log_set_level(AV_LOG_ERROR);
     }
 
-    private void startMetrics() {
-
-    }
-
     private void startServer() {
-        PropertyMap network = config.getNetwork();
+        PropertyMap network = serverConfig.getNetwork();
         int port = network.getInt(NetworkAttributes.PORT);
         int sndbuf = network.getInt(NetworkAttributes.SNDBUF);
         int lowWatermark = network.getInt(NetworkAttributes.WATERMARKS_LOW);
         int highWatermark = network.getInt(NetworkAttributes.WATERMARKS_HIGH);
-        bootstrap.group(bossGroup, workerGroup)
+        serverBootstrap.group(bossGroup, workerGroup)
                 .channel(EpollServerSocketChannel.class)
                 .childAttr(RtspServerAttributes.CONTEXT, serverContext)
                 .option(ChannelOption.SO_REUSEADDR, true)
@@ -71,19 +63,19 @@ public class RtspServer {
                 .childOption(ChannelOption.SO_LINGER, 0)
                 .childOption(ChannelOption.SO_KEEPALIVE, true);
         if (sndbuf > 0) {
-            bootstrap.childOption(ChannelOption.SO_SNDBUF, sndbuf);
+            serverBootstrap.childOption(ChannelOption.SO_SNDBUF, sndbuf);
         }
         if (lowWatermark > 0 && highWatermark > 0) {
             WriteBufferWaterMark writeBufferWaterMark = new WriteBufferWaterMark(lowWatermark, highWatermark);
-            bootstrap.childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark);
+            serverBootstrap.childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, writeBufferWaterMark);
         }
-        bootstrap.childHandler(new RtspServerInitializer());
-        future = bootstrap.bind("0.0.0.0", port).syncUninterruptibly();
+        serverBootstrap.childHandler(new RtspServerInitializer());
+        bindFuture = serverBootstrap.bind("0.0.0.0", port).syncUninterruptibly();
     }
 
     public void stop() {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
-        future.channel().close().syncUninterruptibly();
+        bindFuture.channel().close().syncUninterruptibly();
     }
 }

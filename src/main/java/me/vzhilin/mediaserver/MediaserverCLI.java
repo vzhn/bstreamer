@@ -1,6 +1,5 @@
 package me.vzhilin.mediaserver;
 
-import io.netty.channel.EventLoopGroup;
 import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.server.ConsoleReporter;
@@ -15,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class MediaserverCLI {
@@ -65,7 +65,7 @@ public class MediaserverCLI {
     private void startConsoleReporter(RtspServer server) {
         ServerContext sc = server.getServerContext();
         ServerStatistics stat = sc.getStat();
-        ScheduledExecutorService exec = sc.getScheduledExecutor();
+        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
         new ConsoleReporter(stat, exec).start();
     }
 }

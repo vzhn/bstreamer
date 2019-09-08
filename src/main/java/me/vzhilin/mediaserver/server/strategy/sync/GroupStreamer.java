@@ -12,16 +12,12 @@ import me.vzhilin.mediaserver.conf.PropertyMap;
 import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.ServerContext;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
-import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
 import me.vzhilin.mediaserver.util.scheduler.PushSource;
 import me.vzhilin.mediaserver.util.scheduler.PushSourceSession;
 import me.vzhilin.mediaserver.util.scheduler.PushTaskSubscriber;
 import me.vzhilin.mediaserver.util.scheduler.PushedPacket;
-import org.apache.log4j.Logger;
 
-public final class GroupStreamer implements StreamingStrategy {
-    private final static Logger LOG = Logger.getLogger(GroupStreamer.class);
-
+public final class GroupStreamer {
     private final ChannelGroup group;
     private final PropertyMap sourceConfig;
     private final ServerStatistics stat;
@@ -54,7 +50,6 @@ public final class GroupStreamer implements StreamingStrategy {
         };
     }
 
-    @Override
     public void attachContext(ChannelHandlerContext ctx) {
         Channel ch = ctx.channel();
         ch.closeFuture().addListener((ChannelFutureListener) future -> detachContext(ctx));
@@ -68,7 +63,6 @@ public final class GroupStreamer implements StreamingStrategy {
         }
     }
 
-    @Override
     public void detachContext(ChannelHandlerContext context) {
         boolean wasLast = group.remove(context.channel()) & group.isEmpty();
         if (wasLast) {
@@ -77,7 +71,6 @@ public final class GroupStreamer implements StreamingStrategy {
         stat.closeConn(sourceConfig);
     }
 
-    @Override
     public MediaPacketSourceDescription describe() {
         return pushSource.describe();
     }
