@@ -12,10 +12,8 @@ import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
 import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.media.impl.CommonSourceAttributes;
 import me.vzhilin.mediaserver.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.mediaserver.server.strategy.StreamingStrategy;
-import me.vzhilin.mediaserver.server.strategy.StreamingStrategyFactory;
 import me.vzhilin.mediaserver.util.RtspUriParser;
 
 import java.util.Base64;
@@ -96,16 +94,15 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
     }
 
     private StreamingStrategy getStreamingStrategy(EventLoop loop, RtspUriParser uri) {
-        String strategyName = uri.getParam("mode", "sync");
-        String source = uri.pathItem(0);
+        String url = uri.pathItem(0);
         String extra = uri.pathItem(1);
-        PropertyMap mpsc = config.getSourceConfig(source);
-        mpsc.put(CommonSourceAttributes.NAME, source);
-        mpsc.put(CommonSourceAttributes.EXTRA, extra);
-        mpsc.putAll(uri.allParameters());
-        StreamingStrategyFactory strategyFactory = context.getStreamingStrategyFactory(strategyName);
 
-        return strategyFactory.getStrategy(loop, mpsc);
+        PropertyMap mpsc = config.getStreamingConfig(url);
+        PropertyMap conf = mpsc.getMap("conf");
+        conf.putAll(uri.allParameters());
+        String clazz = mpsc.getString("class");
+
+        return context.getStreamer(loop, url, clazz, conf);
     }
 
     private FullHttpResponse description(RtspUriParser uri, MediaPacketSourceDescription description) {

@@ -14,18 +14,9 @@ public class Config {
         return properties.getMap("network");
     }
 
-    public PropertyMap getStrategyConfig(String strategyName) {
-        return new PropertyMap(properties.getMap("strategy").getMap(strategyName));
-    }
-
-    public PropertyMap getSourceConfig(String configName) {
-        PropertyMap props = properties.getMap("source").getMap(configName);
+    public PropertyMap getStreamingConfig(String configName) {
+        PropertyMap props = properties.getMap("streaming").getMap(configName);
         return new PropertyMap(props);
-    }
-
-    @Override
-    public String toString() {
-        return properties.toString();
     }
 
     public BufferingLimits getBufferingLimits() {
@@ -34,5 +25,10 @@ public class Config {
         int packetLimit = syncProperties.getInt(SyncStrategyAttributes.LIMIT_PACKETS);
         int timeLimit = syncProperties.getInt(SyncStrategyAttributes.LIMIT_TIME);
         return new BufferingLimits(sizeLimit, packetLimit, timeLimit);
+    }
+
+    @Override
+    public String toString() {
+        return properties.toString();
     }
 }

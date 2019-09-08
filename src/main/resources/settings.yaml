@@ -10,14 +10,20 @@ strategy:
       packets: 10
       size: 131072
       time: 200
-source:
+streaming:
   file:
-    dir: /home/vzhilin/misc/video_samples/
+    class: me.vzhilin.mediaserver.media.impl.file.FileMediaPacketSource
+    conf:
+      basedir: /home/vzhilin/misc/video_samples/
+      file: simpsons_video.mkv
   picture:
-    width: 640
-    height: 480
-    encoder:
-      bitrate: 400000
-      fps: 25
-      gop_size: 10
-      max_b_frames: 1
+    class: me.vzhilin.mediaserver.media.impl.picture.SimplePictureSource
+    conf:
+      picture:
+        width: 640
+        height: 480
+      encoder:
+        bitrate: 400000
+        fps: 25
+        gop_size: 10
+        max_b_frames: 1

@@ -3,7 +3,6 @@ package me.vzhilin.mediaserver.media.impl.file;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.media.impl.CommonSourceAttributes;
 import me.vzhilin.mediaserver.media.PullSource;
 import me.vzhilin.mediaserver.util.AVCCExtradataParser;
 import org.bytedeco.javacpp.*;
@@ -26,32 +25,29 @@ public class FileMediaPacketSource implements PullSource {
 
     public FileMediaPacketSource(PropertyMap sourceProperties) throws IOException {
         File dir = new File(sourceProperties.getString(FileSourceAttributes.DIR));
-        File videoFile = new File(dir, sourceProperties.getString(CommonSourceAttributes.EXTRA));
+        File videoFile = new File(dir, sourceProperties.getString(FileSourceAttributes.FILE));
         if (videoFile.exists()) {
             open(videoFile);
         } else {
-            throw new FileNotFoundException(dir.getAbsolutePath());
+            throw new FileNotFoundException(videoFile.getAbsolutePath());
         }
     }
 
     private void open(File file) throws IOException {
         pAvfmtCtx = new avformat.AVFormatContext(null);
-        int r;
-//        synchronized (FFmpeg.class) {
-            r = avformat_open_input(pAvfmtCtx, new BytePointer(file.getAbsolutePath()), null, null);
-            if (r < 0) {
-                pAvfmtCtx.close();
-                wasClosed = true;
-                throw new IOException("avformat_open_input error: " + r);
-            }
-            r = avformat_find_stream_info(pAvfmtCtx, (PointerPointer) null);
-            if (r < 0) {
-                wasClosed = true;
-                avformat_close_input(pAvfmtCtx);
-                pAvfmtCtx.close();
-                throw new IOException("error: " + r);
-            }
-//        }
+        int r = avformat_open_input(pAvfmtCtx, new BytePointer(file.getAbsolutePath()), null, null);
+        if (r < 0) {
+            pAvfmtCtx.close();
+            wasClosed = true;
+            throw new IOException("avformat_open_input error: " + r);
+        }
+        r = avformat_find_stream_info(pAvfmtCtx, (PointerPointer) null);
+        if (r < 0) {
+            wasClosed = true;
+            avformat_close_input(pAvfmtCtx);
+            pAvfmtCtx.close();
+            throw new IOException("error: " + r);
+        }
         pk = new avcodec.AVPacket();
         AVStream avStream = getVideoStream();
         if (avStream == null) {
@@ -141,9 +137,7 @@ public class FileMediaPacketSource implements PullSource {
     public void close() {
         if (!wasClosed) {
             wasClosed = true;
-//            synchronized (FFmpeg.class) {
-                avformat_close_input(pAvfmtCtx);
-//            }
+            avformat_close_input(pAvfmtCtx);
             packetQueue.forEach(mediaPacket -> mediaPacket.getPayload().release());
             packetQueue.clear();
             pAvfmtCtx.close();

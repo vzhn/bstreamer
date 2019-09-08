@@ -10,8 +10,6 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import me.vzhilin.mediaserver.conf.Config;
 import me.vzhilin.mediaserver.conf.NetworkAttributes;
 import me.vzhilin.mediaserver.conf.PropertyMap;
-import me.vzhilin.mediaserver.media.impl.file.FileSourceFactory;
-import me.vzhilin.mediaserver.server.strategy.sync.SyncStrategyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,8 +34,6 @@ public class RtspServer {
         this.bossGroup = new EpollEventLoopGroup(1);
         this.workerGroup = new EpollEventLoopGroup(1);
         this.serverContext = new ServerContext(config);
-        this.serverContext.registerSourceFactory("file", new FileSourceFactory());
-        this.serverContext.registerSyncStrategy("sync", new SyncStrategyFactory(serverContext));
         this.serverContext.setScheduledExecutor(Executors.newSingleThreadScheduledExecutor());
     }
 
