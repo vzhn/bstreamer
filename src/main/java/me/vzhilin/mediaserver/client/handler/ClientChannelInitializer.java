@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.rtsp.RtspEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 import me.vzhilin.mediaserver.client.Client;
+import me.vzhilin.mediaserver.client.ClientAttributes;
 import me.vzhilin.mediaserver.client.ConnectionStatistics;
 import me.vzhilin.mediaserver.client.RtspInterleavedDecoder;
 import me.vzhilin.mediaserver.client.rtsp.NettyRtspChannelHandler;
@@ -25,8 +26,8 @@ public final class ClientChannelInitializer extends ChannelInitializer<SocketCha
 
     @Override
     protected void initChannel(SocketChannel ch) {
-        URI uri = ch.attr(Client.URL).get();
-        ConnectionStatistics connectionStat = ch.attr(Client.STAT).get();
+        URI uri = ch.attr(ClientAttributes.URL).get();
+        ConnectionStatistics connectionStat = ch.attr(ClientAttributes.STAT).get();
 
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast("rtsp_interleaved_decoder", newInterleavedDecoder());

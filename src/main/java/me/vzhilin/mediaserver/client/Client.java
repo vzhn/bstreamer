@@ -7,12 +7,14 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.util.AttributeKey;
 import me.vzhilin.mediaserver.client.conf.ClientConfig;
 import me.vzhilin.mediaserver.client.conf.ConnectionSettings;
 import me.vzhilin.mediaserver.client.conf.NetworkOptions;
 import me.vzhilin.mediaserver.client.handler.ClientChannelInitializer;
+import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,9 +23,9 @@ import java.net.URI;
 import java.util.List;
 
 public class Client {
-    public static final AttributeKey<ConnectionStatistics> STAT = AttributeKey.valueOf("stat");
-    public static final AttributeKey<URI> URL = AttributeKey.valueOf("url");
-
+    static {
+        BasicConfigurator.configure();
+    }
     private final Bootstrap bootstrap;
     private final ClientConfig conf;
     private final TotalStatistics ss;
@@ -31,11 +33,32 @@ public class Client {
     private final ChannelFutureListener ON_CLOSED = new ClosedListener();
     private final ChannelFutureListener ON_CONNECTED = new ConnectedListener();
 
-    public static void main(String... argv) throws IOException {
-        BasicConfigurator.configure();
-        ClientConfig conf = ClientConfig.read(new File(argv[0]));
-        Client client = new Client(conf);
-        client.start(conf.getConnections());
+    public static void main(String... argv) throws IOException, ParseException {
+        Options options = new Options();
+        options.addOption("h", "help", false, "show help and exit");
+        options.addOption("c", "config", true, "config file");
+        options.addOption("l", "loglevel", true, "log level [OFF|FATAL|ERROR|WARN|INFO|DEBUG|TRACE|ALL]");
+
+        CommandLine cmd = new DefaultParser().parse(options, argv);
+        if (cmd.getOptions().length == 0 || cmd.hasOption("help")) {
+            HelpFormatter helpFormatter = new HelpFormatter();
+            helpFormatter.printHelp("ClientCLI", options);
+        } else {
+            String configPath = cmd.getOptionValue("config");
+            if (configPath == null || configPath.isEmpty()) {
+                System.err.println("config file not found!");
+                return;
+            }
+            if (cmd.hasOption('l')) {
+                String loglevel = cmd.getOptionValue('l');
+                Logger.getRootLogger().setLevel(Level.toLevel(loglevel));
+            } else {
+                Logger.getRootLogger().setLevel(Level.INFO);
+            }
+            ClientConfig conf = ClientConfig.read(new File(configPath));
+            Client client = new Client(conf);
+            client.start(conf.getConnections());
+        }
     }
 
     public Client(ClientConfig conf) {
@@ -60,8 +83,8 @@ public class Client {
             for (int i = 0; i < n; i++) {
                 ConnectionStatistics stat = ss.newStat();
                 bootstrap.clone()
-                    .attr(STAT, stat)
-                    .attr(URL, uri)
+                    .attr(ClientAttributes.STAT, stat)
+                    .attr(ClientAttributes.URL, uri)
                     .connect(uri.getHost(), uri.getPort())
                     .addListener(ON_CONNECTED);
             }
@@ -83,11 +106,11 @@ public class Client {
     }
 
     private void connect(Channel channel) {
-        URI uri = channel.attr(URL).get();
-        ConnectionStatistics connectionStat = channel.attr(STAT).get();
+        URI uri = channel.attr(ClientAttributes.URL).get();
+        ConnectionStatistics connectionStat = channel.attr(ClientAttributes.STAT).get();
         bootstrap
-            .attr(URL, uri)
-            .attr(STAT, connectionStat)
+            .attr(ClientAttributes.URL, uri)
+            .attr(ClientAttributes.STAT, connectionStat)
             .connect(uri.getHost(), uri.getPort()).addListener(ON_CONNECTED);
     }
 
@@ -96,7 +119,7 @@ public class Client {
         public void operationComplete(ChannelFuture future) {
             if (future.isSuccess()) {
                 Channel channel = future.channel();
-                ConnectionStatistics stat = channel.attr(STAT).get();
+                ConnectionStatistics stat = channel.attr(ClientAttributes.STAT).get();
                 stat.onConnected();
                 channel.closeFuture()
                         .addListener((ChannelFutureListener) closeFuture -> stat.onDisconnected())

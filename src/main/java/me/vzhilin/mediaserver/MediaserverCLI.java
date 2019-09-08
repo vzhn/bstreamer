@@ -56,7 +56,7 @@ public class MediaserverCLI {
                 System.exit(1);
             }
             if (cmd.hasOption('l')) {
-                String loglevel = cmd.getOptionValue("l");
+                String loglevel = cmd.getOptionValue('l');
                 Logger.getRootLogger().setLevel(Level.toLevel(loglevel));
             } else {
                 Logger.getRootLogger().setLevel(Level.INFO);
