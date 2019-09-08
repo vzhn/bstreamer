@@ -4,12 +4,10 @@ network:
   watermarks:
     high: 131072
     low: 65536
-strategy:
-  sync:
-    limits:
-      packets: 10
-      size: 131072
-      time: 200
+  limits:
+    packets: 10
+    size: 131072
+    time: 200
 streaming:
   file:
     class: me.vzhilin.mediaserver.media.impl.file.FileMediaPacketSource
