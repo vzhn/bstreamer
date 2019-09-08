@@ -34,7 +34,7 @@ public class ServerContext {
         return config;
     }
 
-    public GroupStreamer getStreamer(EventLoop eventLoop, String url, String clazz, PropertyMap cfg) {
+    public synchronized GroupStreamer getStreamer(EventLoop eventLoop, String url, String clazz, PropertyMap cfg) {
         return streams.computeIfAbsent(new StreamKey(eventLoop, url, clazz, cfg),
                 sk -> new GroupStreamer(ServerContext.this, sk.eventLoop, pullSourceRegistry.get(sk.sourceKey)));
     }
