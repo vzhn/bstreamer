@@ -8,6 +8,8 @@ import me.vzhilin.mediaserver.server.ServerContext;
 import me.vzhilin.mediaserver.server.stat.ServerStatistics;
 import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,7 +35,7 @@ public class MediaserverCLI {
         options = new Options();
         options.addOption("h", "help", false, "show help and exit");
         options.addOption("c", "config", true, "config file");
-        options.addOption("l", "loglevel", true, "log level [info|debug|trace]");
+        options.addOption("l", "loglevel", true, "log level [OFF|FATAL|ERROR|WARN|INFO|DEBUG|TRACE|ALL]");
         CommandLineParser parser = new DefaultParser();
         cmd = parser.parse(options, argv);
     }
@@ -52,6 +54,12 @@ public class MediaserverCLI {
             if (!configFile.exists()) {
                 System.err.println("config file not found!");
                 System.exit(1);
+            }
+            if (cmd.hasOption('l')) {
+                String loglevel = cmd.getOptionValue("l");
+                Logger.getRootLogger().setLevel(Level.toLevel(loglevel));
+            } else {
+                Logger.getRootLogger().setLevel(Level.INFO);
             }
             InputStream is = new FileInputStream(configPath);
             PropertyMap yaml = PropertyMap.parseYaml(is);
