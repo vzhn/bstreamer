@@ -1,11 +1,8 @@
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import me.vzhilin.mediaserver.client.conf.ClientConfig;
 import me.vzhilin.mediaserver.conf.PropertyMap;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 
 public class Settings {
@@ -17,7 +14,7 @@ public class Settings {
     }
     @Test
     public void test() throws IOException {
-        String path = "/home/vzhilin/IdeaProjects/mediaserver/src/main/resources/settings.yaml";
+        String path = "/home/vzhilin/IdeaProjects/mediaserver/src/main/resources/server.yaml";
 
 
 

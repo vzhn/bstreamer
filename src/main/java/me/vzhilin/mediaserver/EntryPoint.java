@@ -39,7 +39,7 @@ public class EntryPoint {
     }
 
     private synchronized void startServer() throws IOException {
-        InputStream yamlResource = EntryPoint.class.getResourceAsStream("/settings.yaml");
+        InputStream yamlResource = EntryPoint.class.getResourceAsStream("/server.yaml");
         Config config = new Config(PropertyMap.parseYaml(yamlResource));
         server = new RtspServer(config);
         server.start();

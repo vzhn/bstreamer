@@ -15,7 +15,7 @@ public class MediaserverDaemon implements Daemon {
     @Override
     public void init(DaemonContext daemonContext) throws IOException {
         BasicConfigurator.configure();
-        Config config = new Config(PropertyMap.parseYaml(EntryPoint.class.getResourceAsStream("/settings.yaml")));
+        Config config = new Config(PropertyMap.parseYaml(EntryPoint.class.getResourceAsStream("/server.yaml")));
         instance = new RtspServer(config);
     }
 
