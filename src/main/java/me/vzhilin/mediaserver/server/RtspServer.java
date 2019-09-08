@@ -37,7 +37,7 @@ public class RtspServer {
         this.serverConfig = serverConfig;
         this.serverBootstrap = new ServerBootstrap();
         this.bossGroup = new EpollEventLoopGroup(1);
-        this.workerGroup = new EpollEventLoopGroup(1);
+        this.workerGroup = new EpollEventLoopGroup(serverConfig.getNetwork().getInt("threads"));
         this.serverContext = new ServerContext(serverConfig);
     }
 
