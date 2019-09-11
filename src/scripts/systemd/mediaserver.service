@@ -4,7 +4,7 @@ Description=RTSP Mediaserver
 [Service]
 User=mediaserver
 WorkingDirectory=/usr/local/mediaserver
-ExecStart=/usr/bin/java -Xmx256m -cp "repo/*" me.vzhilin.mediaserver.EntryPoint
+ExecStart=/usr/bin/java -Xmx256m -cp "repo/*" me.vzhilin.bstreamer.EntryPoint
 SuccessExitStatus=143
 TimeoutStopSec=10
 Restart=on-failure

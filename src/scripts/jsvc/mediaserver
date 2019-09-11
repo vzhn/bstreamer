@@ -23,7 +23,7 @@ COMMAND="-cwd $APP \
   -errfile /var/log/mediaserver.err \
   -outfile /var/log/mediaserver.out \
   -user $APP_USER \
-  me.vzhilin.mediaserver.MediaserverDaemon"
+  me.vzhilin.bstreamer.MediaserverDaemon"
 
 COMMAND_START="$JSVC $COMMAND"
 COMMAND_STOP="$JSVC -stop $COMMAND"

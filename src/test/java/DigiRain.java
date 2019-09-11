@@ -168,27 +168,6 @@ public class DigiRain {
             }
 
             gr.dispose();
-            blur(g);
-        }
-
-        private void blur(Graphics g) {
-            int r = 5;
-            float[] data = new float[] {
-                1, 4, 7, 4, 1,
-                4, 16, 26, 16, 4,
-                7, 26, 41, 26, 7,
-                4, 16, 26, 16, 4,
-                1, 4, 7, 4, 1
-            };
-
-            for (int i = 0; i < data.length; i++) {
-                data[i] *= 1f/273;
-            }
-
-//            Kernel kernel = new Kernel(r, r, data);
-//            BufferedImageOp op = new ConvolveOp(kernel);
-
-//            BufferedImage rs = op.filter(img, null);
             g.drawImage(img, 0, 0, null);
         }
 

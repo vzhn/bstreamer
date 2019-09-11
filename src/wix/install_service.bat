@@ -17,12 +17,12 @@ REM Startup configuration
 set PR_STARTPATH=%CURDIR%
 set PR_STARTUP=auto
 set PR_STARTMODE=jvm
-set PR_STARTCLASS=me.vzhilin.mediaserver.EntryPoint
+set PR_STARTCLASS=me.vzhilin.bstreamer.EntryPoint
 set PR_STARTMETHOD=start
 
 REM Shutdown configuration
 set PR_STOPMODE=jvm
-set PR_STOPCLASS=me.vzhilin.mediaserver.EntryPoint
+set PR_STOPCLASS=me.vzhilin.bstreamer.EntryPoint
 set PR_STOPMETHOD=stop
 
 REM JVM configuration
