@@ -6,7 +6,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.rtsp.RtspEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
-import me.vzhilin.bstreamer.client.Client;
+import me.vzhilin.bstreamer.ClientCLI;
 import me.vzhilin.bstreamer.client.ClientAttributes;
 import me.vzhilin.bstreamer.client.ConnectionStatistics;
 import me.vzhilin.bstreamer.client.RtspInterleavedDecoder;
@@ -20,7 +20,7 @@ public final class ClientChannelInitializer extends ChannelInitializer<SocketCha
     private static final int MAX_CONTENT_LENGTH = 64 * 1024;
     private final Optional<Integer> idleTimeout;
 
-    public ClientChannelInitializer(Client client) {
+    public ClientChannelInitializer(ClientCLI client) {
         this.idleTimeout = client.getConf().getNetwork().getIdleTimeout();
     }
 

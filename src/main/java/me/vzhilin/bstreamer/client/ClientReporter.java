@@ -14,7 +14,7 @@ public final class ClientReporter {
     private final TotalStatistics stat;
     private final BufferPoolMXBean directMemoryPool;
 
-    ClientReporter(TotalStatistics stat) {
+    public ClientReporter(TotalStatistics stat) {
         this.stat = stat;
         this.directMemoryPool = getDirectMemoryPool();
     }

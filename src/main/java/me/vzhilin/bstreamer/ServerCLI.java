@@ -19,7 +19,7 @@ import java.lang.management.ManagementFactory;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class MediaserverCLI {
+public class ServerCLI {
     private final CommandLine cmd;
     private final Options options;
 
@@ -27,11 +27,11 @@ public class MediaserverCLI {
         System.err.println("pid = " + ManagementFactory.getRuntimeMXBean().getName());
 
         BasicConfigurator.configure();
-        MediaserverCLI mediaserver = new MediaserverCLI(argv);
+        ServerCLI mediaserver = new ServerCLI(argv);
         mediaserver.start();
     }
 
-    private MediaserverCLI(String[] argv) throws ParseException {
+    private ServerCLI(String[] argv) throws ParseException {
         options = new Options();
         options.addOption("h", "help", false, "show help and exit");
         options.addOption("c", "config", true, "config file");

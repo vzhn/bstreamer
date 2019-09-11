@@ -14,8 +14,7 @@ public final class PropertyMap {
     /**
      * ctor
      */
-    public PropertyMap() {
-    }
+    public PropertyMap() { }
 
     /**
      * Copy ctor

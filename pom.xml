@@ -23,7 +23,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>me.vzhilin.bstreamer.EntryPoint</mainClass>
+                            <mainClass>me.vzhilin.bstreamer.server.EntryPoint</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -54,7 +54,7 @@
                 <configuration>
                     <programs>
                         <program>
-                            <mainClass>me.vzhilin.bstreamer.EntryPoint</mainClass>
+                            <mainClass>me.vzhilin.bstreamer.server.EntryPoint</mainClass>
                             <id>app</id>
                         </program>
                     </programs>

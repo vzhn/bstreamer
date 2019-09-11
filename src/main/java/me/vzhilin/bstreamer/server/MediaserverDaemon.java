@@ -1,6 +1,5 @@
-package me.vzhilin.bstreamer;
+package me.vzhilin.bstreamer.server;
 
-import me.vzhilin.bstreamer.server.RtspServer;
 import me.vzhilin.bstreamer.server.conf.Config;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.apache.commons.daemon.Daemon;

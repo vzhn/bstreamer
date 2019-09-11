@@ -1,4 +1,4 @@
-package me.vzhilin.bstreamer.client;
+package me.vzhilin.bstreamer;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -7,6 +7,10 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
+import me.vzhilin.bstreamer.client.ClientAttributes;
+import me.vzhilin.bstreamer.client.ClientReporter;
+import me.vzhilin.bstreamer.client.ConnectionStatistics;
+import me.vzhilin.bstreamer.client.TotalStatistics;
 import me.vzhilin.bstreamer.client.conf.ClientConfig;
 import me.vzhilin.bstreamer.client.conf.ConnectionSettings;
 import me.vzhilin.bstreamer.client.conf.NetworkOptions;
@@ -22,7 +26,7 @@ import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.List;
 
-public class Client {
+public class ClientCLI {
     static {
         BasicConfigurator.configure();
     }
@@ -56,12 +60,12 @@ public class Client {
                 Logger.getRootLogger().setLevel(Level.INFO);
             }
             ClientConfig conf = ClientConfig.read(new File(configPath));
-            Client client = new Client(conf);
+            ClientCLI client = new ClientCLI(conf);
             client.start(conf.getConnections());
         }
     }
 
-    public Client(ClientConfig conf) {
+    public ClientCLI(ClientConfig conf) {
         this.ss = new TotalStatistics();
         this.conf = conf;
 
