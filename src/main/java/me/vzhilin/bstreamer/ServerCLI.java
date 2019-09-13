@@ -43,7 +43,7 @@ public class ServerCLI {
     private void start() throws IOException {
         if (cmd.getOptions().length == 0 || cmd.hasOption("help")) {
             HelpFormatter helpFormatter = new HelpFormatter();
-            helpFormatter.printHelp("Mediaserver", options);
+            helpFormatter.printHelp("bserver [options]", options);
         } else {
             String configPath = cmd.getOptionValue("config");
             if (configPath == null || configPath.isEmpty()) {

@@ -46,7 +46,7 @@ public class ClientCLI {
         CommandLine cmd = new DefaultParser().parse(options, argv);
         if (cmd.getOptions().length == 0 || cmd.hasOption("help")) {
             HelpFormatter helpFormatter = new HelpFormatter();
-            helpFormatter.printHelp("ClientCLI", options);
+            helpFormatter.printHelp("bclient [options]", options);
         } else {
             String configPath = cmd.getOptionValue("config");
             if (configPath == null || configPath.isEmpty()) {
