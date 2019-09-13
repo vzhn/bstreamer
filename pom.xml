@@ -11,7 +11,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <mediaserver.user>mediaserver</mediaserver.user>
         <mediaserver.group>mediaserver</mediaserver.group>
-        <mediaserver.home>/usr/local/mediaserver</mediaserver.home>
+        <mediaserver.home>/usr/local/bstreamer</mediaserver.home>
         <ffmpeg.arch>linux-x86_64</ffmpeg.arch>
     </properties>
     <build>
@@ -54,8 +54,12 @@
                 <configuration>
                     <programs>
                         <program>
-                            <mainClass>me.vzhilin.bstreamer.server.EntryPoint</mainClass>
-                            <id>app</id>
+                            <mainClass>me.vzhilin.bstreamer.ServerCLI</mainClass>
+                            <id>bserver</id>
+                        </program>
+                        <program>
+                            <mainClass>me.vzhilin.bstreamer.ClientCLI</mainClass>
+                            <id>bclient</id>
                         </program>
                     </programs>
                     <repositoryLayout>flat</repositoryLayout>
@@ -111,31 +115,6 @@
             <version>1.7.13</version>
         </dependency>
         <dependency>
-            <groupId>io.dropwizard.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
-            <version>4.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient_dropwizard</artifactId>
-            <version>0.6.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient_httpserver</artifactId>
-            <version>0.6.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient</artifactId>
-            <version>0.6.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jfree</groupId>
-            <artifactId>jfreechart</artifactId>
-            <version>1.5.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
             <version>2.9.9</version>
@@ -149,11 +128,6 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.9.9</version>
-        </dependency>
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>1.24</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -213,19 +187,6 @@
                                                 <filemode>444</filemode>
                                             </mapper>
                                         </data>
-                                        <!--
-                                        <mapping>
-                                            <directoryIncluded>false</directoryIncluded>
-                                            <directory>/usr/lib/systemd/system/</directory>
-                                            <filemode>444</filemode>
-                                            <sources>
-                                                <source>
-                                                    <location>src/scripts/systemd/mediaserver.service</location>
-                                                </source>
-                                            </sources>
-                                        </mapping>
-
-                                        -->
                                     </dataSet>
                                 </configuration>
                             </execution>
@@ -238,6 +199,15 @@
             <id>rpm</id>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>appassembler-maven-plugin</artifactId>
+                        <configuration>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>rpm-maven-plugin</artifactId>
@@ -255,42 +225,24 @@
                             <distribution>github</distribution>
                             <group>Networking/Daemons</group>
                             <needarch>true</needarch>
-                            <defaultUsername>${mediaserver.group}</defaultUsername>
-                            <defaultGroupname>${mediaserver.user}</defaultGroupname>
-                            <defaultDirmode>554</defaultDirmode>
+                            <defaultUsername>root</defaultUsername>
+                            <defaultGroupname>root</defaultGroupname>
+                            <defaultDirmode>755</defaultDirmode>
                             <defaultFilemode>444</defaultFilemode>
-                            <defineStatements>
-                                <defineStatement>mediaserver_group ${mediaserver.group}</defineStatement>
-                                <defineStatement>mediaserver_user ${mediaserver.user}</defineStatement>
-                                <defineStatement>mediaserver_home ${mediaserver.home}</defineStatement>
-                            </defineStatements>
-                            <preinstallScriptlet>
-                                <scriptFile>src/rpm/preinstall.sh</scriptFile>
+                            <postinstallScriptlet>
+                                <scriptFile>src/rpm/postinstall.sh</scriptFile>
                                 <fileEncoding>utf-8</fileEncoding>
                                 <filter>true</filter>
-                            </preinstallScriptlet>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>rpm.systemd</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>rpm-maven-plugin</artifactId>
-                        <version>2.2.0</version>
-                        <configuration>
-                            <preremoveScriptlet>
-                                <scriptFile>src/rpm.systemd/preremove.sh</scriptFile>
+                            </postinstallScriptlet>
+                            <postremoveScriptlet>
+                                <scriptFile>src/rpm/postremove.sh</scriptFile>
                                 <fileEncoding>utf-8</fileEncoding>
                                 <filter>true</filter>
-                            </preremoveScriptlet>
+                            </postremoveScriptlet>
                             <mappings>
                                 <mapping>
                                     <directory>${mediaserver.home}</directory>
+                                    <recurseDirectories>false</recurseDirectories>
                                     <sources>
                                         <source>
                                             <location>target/appassembler</location>
@@ -298,65 +250,19 @@
                                     </sources>
                                 </mapping>
                                 <mapping>
-                                    <directoryIncluded>false</directoryIncluded>
-                                    <directory>/usr/lib/systemd/system/</directory>
-                                    <filemode>444</filemode>
+                                    <directory>${mediaserver.home}/bin</directory>
+                                    <filemode>755</filemode>
                                     <sources>
                                         <source>
-                                            <location>src/scripts/systemd/mediaserver.service</location>
-                                        </source>
-                                    </sources>
-                                </mapping>
-                            </mappings>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>rpm.initd</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>rpm-maven-plugin</artifactId>
-                        <version>2.2.0</version>
-                        <configuration>
-                            <mappings>
-                                <mapping>
-                                    <directory>${mediaserver.home}</directory>
-                                    <sources>
-                                        <source>
-                                            <location>target/appassembler</location>
+                                            <location>target/appassembler/bin</location>
                                         </source>
                                     </sources>
                                 </mapping>
                                 <mapping>
-                                    <directory>${mediaserver.home}</directory>
-                                    <filemode>555</filemode>
+                                    <directory>${mediaserver.home}/conf</directory>
                                     <sources>
                                         <source>
-                                            <location>${jsvc.path}</location>
-                                        </source>
-                                    </sources>
-                                </mapping>
-                                <mapping>
-                                    <directoryIncluded>false</directoryIncluded>
-                                    <directory>/etc/init.d</directory>
-                                    <filemode>744</filemode>
-                                    <sources>
-                                        <source>
-                                            <location>src/scripts/jsvc/mediaserver</location>
-                                        </source>
-                                    </sources>
-                                </mapping>
-                                <mapping>
-                                    <directoryIncluded>false</directoryIncluded>
-                                    <directory>/etc/logrotate.d/mediaserver.conf</directory>
-                                    <filemode>444</filemode>
-                                    <sources>
-                                        <source>
-                                            <location>src/scripts/log/mediaserver.conf</location>
+                                            <location>src/conf</location>
                                         </source>
                                     </sources>
                                 </mapping>
