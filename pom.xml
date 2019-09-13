@@ -18,18 +18,6 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <mainClass>me.vzhilin.bstreamer.server.EntryPoint</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
@@ -88,11 +76,6 @@
             <artifactId>ffmpeg</artifactId>
             <version>4.1-1.4.4</version>
             <classifier>${ffmpeg.arch}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>commons-daemon</groupId>
-            <artifactId>commons-daemon</artifactId>
-            <version>1.2.0</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
