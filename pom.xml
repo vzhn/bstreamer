@@ -9,8 +9,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <mediaserver.home>/usr/local/bstreamer</mediaserver.home>
+        <bstreamer.home>/usr/local/bstreamer</bstreamer.home>
         <ffmpeg.arch>linux-x86_64</ffmpeg.arch>
+        <video.location>src/video</video.location>
     </properties>
     <build>
         <plugins>
@@ -160,8 +161,26 @@
                                             <type>directory</type>
                                             <mapper>
                                                 <type>perm</type>
-                                                <prefix>${mediaserver.home}</prefix>
-                                                <filemode>640</filemode>
+                                                <prefix>${bstreamer.home}</prefix>
+                                                <filemode>644</filemode>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>target/appassembler/bin</src>
+                                            <type>directory</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>${bstreamer.home}/bin</prefix>
+                                                <filemode>755</filemode>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${video.location}</src>
+                                            <type>directory</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>${bstreamer.home}/video</prefix>
+                                                <filemode>644</filemode>
                                             </mapper>
                                         </data>
                                     </dataSet>
@@ -218,7 +237,7 @@
                             </postremoveScriptlet>
                             <mappings>
                                 <mapping>
-                                    <directory>${mediaserver.home}</directory>
+                                    <directory>${bstreamer.home}</directory>
                                     <recurseDirectories>false</recurseDirectories>
                                     <sources>
                                         <source>
@@ -227,7 +246,7 @@
                                     </sources>
                                 </mapping>
                                 <mapping>
-                                    <directory>${mediaserver.home}/bin</directory>
+                                    <directory>${bstreamer.home}/bin</directory>
                                     <filemode>755</filemode>
                                     <sources>
                                         <source>
@@ -236,10 +255,18 @@
                                     </sources>
                                 </mapping>
                                 <mapping>
-                                    <directory>${mediaserver.home}/conf</directory>
+                                    <directory>${bstreamer.home}/conf</directory>
                                     <sources>
                                         <source>
                                             <location>src/conf</location>
+                                        </source>
+                                    </sources>
+                                </mapping>
+                                <mapping>
+                                    <directory>${bstreamer.home}/video</directory>
+                                    <sources>
+                                        <source>
+                                            <location>${video.location}</location>
                                         </source>
                                     </sources>
                                 </mapping>
@@ -253,7 +280,7 @@
             <id>windows-x86_64</id>
             <properties>
                 <ffmpeg.arch>windows-x86_64</ffmpeg.arch>
-                <mediaserver.home>C:\opt\mediaserver</mediaserver.home>
+                <bstreamer.home>C:\opt\mediaserver</bstreamer.home>
             </properties>
             <build>
                 <plugins>
