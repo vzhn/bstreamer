@@ -131,6 +131,15 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>appassembler-maven-plugin</artifactId>
+                        <configuration>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </configuration>
+                    </plugin>
+                    <plugin>
                         <artifactId>jdeb</artifactId>
                         <groupId>org.vafer</groupId>
                         <version>1.7</version>
@@ -153,21 +162,8 @@
                                             <type>directory</type>
                                             <mapper>
                                                 <type>perm</type>
-                                                <user>${mediaserver.user}</user>
-                                                <group>${mediaserver.group}</group>
                                                 <prefix>${mediaserver.home}</prefix>
                                                 <filemode>640</filemode>
-                                            </mapper>
-                                        </data>
-                                        <data>
-                                            <src>src/scripts/systemd/mediaserver.service</src>
-                                            <type>file</type>
-                                            <mapper>
-                                                <type>perm</type>
-                                                <user>${mediaserver.user}</user>
-                                                <group>${mediaserver.group}</group>
-                                                <prefix>/lib/systemd/system/</prefix>
-                                                <filemode>444</filemode>
                                             </mapper>
                                         </data>
                                     </dataSet>
