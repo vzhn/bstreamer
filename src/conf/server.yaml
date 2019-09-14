@@ -14,7 +14,7 @@ streaming:
     class: me.vzhilin.bstreamer.server.media.impl.file.FileMediaPacketSource
     conf:
       basedir: /home/vzhilin/misc/video_samples/
-      file: simpsons_video.mkv
+      file: jellyfish-5-mbps-hd-h264.mkv
   picture:
     class: me.vzhilin.bstreamer.server.media.impl.picture.SimplePictureSource
     conf:

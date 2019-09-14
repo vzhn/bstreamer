@@ -5,6 +5,7 @@ import me.vzhilin.bstreamer.server.RtspServer;
 import me.vzhilin.bstreamer.server.ServerContext;
 import me.vzhilin.bstreamer.server.conf.Config;
 import me.vzhilin.bstreamer.server.stat.ServerStatistics;
+import me.vzhilin.bstreamer.util.ConfigLocator;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
@@ -16,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -45,23 +47,17 @@ public class ServerCLI {
             HelpFormatter helpFormatter = new HelpFormatter();
             helpFormatter.printHelp("bserver [options]", options);
         } else {
-            String configPath = cmd.getOptionValue("config");
-            if (configPath == null || configPath.isEmpty()) {
-                System.err.println("config file not found!");
-                System.exit(1);
-            }
-            File configFile = new File(configPath);
-            if (!configFile.exists()) {
-                System.err.println("config file not found!");
-                System.exit(1);
-            }
             if (cmd.hasOption('l')) {
                 String loglevel = cmd.getOptionValue('l');
                 Logger.getRootLogger().setLevel(Level.toLevel(loglevel));
             } else {
                 Logger.getRootLogger().setLevel(Level.INFO);
             }
-            InputStream is = new FileInputStream(configPath);
+            Optional<File> configPath = new ConfigLocator("server.yaml").locate(cmd.getOptionValue("config"));
+            if (!configPath.isPresent()) {
+                System.exit(1);
+            }
+            InputStream is = new FileInputStream(configPath.get());
             PropertyMap yaml = PropertyMap.parseYaml(is);
             Config config = new Config(yaml);
             RtspServer server = new RtspServer(config);

@@ -15,6 +15,7 @@ import me.vzhilin.bstreamer.client.conf.ClientConfig;
 import me.vzhilin.bstreamer.client.conf.ConnectionSettings;
 import me.vzhilin.bstreamer.client.conf.NetworkOptions;
 import me.vzhilin.bstreamer.client.handler.ClientChannelInitializer;
+import me.vzhilin.bstreamer.util.ConfigLocator;
 import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 public class ClientCLI {
     static {
@@ -44,22 +46,21 @@ public class ClientCLI {
         options.addOption("l", "loglevel", true, "log level [OFF|FATAL|ERROR|WARN|INFO|DEBUG|TRACE|ALL]");
 
         CommandLine cmd = new DefaultParser().parse(options, argv);
-        if (cmd.getOptions().length == 0 || cmd.hasOption("help")) {
+        if (cmd.hasOption("help")) {
             HelpFormatter helpFormatter = new HelpFormatter();
             helpFormatter.printHelp("bclient [options]", options);
         } else {
-            String configPath = cmd.getOptionValue("config");
-            if (configPath == null || configPath.isEmpty()) {
-                System.err.println("config file not found!");
-                return;
-            }
             if (cmd.hasOption('l')) {
                 String loglevel = cmd.getOptionValue('l');
                 Logger.getRootLogger().setLevel(Level.toLevel(loglevel));
             } else {
                 Logger.getRootLogger().setLevel(Level.INFO);
             }
-            ClientConfig conf = ClientConfig.read(new File(configPath));
+            Optional<File> configPath = new ConfigLocator("client.yaml").locate(cmd.getOptionValue("config"));
+            if (!configPath.isPresent()) {
+                System.exit(1);
+            }
+            ClientConfig conf = ClientConfig.read(configPath.get());
             ClientCLI client = new ClientCLI(conf);
             client.start(conf.getConnections());
         }
