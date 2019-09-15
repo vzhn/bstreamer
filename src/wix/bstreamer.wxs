@@ -7,10 +7,6 @@
 <?define UpgradeCode = "{3ffd2739-6044-4c6a-9893-c538eef66ffb}" ?>
 <?define WixScriptsDir="target\wix\"?>
 
-<?ifndef env.CommonsDaemonDir ?>
-	<?error CommonsDaemonDir environment variable must be defined ?>
-<?endif ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
     <Product Name='$(var.Name)'
       Manufacturer="$(var.Manufacturer)"
