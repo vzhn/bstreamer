@@ -15,8 +15,8 @@ import me.vzhilin.bstreamer.client.conf.ClientConfig;
 import me.vzhilin.bstreamer.client.conf.ConnectionSettings;
 import me.vzhilin.bstreamer.client.conf.NetworkOptions;
 import me.vzhilin.bstreamer.client.handler.ClientChannelInitializer;
+import me.vzhilin.bstreamer.util.AppRuntime;
 import me.vzhilin.bstreamer.util.ConfigLocator;
-import me.vzhilin.bstreamer.util.Os;
 import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
@@ -75,7 +75,7 @@ public class ClientCLI {
 
         EventLoopGroup workers;
         Class<? extends SocketChannel> channelClazz;
-        if (Os.IS_WINDOWS) {
+        if (AppRuntime.IS_WINDOWS) {
             workers = new NioEventLoopGroup(nThreads);
             channelClazz = NioSocketChannel.class;
         } else {

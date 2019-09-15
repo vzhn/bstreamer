@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import me.vzhilin.bstreamer.server.media.AVCCExtradataParser;
 import me.vzhilin.bstreamer.server.media.PullSource;
+import me.vzhilin.bstreamer.util.AppRuntime;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.bytedeco.javacpp.*;
 
@@ -24,7 +25,11 @@ public class FileMediaPacketSource implements PullSource {
     private AVFormatContext pAvfmtCtx;
 
     public FileMediaPacketSource(PropertyMap sourceProperties) throws IOException {
-        File dir = new File(sourceProperties.getString(FileSourceAttributes.DIR));
+        String dirPath = sourceProperties.getString(FileSourceAttributes.DIR);
+        File dir = new File(dirPath);
+        if (!dir.isAbsolute()) {
+            dir = new File(AppRuntime.APP_PATH, dirPath);
+        }
         File videoFile = new File(dir, sourceProperties.getString(FileSourceAttributes.FILE));
         if (videoFile.exists()) {
             open(videoFile);

@@ -15,7 +15,7 @@ public class ConfigLocator {
         this.defaults.add(new File(configFile));
         this.defaults.add(new File("src/conf", configFile));
         this.defaults.add(new File("conf", configFile));
-        this.defaults.add(new File(new File(Os.APP_PATH, "conf"), configFile));
+        this.defaults.add(new File(new File(AppRuntime.APP_PATH, "conf"), configFile));
     }
 
     public Optional<File> locate(String configPath) {

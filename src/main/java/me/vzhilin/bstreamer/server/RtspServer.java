@@ -12,7 +12,7 @@ import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import me.vzhilin.bstreamer.server.conf.Config;
 import me.vzhilin.bstreamer.server.conf.NetworkAttributes;
-import me.vzhilin.bstreamer.util.Os;
+import me.vzhilin.bstreamer.util.AppRuntime;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +43,7 @@ public class RtspServer {
         this.serverBootstrap = new ServerBootstrap();
 
         int nThreads = serverConfig.getNetwork().getInt("threads");
-        if (Os.IS_WINDOWS) {
+        if (AppRuntime.IS_WINDOWS) {
             bossGroup = new NioEventLoopGroup(1);
             workerGroup = new NioEventLoopGroup(nThreads);
             channelClazz = NioServerSocketChannel.class;
