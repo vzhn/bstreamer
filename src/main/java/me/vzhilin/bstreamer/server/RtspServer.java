@@ -7,8 +7,12 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.ServerSocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import me.vzhilin.bstreamer.server.conf.Config;
 import me.vzhilin.bstreamer.server.conf.NetworkAttributes;
+import me.vzhilin.bstreamer.util.Os;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +30,7 @@ import static org.bytedeco.javacpp.avutil.av_log_set_level;
 public class RtspServer {
     private final static Logger LOG = LoggerFactory.getLogger(RtspServer.class);
 
+    private final Class<? extends ServerSocketChannel> channelClazz;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
     private final ServerBootstrap serverBootstrap;
@@ -36,8 +41,18 @@ public class RtspServer {
     public RtspServer(Config serverConfig) {
         this.serverConfig = serverConfig;
         this.serverBootstrap = new ServerBootstrap();
-        this.bossGroup = new EpollEventLoopGroup(1);
-        this.workerGroup = new EpollEventLoopGroup(serverConfig.getNetwork().getInt("threads"));
+
+        int nThreads = serverConfig.getNetwork().getInt("threads");
+        if (Os.isWindows()) {
+            bossGroup = new NioEventLoopGroup(1);
+            workerGroup = new NioEventLoopGroup(nThreads);
+            channelClazz = NioServerSocketChannel.class;
+        } else {
+            bossGroup = new EpollEventLoopGroup(1);
+            workerGroup = new EpollEventLoopGroup(nThreads);
+            channelClazz = EpollServerSocketChannel.class;
+        }
+
         this.serverContext = new ServerContext(serverConfig);
     }
 
@@ -62,7 +77,7 @@ public class RtspServer {
         int lowWatermark = network.getInt(NetworkAttributes.WATERMARKS_LOW);
         int highWatermark = network.getInt(NetworkAttributes.WATERMARKS_HIGH);
         serverBootstrap.group(bossGroup, workerGroup)
-                .channel(EpollServerSocketChannel.class)
+                .channel(channelClazz)
                 .childAttr(RtspServerAttributes.CONTEXT, serverContext)
                 .option(ChannelOption.SO_REUSEADDR, true)
                 .option(ChannelOption.SO_BACKLOG, 20000)

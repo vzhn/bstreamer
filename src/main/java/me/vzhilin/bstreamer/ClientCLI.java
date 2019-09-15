@@ -1,12 +1,12 @@
 package me.vzhilin.bstreamer;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelOption;
+import io.netty.channel.*;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import me.vzhilin.bstreamer.client.ClientAttributes;
 import me.vzhilin.bstreamer.client.ClientReporter;
 import me.vzhilin.bstreamer.client.ConnectionStatistics;
@@ -16,6 +16,7 @@ import me.vzhilin.bstreamer.client.conf.ConnectionSettings;
 import me.vzhilin.bstreamer.client.conf.NetworkOptions;
 import me.vzhilin.bstreamer.client.handler.ClientChannelInitializer;
 import me.vzhilin.bstreamer.util.ConfigLocator;
+import me.vzhilin.bstreamer.util.Os;
 import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
@@ -23,7 +24,6 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
@@ -72,16 +72,25 @@ public class ClientCLI {
 
         NetworkOptions nw = conf.getNetwork();
         final int nThreads = nw.getThreads().orElse(Runtime.getRuntime().availableProcessors() * 2);
+
+        EventLoopGroup workers;
+        Class<? extends SocketChannel> channelClazz;
+        if (Os.isWindows()) {
+            workers = new NioEventLoopGroup(nThreads);
+            channelClazz = NioSocketChannel.class;
+        } else {
+            workers = new EpollEventLoopGroup(nThreads);
+            channelClazz = EpollSocketChannel.class;
+        }
         bootstrap = new Bootstrap()
-            .group(new EpollEventLoopGroup(nThreads))
-            .channel(EpollSocketChannel.class);
+            .group(workers)
+            .channel(channelClazz);
         nw.getRcvbuf().ifPresent(rcvbuf -> bootstrap.option(ChannelOption.SO_RCVBUF, rcvbuf));
         nw.getConnectTimeout().ifPresent(timeout -> bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout));
         bootstrap.handler(new ClientChannelInitializer(this));
     }
 
     public void start(List<ConnectionSettings> connections) {
-        System.err.println("pid = " + ManagementFactory.getRuntimeMXBean().getName());
         for (ConnectionSettings conn: connections) {
             URI uri = URI.create(conn.getUrl());
             int n = conn.getN();
