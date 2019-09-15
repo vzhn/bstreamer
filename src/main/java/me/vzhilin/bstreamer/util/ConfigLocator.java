@@ -9,16 +9,13 @@ import java.util.Optional;
 
 public class ConfigLocator {
     private final static Logger LOG = Logger.getLogger(ConfigLocator.class);
-    private static final String USR_LOCAL_BSTREAMER_CONF = "/usr/local/bstreamer/conf/";
-    private static final String RELATIVE_CONF = "conf/";
-    private static final String IDE_BSTREAMER_CONF = "src/conf/";
     private final List<File> defaults = new ArrayList<>();
 
     public ConfigLocator(String configFile) {
         this.defaults.add(new File(configFile));
-        this.defaults.add(new File(IDE_BSTREAMER_CONF, configFile));
-        this.defaults.add(new File(RELATIVE_CONF, configFile));
-        this.defaults.add(new File(USR_LOCAL_BSTREAMER_CONF, configFile));
+        this.defaults.add(new File("src/conf", configFile));
+        this.defaults.add(new File("conf", configFile));
+        this.defaults.add(new File(new File(Os.APP_PATH, "conf"), configFile));
     }
 
     public Optional<File> locate(String configPath) {

@@ -43,7 +43,7 @@ public class RtspServer {
         this.serverBootstrap = new ServerBootstrap();
 
         int nThreads = serverConfig.getNetwork().getInt("threads");
-        if (Os.isWindows()) {
+        if (Os.IS_WINDOWS) {
             bossGroup = new NioEventLoopGroup(1);
             workerGroup = new NioEventLoopGroup(nThreads);
             channelClazz = NioServerSocketChannel.class;

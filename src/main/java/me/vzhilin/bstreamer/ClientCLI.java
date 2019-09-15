@@ -75,7 +75,7 @@ public class ClientCLI {
 
         EventLoopGroup workers;
         Class<? extends SocketChannel> channelClazz;
-        if (Os.isWindows()) {
+        if (Os.IS_WINDOWS) {
             workers = new NioEventLoopGroup(nThreads);
             channelClazz = NioSocketChannel.class;
         } else {
