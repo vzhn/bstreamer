@@ -33,11 +33,9 @@
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
-        <Directory Id="ROOTDIRECTORY" Name="$(var.Manufacturer)">
           <Directory Id="INSTALLFOLDER" Name="$(var.Name)">
-			<Directory Id="RepoDir"/>
+            <Directory Id="RepoDir"/>
           </Directory>
-        </Directory>
       </Directory>
     </Directory>
   </Fragment>
