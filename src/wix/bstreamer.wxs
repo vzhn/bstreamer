@@ -35,6 +35,7 @@
       <Directory Id="ProgramFilesFolder">
           <Directory Id="INSTALLFOLDER" Name="$(var.Name)">
             <Directory Id="RepoDir"/>
+            <Directory Id="BinDir"/>
           </Directory>
       </Directory>
     </Directory>
@@ -43,6 +44,7 @@
   <Fragment>
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
 	  <ComponentGroupRef Id="RepoGroup"/>
+	  <ComponentGroupRef Id="BinGroup"/>
     </ComponentGroup>
   </Fragment>
 </Wix>
