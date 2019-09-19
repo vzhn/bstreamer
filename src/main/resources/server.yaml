@@ -6,17 +6,17 @@ network:
     high: 131072
     low: 65536
   limits:
-#    packets: 10
-#    size: 131072
+    #    packets: 10
+    #    size: 131072
     time: 200
 streaming:
   file:
-    class: me.vzhilin.bstreamer.server.streaming.FileMediaPacketSource
+    class: FileMediaPacketSource
     conf:
       basedir: /home/vzhilin/misc/video_samples/
-      file: simpsons_video.mkv
+      file: jellyfish-5-mbps-hd-h264.mkv
   picture:
-    class: me.vzhilin.bstreamer.server.streaming.SimplePictureSource
+    class: SimplePictureSource
     conf:
       picture:
         width: 640

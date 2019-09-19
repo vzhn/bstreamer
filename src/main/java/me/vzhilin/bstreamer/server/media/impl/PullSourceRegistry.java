@@ -18,6 +18,7 @@ public final class PullSourceRegistry {
     // url -> source properties -> source
     private final Map<SourceKey, PushSource> sources = new HashMap<>();
     private final Function<SourceKey, PushSource> mappingFunction;
+    private final static String DEFAULT_PACKAGE = "me.vzhilin.bstreamer.server.streaming.";
 
     public PullSourceRegistry(BufferingLimits limits, ScheduledExecutorService workers) {
         mappingFunction = (SourceKey key) -> new PushSource(supplierFor(key), key.cfg, workers, limits);
@@ -29,7 +30,7 @@ public final class PullSourceRegistry {
 
     private Supplier<PullSource> supplierFor(SourceKey key) {
         try {
-            Class<PullSource> pullSource = (Class<PullSource>) Class.forName(key.clazz);
+            Class<PullSource> pullSource = (Class<PullSource>) Class.forName(DEFAULT_PACKAGE + key.clazz);
             Constructor<PullSource> constructor = pullSource.getDeclaredConstructor(PropertyMap.class);
             return () -> {
                 try {
