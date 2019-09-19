@@ -1,8 +1,8 @@
 package me.vzhilin.bstreamer;
 
-import me.vzhilin.bstreamer.server.ConsoleReporter;
 import me.vzhilin.bstreamer.server.RtspServer;
 import me.vzhilin.bstreamer.server.ServerContext;
+import me.vzhilin.bstreamer.server.ServerReporter;
 import me.vzhilin.bstreamer.server.conf.Config;
 import me.vzhilin.bstreamer.server.stat.ServerStatistics;
 import me.vzhilin.bstreamer.util.ConfigLocator;
@@ -70,6 +70,6 @@ public class ServerCLI {
         ServerContext sc = server.getServerContext();
         ServerStatistics stat = sc.getStat();
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        new ConsoleReporter(stat, exec).start();
+        new ServerReporter(stat, exec).start();
     }
 }

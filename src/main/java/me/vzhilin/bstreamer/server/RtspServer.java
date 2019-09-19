@@ -63,8 +63,6 @@ public class RtspServer {
     public void start() {
         setupLoglevel();
         startServer();
-
-        LOG.info("mediaserver started");
     }
 
     private void setupLoglevel() {
