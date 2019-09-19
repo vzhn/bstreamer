@@ -41,7 +41,12 @@ public final class ClientReporter {
             TotalStatistics.Snapshot s = stat.snapshot();
             String direct = HumanReadable.humanReadableByteCount(directMemoryPool.getMemoryUsed(), false);
 
-            long gbps = 8 * s.bytes / s.deltaTime * 1000;
+            long gbps;
+            if (s.deltaTime == 0) {
+                gbps = 0;
+            } else {
+                gbps = 8 * s.bytes / s.deltaTime * 1000;
+            }
             String bandwidth = HumanReadable.humanReadableByteCount(gbps, false);
             LocalDateTime now = LocalDateTime.now();
             System.out.printf("\r%02d:%02d:%02d C %d [+%d; -%d] E %d [+%d] %s ",
