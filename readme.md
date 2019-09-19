@@ -27,12 +27,12 @@ network:
     time: 200
 streaming:
   file:
-    class: me.vzhilin.bstreamer.server.media.impl.file.FileMediaPacketSource
+    class: me.vzhilin.bstreamer.server.streaming.FileMediaPacketSource
     conf:
       basedir: video_samples
       file: jellyfish-5-mbps-hd-h264.mkv
   picture:
-    class: me.vzhilin.bstreamer.server.media.impl.picture.SimplePictureSource
+    class: me.vzhilin.bstreamer.server.streaming.SimplePictureSource
     conf:
       picture:
         width: 640

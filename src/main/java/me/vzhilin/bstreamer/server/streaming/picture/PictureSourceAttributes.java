@@ -1,4 +1,4 @@
-package me.vzhilin.bstreamer.server.media.impl.picture;
+package me.vzhilin.bstreamer.server.streaming.picture;
 
 public class PictureSourceAttributes {
     public static final String PICTURE_WIDTH                = "width";

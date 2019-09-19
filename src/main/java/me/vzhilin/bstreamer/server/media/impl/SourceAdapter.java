@@ -1,10 +1,10 @@
 package me.vzhilin.bstreamer.server.media.impl;
 
-import me.vzhilin.bstreamer.server.media.PullSource;
-import me.vzhilin.bstreamer.server.media.PushSource;
-import me.vzhilin.bstreamer.server.media.PushSourceListener;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacket;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.base.PullSource;
+import me.vzhilin.bstreamer.server.streaming.base.PushSource;
+import me.vzhilin.bstreamer.server.streaming.base.PushSourceListener;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
 
 import java.util.ArrayList;
 import java.util.List;

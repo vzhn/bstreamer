@@ -9,12 +9,12 @@ import io.netty.channel.group.ChannelMatchers;
 import io.netty.channel.group.DefaultChannelGroup;
 import me.vzhilin.bstreamer.server.ServerContext;
 import me.vzhilin.bstreamer.server.media.InterleavedFrame;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.bstreamer.server.scheduler.PushSource;
 import me.vzhilin.bstreamer.server.scheduler.PushSourceSession;
 import me.vzhilin.bstreamer.server.scheduler.PushTaskSubscriber;
 import me.vzhilin.bstreamer.server.scheduler.PushedPacket;
 import me.vzhilin.bstreamer.server.stat.ServerStatistics;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
 import me.vzhilin.bstreamer.util.PropertyMap;
 
 public final class GroupStreamer {

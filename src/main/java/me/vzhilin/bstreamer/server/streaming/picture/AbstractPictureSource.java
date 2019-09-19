@@ -1,11 +1,11 @@
-package me.vzhilin.bstreamer.server.media.impl.picture;
+package me.vzhilin.bstreamer.server.streaming.picture;
 
 import io.netty.buffer.Unpooled;
 import me.vzhilin.bstreamer.server.ServerContext;
-import me.vzhilin.bstreamer.server.media.PullSource;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacket;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.bstreamer.server.stat.GroupStatistics;
+import me.vzhilin.bstreamer.server.streaming.base.PullSource;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.PointerPointer;

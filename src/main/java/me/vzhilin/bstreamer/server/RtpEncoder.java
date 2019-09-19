@@ -1,7 +1,7 @@
 package me.vzhilin.bstreamer.server;
 
 import io.netty.buffer.ByteBuf;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacket;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
 
 public class RtpEncoder {
     private static final int MTU = 65536;

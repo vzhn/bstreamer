@@ -1,9 +1,12 @@
-package me.vzhilin.bstreamer.server.media.impl.file;
+package me.vzhilin.bstreamer.server.streaming;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import me.vzhilin.bstreamer.server.media.AVCCExtradataParser;
-import me.vzhilin.bstreamer.server.media.PullSource;
+import me.vzhilin.bstreamer.server.streaming.base.PullSource;
+import me.vzhilin.bstreamer.server.streaming.file.FileSourceAttributes;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
 import me.vzhilin.bstreamer.util.AppRuntime;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.bytedeco.javacpp.*;

@@ -1,7 +1,7 @@
 package me.vzhilin.bstreamer.server.strategy;
 
 import io.netty.channel.ChannelHandlerContext;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
 
 public interface StreamingStrategy {
     void attachContext(ChannelHandlerContext context);

@@ -1,7 +1,7 @@
 package me.vzhilin.bstreamer.server.scheduler;
 
-import me.vzhilin.bstreamer.server.media.PullSource;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.base.PullSource;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
 import me.vzhilin.bstreamer.util.PropertyMap;
 
 import java.util.concurrent.Future;

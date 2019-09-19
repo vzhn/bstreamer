@@ -1,4 +1,4 @@
-package me.vzhilin.bstreamer.server.media.impl.picture;
+package me.vzhilin.bstreamer.server.streaming.picture;
 
 import org.bytedeco.javacpp.avcodec;
 import org.bytedeco.javacpp.avutil;

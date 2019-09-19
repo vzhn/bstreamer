@@ -1,9 +1,9 @@
 package me.vzhilin.bstreamer.server.media.impl;
 
 import me.vzhilin.bstreamer.server.SourceKey;
-import me.vzhilin.bstreamer.server.media.PullSource;
 import me.vzhilin.bstreamer.server.scheduler.BufferingLimits;
 import me.vzhilin.bstreamer.server.scheduler.PushSource;
+import me.vzhilin.bstreamer.server.streaming.base.PullSource;
 import me.vzhilin.bstreamer.util.PropertyMap;
 
 import java.lang.reflect.Constructor;

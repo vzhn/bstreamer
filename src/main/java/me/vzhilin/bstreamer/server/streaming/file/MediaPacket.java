@@ -1,4 +1,4 @@
-package me.vzhilin.bstreamer.server.media.impl.file;
+package me.vzhilin.bstreamer.server.streaming.file;
 
 import io.netty.buffer.ByteBuf;
 

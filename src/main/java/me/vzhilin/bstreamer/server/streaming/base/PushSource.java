@@ -1,6 +1,6 @@
-package me.vzhilin.bstreamer.server.media;
+package me.vzhilin.bstreamer.server.streaming.base;
 
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
 
 public interface PushSource {
     MediaPacketSourceDescription getDesc();

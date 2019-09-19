@@ -1,6 +1,7 @@
-package me.vzhilin.bstreamer.server.media.impl.picture;
+package me.vzhilin.bstreamer.server.streaming;
 
 import me.vzhilin.bstreamer.server.ServerContext;
+import me.vzhilin.bstreamer.server.streaming.picture.AbstractPictureSource;
 import me.vzhilin.bstreamer.util.PropertyMap;
 
 import java.awt.*;

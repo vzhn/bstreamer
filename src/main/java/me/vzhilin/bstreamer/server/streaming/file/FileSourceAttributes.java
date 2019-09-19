@@ -1,4 +1,4 @@
-package me.vzhilin.bstreamer.server.media.impl.file;
+package me.vzhilin.bstreamer.server.streaming.file;
 
 public class FileSourceAttributes {
     public final static String DIR = "basedir";

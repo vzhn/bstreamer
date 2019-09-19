@@ -1,6 +1,6 @@
-package me.vzhilin.bstreamer.server.media;
+package me.vzhilin.bstreamer.server.streaming.base;
 
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacket;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
 
 public interface PushSourceListener {
     void onNext(MediaPacket packet);

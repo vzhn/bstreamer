@@ -11,8 +11,8 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
 import me.vzhilin.bstreamer.server.conf.Config;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacketSourceDescription;
 import me.vzhilin.bstreamer.server.strategy.sync.GroupStreamer;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
 import me.vzhilin.bstreamer.util.PropertyMap;
 
 import java.util.Base64;

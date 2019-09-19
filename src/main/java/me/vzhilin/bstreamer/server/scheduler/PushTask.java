@@ -4,9 +4,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import me.vzhilin.bstreamer.server.RtpEncoder;
 import me.vzhilin.bstreamer.server.media.InterleavedFrame;
-import me.vzhilin.bstreamer.server.media.PullSource;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacket;
-import me.vzhilin.bstreamer.server.media.impl.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.base.PullSource;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
+import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
 
 import java.io.IOException;
 import java.util.ArrayList;
