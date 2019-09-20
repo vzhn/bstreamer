@@ -1,10 +1,17 @@
-Bstreamer is a tool for load testing video streaming applications
+## Motivation
+Imagine that you need to develop video streaming software that is capable to receive and send video from thousands ip cameras to
+thousands video clients. You do not have so many ip cameras so you need piece of software to replace it. 
 
+**Bstreamer** is a tool for load testing video streaming applications. Supported transport: RTSP over TCP (interleaved mode)
 
-### bserver
-An application for client load testing
+* **bserver** is RTSP server
+* **bclient** is RTSP client
 
-Usage:
+## bserver
+Is capable to serve 10k connections with 40 gbps total bandwidth. 
+It can stream h264 video files stored in matroska format and procedural-generated pictures.
+
+#### Usage:
 ```
 $ bserver -c server.yaml
 
@@ -12,7 +19,7 @@ time      | client connections | errors       | throughput
 =========================================================
 16:13:00  | 4000 [+0; -0]      | 0            | 17.6 GiB   
 ```
-Server config example:
+##### server.yaml:
 ```
 network:
   bind: ["0.0.0.0:5000"]
@@ -44,10 +51,10 @@ streaming:
         max_b_frames: 1
 ```
 
-### bclient
-An application for server load testing
+## bclient
+Is capable to receive video from multiple connections
 
-Usage:
+#### Usage:
 ```
 $ bclient -c client.yaml
 
@@ -56,7 +63,7 @@ time      | server connections | errors       | throughput
 16:13:00  | 4000 [+0; -0]      | 0            | 17.6 GiB 
 ```
 
-Client config example:
+##### client.yaml:
 ```
 network:
   threads: 4
