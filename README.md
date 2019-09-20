@@ -34,12 +34,12 @@ network:
     time: 200
 streaming:
   file:
-    class: me.vzhilin.bstreamer.server.streaming.FileMediaPacketSource
+    class: FileMediaPacketSource
     conf:
       basedir: video_samples
       file: jellyfish-5-mbps-hd-h264.mkv
   picture:
-    class: me.vzhilin.bstreamer.server.streaming.SimplePictureSource
+    class: SimplePictureSource
     conf:
       picture:
         width: 640
@@ -52,7 +52,7 @@ streaming:
 ```
 
 ## bclient
-Is capable to receive video from multiple connections
+RTSP client aimed to receive video from multiple connections with maximum possible throughput
 
 #### Usage:
 ```
