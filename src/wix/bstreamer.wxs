@@ -37,6 +37,7 @@
             <Directory Id="RepoDir"/>
             <Directory Id="BinDir"/>
             <Directory Id="ConfDir"/>
+            <Directory Id="VideoDir"/>
           </Directory>
       </Directory>
     </Directory>
@@ -47,6 +48,7 @@
 	  <ComponentGroupRef Id="RepoGroup"/>
 	  <ComponentGroupRef Id="BinGroup"/>
 	  <ComponentGroupRef Id="ConfGroup"/>
+	  <ComponentGroupRef Id="VideoGroup"/>
     </ComponentGroup>
   </Fragment>
 </Wix>
