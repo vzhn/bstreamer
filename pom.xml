@@ -11,7 +11,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <bstreamer.home>/usr/local/bstreamer</bstreamer.home>
         <ffmpeg.arch>linux-x86_64</ffmpeg.arch>
-        <video.location>src/video</video.location>
+        <video.location>src/deploy/video</video.location>
     </properties>
     <build>
         <plugins>
@@ -75,7 +75,7 @@
                     <execution>
                         <phase>package</phase>
                         <goals>
-                            <goal>assembly</goal>
+                            <goal>single</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -172,7 +172,7 @@
                                     <!-- expand "SNAPSHOT" to what is in the "USER" env variable -->
                                     <snapshotEnv>USER</snapshotEnv>
                                     <verbose>true</verbose>
-                                    <controlDir>${basedir}/src/deb/control</controlDir>
+                                    <controlDir>${basedir}/src/deploy/deb/control</controlDir>
                                     <dataSet>
                                         <data>
                                             <src>target/appassembler</src>
@@ -244,12 +244,12 @@
                             <defaultDirmode>755</defaultDirmode>
                             <defaultFilemode>444</defaultFilemode>
                             <postinstallScriptlet>
-                                <scriptFile>src/rpm/postinstall.sh</scriptFile>
+                                <scriptFile>src/deploy/rpm/postinstall.sh</scriptFile>
                                 <fileEncoding>utf-8</fileEncoding>
                                 <filter>true</filter>
                             </postinstallScriptlet>
                             <postremoveScriptlet>
-                                <scriptFile>src/rpm/postremove.sh</scriptFile>
+                                <scriptFile>src/deploy/rpm/postremove.sh</scriptFile>
                                 <fileEncoding>utf-8</fileEncoding>
                                 <filter>true</filter>
                             </postremoveScriptlet>
@@ -276,7 +276,7 @@
                                     <directory>${bstreamer.home}/conf</directory>
                                     <sources>
                                         <source>
-                                            <location>src/conf</location>
+                                            <location>src/deploy/conf</location>
                                         </source>
                                     </sources>
                                 </mapping>
@@ -336,7 +336,7 @@
                                     <escapeWindowsPaths>false</escapeWindowsPaths>
                                     <resources>
                                         <resource>
-                                            <directory>src/wix</directory>
+                                            <directory>src/deploy/wix</directory>
                                             <filtering>true</filtering>
                                         </resource>
                                     </resources>
