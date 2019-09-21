@@ -25,11 +25,19 @@ public class SimplePictureSource extends AbstractPictureSource {
 
     @Override
     protected void drawPicture(BufferedImage image) {
-        OperatingSystemMXBean bean = ManagementFactory.getOperatingSystemMXBean();
-
         Graphics gc = image.getGraphics();
         gc.setColor(Color.WHITE);
         gc.fillRect(0, 0, image.getWidth(), image.getHeight());
+
+        drawStat(gc);
+    }
+
+
+    private void drawStat(Graphics gc) {
+        OperatingSystemMXBean bean = ManagementFactory.getOperatingSystemMXBean();
+        gc.setColor(Color.PINK);
+        gc.fillRect(0, 0, 220, 90);
+
         gc.setColor(Color.BLACK);
         Typewriter tw = new Typewriter(gc);
 
@@ -39,5 +47,4 @@ public class SimplePictureSource extends AbstractPictureSource {
         tw.drawString("total_connections: " + totalStat.connections());
         tw.drawString("load_average: " + bean.getSystemLoadAverage());
     }
-
 }
