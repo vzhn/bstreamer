@@ -71,14 +71,6 @@
                         <descriptor>src/main/assembly/assembly.xml</descriptor>
                     </descriptors>
                 </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
@@ -87,12 +79,6 @@
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>ffmpeg</artifactId>
             <version>4.1-1.4.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>ffmpeg</artifactId>
-            <version>4.1-1.4.4</version>
-            <classifier>${ffmpeg.arch}</classifier>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -143,6 +129,22 @@
     </dependencies>
 
     <profiles>
+        <profile>
+            <id>linux-x86_64</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                </os>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>ffmpeg</artifactId>
+                    <version>4.1-1.4.4</version>
+                    <classifier>linux-x86_64</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
         <profile>
             <id>deb</id>
             <build>
@@ -297,9 +299,21 @@
         <profile>
             <id>windows-x86_64</id>
             <properties>
-                <ffmpeg.arch>windows-x86_64</ffmpeg.arch>
                 <bstreamer.home>C:\opt\mediaserver</bstreamer.home>
             </properties>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>ffmpeg</artifactId>
+                    <version>4.1-1.4.4</version>
+                    <classifier>windows-x86_64</classifier>
+                </dependency>
+            </dependencies>
             <build>
                 <plugins>
                     <plugin>
