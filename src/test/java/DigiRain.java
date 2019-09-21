@@ -6,8 +6,6 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 public class DigiRain {
     public static final int CHAR_H = 25;
@@ -42,15 +40,16 @@ public class DigiRain {
             @Override
             public void run() {
                 synchronized (strings) {
-                    if (free.isEmpty()) {
-                        return;
+                    if (!free.isEmpty()) {
+                        int y = 0;
+                        int k = randomItem(free);
+                        free.remove(k);
+                        int x = k * 25;
+                        strings.add(new DigiString("", x, y));
                     }
 
-                    int y = 0;
-                    int k = randomItem(free);
-                    free.remove(k);
-                    int x = k * 25;
-                    strings.add(new DigiString("", x, y));
+                    strings.forEach(DigiString::appendRandomCharacter);
+                    frame.repaint();
                 }
             }
 
@@ -64,18 +63,6 @@ public class DigiRain {
                 return v;
             }
         }, 0, 100, TimeUnit.MILLISECONDS);
-        exec.scheduleAtFixedRate(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        synchronized (strings) {
-                            strings.forEach(DigiString::appendRandomCharacter);
-                        }
-
-                        frame.repaint();
-                    }
-                }
-        , 0, 50, TimeUnit.MILLISECONDS);
     }
 
     private static class DigiString {
@@ -144,27 +131,14 @@ public class DigiRain {
             gr.setColor(Color.GREEN);
             synchronized (strings) {
                 strings.forEach(digiString -> paintString(gr, digiString));
-                strings.forEach(new Consumer<DigiString>() {
-                    @Override
-                    public void accept(DigiString digiString) {
-                        digiString.randomMutate();
+                strings.forEach(DigiString::randomMutate);
+                strings.forEach(digiString -> {
+                    if (digiString.y > 700) {
+                        int k = digiString.x / 25;
+                        free.add(k);
                     }
                 });
-                strings.forEach(new Consumer<DigiString>() {
-                    @Override
-                    public void accept(DigiString digiString) {
-                        if (digiString.y > 700) {
-                            int k = digiString.x / 25;
-                            free.add(k);
-                        }
-                    }
-                });
-                strings.removeIf(new Predicate<DigiString>() {
-                    @Override
-                    public boolean test(DigiString digiString) {
-                        return digiString.y > 700;
-                    }
-                });
+                strings.removeIf(digiString -> digiString.y > 700);
             }
 
             gr.dispose();
@@ -172,7 +146,6 @@ public class DigiRain {
         }
 
         private void paintString(Graphics gr, DigiString s) {
-            Font font = gr.getFont();
             char[] chs = s.data.toCharArray();
 
             float factor = 1.0f;

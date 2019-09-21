@@ -2,7 +2,6 @@ package me.vzhilin.bstreamer.server.streaming.picture;
 
 import io.netty.buffer.Unpooled;
 import me.vzhilin.bstreamer.server.ServerContext;
-import me.vzhilin.bstreamer.server.stat.GroupStatistics;
 import me.vzhilin.bstreamer.server.streaming.base.PullSource;
 import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
 import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
@@ -40,7 +39,6 @@ public abstract class AbstractPictureSource implements PullSource {
     private long frameNumber = 0;
     private Deque<MediaPacket> queue = new LinkedList<MediaPacket>();
     private boolean init;
-    private GroupStatistics groupStatistics;
     private boolean closed;
 
     public AbstractPictureSource(ServerContext context, PropertyMap properties) {
@@ -196,18 +194,7 @@ public abstract class AbstractPictureSource implements PullSource {
         }
     }
 
-    private synchronized void setGroupStatistics(GroupStatistics groupStatistics) {
-        this.groupStatistics = groupStatistics;
-    }
-
     protected abstract void drawPicture(BufferedImage image);
-
-    protected synchronized GroupStatistics getGroupStatistics() {
-        if (this.groupStatistics == null) {
-            this.groupStatistics = context.getStat().get(properties);
-        }
-        return groupStatistics;
-    }
 
     private void encode(AVCodecContext c, AVFrame frame, AVPacket pkt) {
         int ret = avcodec_send_frame(c, frame);
