@@ -2,6 +2,7 @@ package me.vzhilin.bstreamer.server.streaming;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import me.vzhilin.bstreamer.server.ServerContext;
 import me.vzhilin.bstreamer.server.media.AVCCExtradataParser;
 import me.vzhilin.bstreamer.server.streaming.base.PullSource;
 import me.vzhilin.bstreamer.server.streaming.file.FileSourceAttributes;
@@ -27,7 +28,7 @@ public class FileMediaPacketSource implements PullSource {
     private AVPacket pk;
     private AVFormatContext pAvfmtCtx;
 
-    public FileMediaPacketSource(PropertyMap sourceProperties) throws IOException {
+    public FileMediaPacketSource(ServerContext context, PropertyMap sourceProperties) throws IOException {
         String dirPath = sourceProperties.getString(FileSourceAttributes.DIR);
         File dir = new File(dirPath);
         if (!dir.isAbsolute()) {

@@ -13,7 +13,7 @@ public class ConfigLocator {
 
     public ConfigLocator(String configFile) {
         this.defaults.add(new File(configFile));
-        this.defaults.add(new File("src/conf", configFile));
+        this.defaults.add(new File("src/deploy/conf", configFile));
         this.defaults.add(new File("conf", configFile));
         this.defaults.add(new File(new File(AppRuntime.APP_PATH, "conf"), configFile));
     }

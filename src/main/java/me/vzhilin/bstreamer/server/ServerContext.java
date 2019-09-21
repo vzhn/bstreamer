@@ -23,7 +23,7 @@ public class ServerContext {
         this.config = config;
         this.stat = new ServerStatistics();
         ScheduledExecutorService workerExecutors = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
-        this.pullSourceRegistry = new PullSourceRegistry(config.getBufferingLimits(), workerExecutors);
+        this.pullSourceRegistry = new PullSourceRegistry(this, config.getBufferingLimits(), workerExecutors);
     }
 
     public ServerStatistics getStat() {

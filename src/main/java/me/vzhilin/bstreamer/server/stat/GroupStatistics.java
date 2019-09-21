@@ -1,25 +1,30 @@
 package me.vzhilin.bstreamer.server.stat;
 
 public final class GroupStatistics {
-    private long totalConnections;
-    private long totalBytes;
-    private long totalLagCounter;
+    private long connections;
+    private long openedConnections;
+    private long closedConnections;
 
+    private long totalLagCounter;
     private long lagCounter;
+
+    private long totalBytes;
     private long byteCounter;
-    private long connOpenCounter;
-    private long connCloseCounter;
 
     public GroupStatistics() { }
 
+    public synchronized long connections() {
+        return connections;
+    }
+
     public synchronized void incOpenConn() {
-        ++totalConnections;
-        ++connOpenCounter;
+        ++connections;
+        ++openedConnections;
     }
 
     public synchronized void incCloseConn() {
-        --totalConnections;
-        ++connCloseCounter;
+        --connections;
+        ++closedConnections;
     }
 
     public synchronized void incByteCount(long bytes) {
@@ -36,8 +41,8 @@ public final class GroupStatistics {
         GroupStatisticsSnapshot snapshot = new GroupStatisticsSnapshot(this);
         lagCounter = 0;
         byteCounter = 0;
-        connOpenCounter = 0;
-        connCloseCounter = 0;
+        openedConnections = 0;
+        closedConnections = 0;
         return snapshot;
     }
 
@@ -51,13 +56,13 @@ public final class GroupStatistics {
         public final long connCloseCOunter;
 
         public GroupStatisticsSnapshot(GroupStatistics gs) {
-            this.totalConnections = gs.totalConnections;
+            this.totalConnections = gs.connections;
             this.totalBytes = gs.totalBytes;
             this.totalLagCounter = gs.totalLagCounter;
             this.lagCounter = gs.lagCounter;
             this.byteCounter = gs.byteCounter;
-            this.connOpenCounter = gs.connOpenCounter;
-            this.connCloseCOunter = gs.connCloseCounter;
+            this.connOpenCounter = gs.openedConnections;
+            this.connCloseCOunter = gs.closedConnections;
         }
     }
 }

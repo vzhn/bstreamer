@@ -1,5 +1,6 @@
 package me.vzhilin.bstreamer.server.media.impl;
 
+import me.vzhilin.bstreamer.server.ServerContext;
 import me.vzhilin.bstreamer.server.SourceKey;
 import me.vzhilin.bstreamer.server.scheduler.BufferingLimits;
 import me.vzhilin.bstreamer.server.scheduler.PushSource;
@@ -15,12 +16,13 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class PullSourceRegistry {
-    // url -> source properties -> source
+    private final static String DEFAULT_PACKAGE = "me.vzhilin.bstreamer.server.streaming.";
     private final Map<SourceKey, PushSource> sources = new HashMap<>();
     private final Function<SourceKey, PushSource> mappingFunction;
-    private final static String DEFAULT_PACKAGE = "me.vzhilin.bstreamer.server.streaming.";
+    private final ServerContext serverContext;
 
-    public PullSourceRegistry(BufferingLimits limits, ScheduledExecutorService workers) {
+    public PullSourceRegistry(ServerContext context, BufferingLimits limits, ScheduledExecutorService workers) {
+        this.serverContext = context;
         mappingFunction = (SourceKey key) -> new PushSource(supplierFor(key), key.cfg, workers, limits);
     }
 
@@ -31,10 +33,10 @@ public final class PullSourceRegistry {
     private Supplier<PullSource> supplierFor(SourceKey key) {
         try {
             Class<PullSource> pullSource = (Class<PullSource>) Class.forName(DEFAULT_PACKAGE + key.clazz);
-            Constructor<PullSource> constructor = pullSource.getDeclaredConstructor(PropertyMap.class);
+            Constructor<PullSource> constructor = pullSource.getDeclaredConstructor(ServerContext.class, PropertyMap.class);
             return () -> {
                 try {
-                    return constructor.newInstance(key.cfg);
+                    return constructor.newInstance(serverContext, key.cfg);
                 } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }
