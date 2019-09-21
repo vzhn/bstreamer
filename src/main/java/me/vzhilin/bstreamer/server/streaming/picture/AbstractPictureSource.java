@@ -4,7 +4,7 @@ import io.netty.buffer.Unpooled;
 import me.vzhilin.bstreamer.server.ServerContext;
 import me.vzhilin.bstreamer.server.streaming.base.PullSource;
 import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
-import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -26,7 +26,7 @@ public abstract class AbstractPictureSource implements PullSource {
     private final H264CodecParameters codecParameters;
     private final ServerContext context;
     private final PropertyMap properties;
-    private MediaPacketSourceDescription desc;
+    private SourceDescription desc;
     private AVPacket pkt;
     private AVCodecContext c;
     private AVRational timebaseMillis;
@@ -91,7 +91,7 @@ public abstract class AbstractPictureSource implements PullSource {
         byte[] extradata = new byte[c.extradata_size()];
         c.extradata().get(extradata);
         parseSpsPps(extradata);
-        desc = new MediaPacketSourceDescription();
+        desc = new SourceDescription();
         desc.setSps(sps);
         desc.setPps(pps);
         desc.setTimebase(timebase);
@@ -150,7 +150,7 @@ public abstract class AbstractPictureSource implements PullSource {
     }
 
     @Override
-    public MediaPacketSourceDescription getDesc() {
+    public SourceDescription getDesc() {
         ensureInitialized();
         return desc;
     }

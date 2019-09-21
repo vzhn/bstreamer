@@ -4,7 +4,7 @@ import me.vzhilin.bstreamer.server.streaming.base.PullSource;
 import me.vzhilin.bstreamer.server.streaming.base.PushSource;
 import me.vzhilin.bstreamer.server.streaming.base.PushSourceListener;
 import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
-import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +25,7 @@ public class SourceAdapter implements PushSource {
     }
 
     @Override
-    public MediaPacketSourceDescription getDesc() {
+    public SourceDescription getDesc() {
         return delegate.getDesc();
     }
 

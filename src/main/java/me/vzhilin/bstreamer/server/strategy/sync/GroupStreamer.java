@@ -14,7 +14,7 @@ import me.vzhilin.bstreamer.server.scheduler.PushSourceSession;
 import me.vzhilin.bstreamer.server.scheduler.PushTaskSubscriber;
 import me.vzhilin.bstreamer.server.scheduler.PushedPacket;
 import me.vzhilin.bstreamer.server.stat.ServerStatistics;
-import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 import me.vzhilin.bstreamer.util.PropertyMap;
 
 public final class GroupStreamer {
@@ -71,7 +71,7 @@ public final class GroupStreamer {
         stat.closeConn(sourceConfig);
     }
 
-    public MediaPacketSourceDescription describe() {
+    public SourceDescription describe() {
         return pushSource.describe();
     }
 

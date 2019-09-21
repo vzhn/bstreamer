@@ -6,7 +6,7 @@ import me.vzhilin.bstreamer.server.RtpEncoder;
 import me.vzhilin.bstreamer.server.media.InterleavedFrame;
 import me.vzhilin.bstreamer.server.streaming.base.PullSource;
 import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
-import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,7 +32,7 @@ final class PushTask implements Runnable {
     private long lastDts;
 
     private List<PushTaskSubscriber> subs = new ArrayList<>();
-    private MediaPacketSourceDescription desc;
+    private SourceDescription desc;
 
     PushTask(Supplier<PullSource> pullSource,
              BufferingLimits limits,
@@ -42,7 +42,7 @@ final class PushTask implements Runnable {
         this.executor = executor;
     }
 
-    public MediaPacketSourceDescription describe() {
+    public SourceDescription describe() {
         synchronized (this) {
             if (desc == null) {
                 PullSource pullSource = sourceSupplier.get();

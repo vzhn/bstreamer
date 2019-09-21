@@ -3,7 +3,7 @@ package me.vzhilin.bstreamer.server.streaming.file;
 
 import org.bytedeco.javacpp.avutil;
 
-public class MediaPacketSourceDescription {
+public class SourceDescription {
     private byte[] sps;
     private byte[] pps;
     private avutil.AVRational timebase;

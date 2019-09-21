@@ -6,7 +6,7 @@ import me.vzhilin.bstreamer.server.media.AVCCExtradataParser;
 import me.vzhilin.bstreamer.server.streaming.base.PullSource;
 import me.vzhilin.bstreamer.server.streaming.file.FileSourceAttributes;
 import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
-import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 import me.vzhilin.bstreamer.util.AppRuntime;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.bytedeco.javacpp.*;
@@ -22,7 +22,7 @@ import static org.bytedeco.javacpp.avformat.*;
 
 public class FileMediaPacketSource implements PullSource {
     private boolean wasClosed;
-    private MediaPacketSourceDescription desc;
+    private SourceDescription desc;
     private Queue<MediaPacket> packetQueue = new LinkedList<>();
     private AVPacket pk;
     private AVFormatContext pAvfmtCtx;
@@ -71,7 +71,7 @@ public class FileMediaPacketSource implements PullSource {
         AVCCExtradataParser extradata = new AVCCExtradataParser(extradataBytes);
         byte[] sps = extradata.getSps();
         byte[] pps = extradata.getPps();
-        desc = new MediaPacketSourceDescription();
+        desc = new SourceDescription();
         desc.setSps(sps);
         desc.setPps(pps);
         desc.setTimebase(streamTimebase);
@@ -93,7 +93,7 @@ public class FileMediaPacketSource implements PullSource {
     }
 
     @Override
-    public MediaPacketSourceDescription getDesc() {
+    public SourceDescription getDesc() {
         return desc;
     }
 

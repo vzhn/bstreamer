@@ -12,7 +12,7 @@ import io.netty.handler.codec.rtsp.RtspHeaderNames;
 import io.netty.handler.codec.rtsp.RtspVersions;
 import me.vzhilin.bstreamer.server.conf.Config;
 import me.vzhilin.bstreamer.server.strategy.sync.GroupStreamer;
-import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 import me.vzhilin.bstreamer.util.PropertyMap;
 
 import java.util.Base64;
@@ -103,7 +103,7 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
         return context.getStreamer(loop, url, clazz, conf);
     }
 
-    private FullHttpResponse description(RtspUriParser uri, MediaPacketSourceDescription description) {
+    private FullHttpResponse description(RtspUriParser uri, SourceDescription description) {
         byte[] sps = description.getSps();
         byte[] pps = description.getPps();
         String spsBase64 = Base64.getEncoder().encodeToString(sps);

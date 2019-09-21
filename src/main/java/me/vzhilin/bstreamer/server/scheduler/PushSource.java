@@ -1,7 +1,7 @@
 package me.vzhilin.bstreamer.server.scheduler;
 
 import me.vzhilin.bstreamer.server.streaming.base.PullSource;
-import me.vzhilin.bstreamer.server.streaming.file.MediaPacketSourceDescription;
+import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 import me.vzhilin.bstreamer.util.PropertyMap;
 
 import java.util.concurrent.Future;
@@ -25,7 +25,7 @@ public final class PushSource {
         task = new PushTask(pullSourceSupplier, limits, pullExecutor);
     }
 
-    public MediaPacketSourceDescription describe() {
+    public SourceDescription describe() {
         return task.describe();
     }
 
