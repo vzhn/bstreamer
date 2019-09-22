@@ -1,5 +1,5 @@
 
-## bserver
+# bserver
 Is an ip camera emulator. It is capable to serve 10k connections with 40 gbps total bandwidth.
 It can stream h264 video files stored in matroska format and procedural-generated pictures.
 
@@ -13,7 +13,7 @@ time      | client connections | errors       | throughput
 16:13:00  | 4000 [+0; -0]      | 0            | 17.6 GiB   
 ```
 
-Now server is ready to stream video. We can receive video with *ffplay*:
+Now server is ready to stream video. Launching *ffplay* to view video: 
 
 ```shell script
 ffplay -rtsp_transport tcp  rtsp://localhost:5000/picture
@@ -25,8 +25,8 @@ time      | client connections | errors       | throughput
 =========================================================
 16:14:00  | 1 [+1; -0]         | 0            | 1.6 MB
             |   |   |
-            |   |   +-- lost connections in past second
-            |   +------ new connections in past second            
+            |   |   +-- lost connections during the past second
+            |   +------ new connections during the past second            
             +---------- total connections   
 ```
 
@@ -92,7 +92,7 @@ streaming:
 
 Any streaming source configuration parameter can be overriden with URI parameter, like this:
 
-| URL                                                                | Effect                                                      |
+| URL                                                                | Description                                                      |
 | -------------------------------------------------------------------|------------------------------------------------------------------|
 | rtsp://localhost:5000/picture                                      | procedural-generated picture with default parameters              |
 | rtsp://localhost:5000/picture?picture.width=320&picture.height=240 | same with specific dimensions                                     |
@@ -101,7 +101,7 @@ Any streaming source configuration parameter can be overriden with URI parameter
 | rtsp://localhost:5000/file?file=simpsons.mkv                       | streaming specific file ```video_samples\simpsons.mkv```                   |
 
 
-## bclient
+# bclient
 RTSP client aimed to receive video from multiple connections with maximum possible throughput
 
 #### Usage:
