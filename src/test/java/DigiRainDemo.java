@@ -1,3 +1,5 @@
+import me.vzhilin.bstreamer.server.streaming.picture.DigiRain;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;

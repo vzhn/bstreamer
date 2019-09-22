@@ -3,6 +3,8 @@ package me.vzhilin.bstreamer.server.streaming;
 import me.vzhilin.bstreamer.server.ServerContext;
 import me.vzhilin.bstreamer.server.stat.GroupStatistics;
 import me.vzhilin.bstreamer.server.streaming.picture.AbstractPictureSource;
+import me.vzhilin.bstreamer.server.streaming.picture.DigiRain;
+import me.vzhilin.bstreamer.server.streaming.picture.PictureSourceAttributes;
 import me.vzhilin.bstreamer.server.streaming.picture.Typewriter;
 import me.vzhilin.bstreamer.util.PropertyMap;
 
@@ -15,27 +17,38 @@ import java.util.Date;
 public class SimplePictureSource extends AbstractPictureSource {
     private final GroupStatistics groupStat;
     private final GroupStatistics totalStat;
+    private final int width;
+    private final int height;
+    private final DigiRain dr;
 
     public SimplePictureSource(ServerContext context, PropertyMap properties) {
         super(context, properties);
 
+        width = properties.getInt(PictureSourceAttributes.PICTURE_WIDTH);
+        height = properties.getInt(PictureSourceAttributes.PICTURE_HEIGHT);
+
         totalStat = context.getStat().getTotal();
         groupStat = context.getStat().get(properties);
+        dr = new DigiRain(width, height, 25);
     }
 
     @Override
     protected void drawPicture(BufferedImage image) {
-        Graphics gc = image.getGraphics();
-        gc.setColor(Color.WHITE);
-        gc.fillRect(0, 0, image.getWidth(), image.getHeight());
+        dr.tick();
 
+        Graphics gc = image.getGraphics();
+        gc.setColor(Color.BLACK);
+        gc.fillRect(0, 0, image.getWidth(), image.getHeight());
         drawStat(gc);
     }
 
-
     private void drawStat(Graphics gc) {
+        Font font = gc.getFont();
+        dr.paint(gc);
+        gc.setFont(font);
+
         OperatingSystemMXBean bean = ManagementFactory.getOperatingSystemMXBean();
-        gc.setColor(Color.PINK);
+        gc.setColor(Color.LIGHT_GRAY);
         gc.fillRect(0, 0, 220, 90);
 
         gc.setColor(Color.BLACK);

@@ -1,3 +1,5 @@
+package me.vzhilin.bstreamer.server.streaming.picture;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
@@ -95,7 +97,7 @@ public class DigiRain {
         private int x;
         private int y;
 
-        public DigiString(int column) {
+        private DigiString(int column) {
             this.data = "";
             this.column = column;
             this.x = column * charWidth;
@@ -103,14 +105,14 @@ public class DigiRain {
             this.rnd = new Random();
         }
 
-        public void randomMutate() {
+        private void randomMutate() {
             if (data.length() > 2) {
                 int p = rnd.nextInt(data.length());
                 data = data.substring(0, p) + randomCharacter() + data.substring(p+1);
             }
         }
 
-        public void appendRandomCharacter() {
+        private void appendRandomCharacter() {
             char ch = randomCharacter();
             if (data.length() > stringHeight) {
                 data = data.substring(1) + ch;
@@ -131,7 +133,7 @@ public class DigiRain {
             }
         }
 
-        public void paint(Graphics gr) {
+        private void paint(Graphics gr) {
             char[] chs = data.toCharArray();
             float factor = 1.0f;
             float[] comp = new float[3];
@@ -159,6 +161,4 @@ public class DigiRain {
             }
         }
     }
-
-
 }
