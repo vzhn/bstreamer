@@ -9,14 +9,13 @@ public class DigiRainDemo {
     private final int width;
     private final int height;
 
-
     public DigiRainDemo(int width, int height) {
         this.width = width;
         this.height = height;
     }
 
     public static void main(String... argv) {
-        new DigiRainDemo(800, 600).start();
+        new DigiRainDemo(2000, 1200).start();
     }
 
     private void start() {
@@ -51,7 +50,6 @@ public class DigiRainDemo {
             gc.dispose();
 
             g.drawImage(img, 0, 0, null);
-
         }
     }
 }

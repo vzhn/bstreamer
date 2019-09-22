@@ -15,6 +15,9 @@ public class DigiRain {
     private final int height;
     private final int stringHeight;
 
+    private int tick = 0;
+    private int curColumn = 0;
+
     public DigiRain(int width, int height, int fontSize) {
         this.width = width;
         this.height = height;
@@ -38,10 +41,24 @@ public class DigiRain {
     }
 
     public synchronized void tick() {
-        if (!freeColumns.isEmpty()) {
-            int freeColumn = randomItem(freeColumns);
-            freeColumns.remove(freeColumn);
-            strings.add(new DigiString(freeColumn));
+        ++tick;
+
+        int cols = width / charWidth;
+        int rows = height / charHeight + stringHeight;
+
+        int nRow = tick % rows;
+        int nextCol = Math.round((float) cols * nRow / rows);
+        if (nextCol != curColumn) {
+            int inc = (cols + nextCol - curColumn) % cols;
+            curColumn = nextCol;
+            for (int i = 0; i < inc; i++) {
+                if (freeColumns.isEmpty()) {
+                    break;
+                }
+                int freeColumn = randomItem(freeColumns);
+                freeColumns.remove(freeColumn);
+                strings.add(new DigiString(freeColumn));
+            }
         }
 
         for (Iterator<DigiString> iterator = strings.iterator(); iterator.hasNext(); ) {
