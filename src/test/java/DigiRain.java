@@ -1,80 +1,88 @@
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class DigiRain {
-    public static final int CHAR_H = 25;
     private final Random rnd;
     private final List<DigiString> strings = new LinkedList<DigiString>();
-    Set<Integer> free = new HashSet<>();
+    private final Set<Integer> freeColumns = new HashSet<>();
+    private final int charWidth;
+    private final int charHeight;
 
-    public DigiRain() {
+    private final Font font;
+    private final int width;
+    private final int height;
+    private final int stringHeight;
+
+    public DigiRain(int width, int height, int fontSize) {
+        this.width = width;
+        this.height = height;
+        this.font = new Font(Font.MONOSPACED, Font.PLAIN, fontSize);
         rnd = new Random();
-    }
 
-    public static void main(String... argv) {
-        new DigiRain().start();
-    }
+        BufferedImage img = new BufferedImage(64, 64, BufferedImage.TYPE_3BYTE_BGR);
+        Graphics gc = img.getGraphics();
+        gc.setFont(this.font);
 
-    private void start() {
-        BufferedImage img = new BufferedImage(800, 600, BufferedImage.TYPE_3BYTE_BGR);
-        JFrame frame = new RainFrame(img);
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
-        frame.setVisible(true);
+        FontMetrics fm = gc.getFontMetrics();
+        charHeight = fm.getAscent() + fm.getDescent();
+        charWidth = charHeight;
+        gc.dispose();
 
-
-        for (int i = 0; i < 800 / 25; i++) {
-            free.add(i);
+        for (int i = 0; i < width / charWidth; i++) {
+            freeColumns.add(i);
         }
 
-
-        int w = 25;
-        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        exec.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                synchronized (strings) {
-                    if (!free.isEmpty()) {
-                        int y = 0;
-                        int k = randomItem(free);
-                        free.remove(k);
-                        int x = k * 25;
-                        strings.add(new DigiString("", x, y));
-                    }
-
-                    strings.forEach(DigiString::appendRandomCharacter);
-                    frame.repaint();
-                }
-            }
-
-            private int randomItem(Set<Integer> free) {
-                Iterator<Integer> it = free.iterator();
-                int pos = rnd.nextInt(free.size());
-                int v = it.next();
-                for (int i = 0; i < pos - 1; i++) {
-                    v = it.next();
-                }
-                return v;
-            }
-        }, 0, 100, TimeUnit.MILLISECONDS);
+        this.stringHeight = height / charHeight;
     }
 
-    private static class DigiString {
+    public synchronized void tick() {
+        if (!freeColumns.isEmpty()) {
+            int freeColumn = randomItem(freeColumns);
+            freeColumns.remove(freeColumn);
+            strings.add(new DigiString(freeColumn));
+        }
+
+        for (Iterator<DigiString> iterator = strings.iterator(); iterator.hasNext(); ) {
+            DigiString digiString = iterator.next();
+            if (digiString.y + stringHeight > height) {
+                freeColumns.add(digiString.column);
+                iterator.remove();
+            } else {
+                digiString.randomMutate();
+                digiString.appendRandomCharacter();
+            }
+        }
+    }
+
+    private int randomItem(Set<Integer> free) {
+        Iterator<Integer> it = free.iterator();
+        int pos = rnd.nextInt(free.size());
+        int v = it.next();
+        for (int i = 0; i < pos - 1; i++) {
+            v = it.next();
+        }
+        return v;
+    }
+
+    public synchronized void paint(Graphics gc) {
+        gc.setFont(font);
+        strings.forEach(digiString -> digiString.paint(gc));
+    }
+
+    private class DigiString {
         private final Random rnd;
+        private final int column;
         private String data;
         private int x;
         private int y;
 
-        public DigiString(String data, int x, int y) {
-            this.data = data;
-            this.x = x;
-            this.y = y;
+        public DigiString(int column) {
+            this.data = "";
+            this.column = column;
+            this.x = column * charWidth;
+            this.y = 0;
             this.rnd = new Random();
         }
 
@@ -86,11 +94,10 @@ public class DigiRain {
         }
 
         public void appendRandomCharacter() {
-//            char ch = (char) ('a' + rnd.nextInt('z' - 'a'));
             char ch = randomCharacter();
-            if (data.length() > 20) {
+            if (data.length() > stringHeight) {
                 data = data.substring(1) + ch;
-                y += CHAR_H;
+                y += charHeight;
             } else {
                 data += ch;
             }
@@ -101,73 +108,40 @@ public class DigiRain {
             if (rnd.nextFloat() > 0.3) {
                 return (char) ('a' + rnd.nextInt('z' - 'a'));
             } else {
-                char a = 0xff66;
-                char b = 0xff9d;
-                return (char)(a + rnd.nextInt(b - a));
+                char from = 0xff66;
+                char to = 0xff9d;
+                return (char)(from + rnd.nextInt(to - from));
             }
         }
-    }
 
-    private class RainFrame extends JFrame {
-        private final BufferedImage img;
-        private final Random rnd;
-        private int ticks;
-
-        public RainFrame(BufferedImage img) throws HeadlessException {
-            this.img = img;
-            this.rnd = new Random();
-
-
-            this.ticks = 0;
-        }
-
-        @Override
-        public void paint(Graphics g) {
-            ++ticks;
-            Graphics gr = img.getGraphics();
-            gr.clearRect(0, 0, 800, 600);
-            gr.setFont(Font.getFont(Font.MONOSPACED));
-            gr.setFont(gr.getFont().deriveFont(25f));
-            gr.setColor(Color.GREEN);
-            synchronized (strings) {
-                strings.forEach(digiString -> paintString(gr, digiString));
-                strings.forEach(DigiString::randomMutate);
-                strings.forEach(digiString -> {
-                    if (digiString.y > 700) {
-                        int k = digiString.x / 25;
-                        free.add(k);
-                    }
-                });
-                strings.removeIf(digiString -> digiString.y > 700);
-            }
-
-            gr.dispose();
-            g.drawImage(img, 0, 0, null);
-        }
-
-        private void paintString(Graphics gr, DigiString s) {
-            char[] chs = s.data.toCharArray();
-
+        public void paint(Graphics gr) {
+            char[] chs = data.toCharArray();
             float factor = 1.0f;
             float[] comp = new float[3];
-            for (int i = chs.length - 1; i >= 0; --i) {
-                if (factor > 0.0f) {
-                    factor -= 0.05f;
-                }
 
-                Color green = Color.GREEN;
-                green.getRGBColorComponents(comp);
-                for (int j = 0; j < 3; j++) {
-                    comp[j] *= factor;
-                    comp[j] = Math.max(0f, comp[j]);
-                }
+            float step = 1.0f / stringHeight;
+            for (int i = chs.length - 1; i >= 0; --i) {
                 if (i == chs.length - 1) {
                     gr.setColor(Color.WHITE);
                 } else {
-                    gr.setColor(new Color(comp[0], comp[1], comp[2]));
+                    if (factor > step) {
+                        factor -= step;
+                        Color green = Color.GREEN;
+                        green.getRGBColorComponents(comp);
+                        for (int j = 0; j < 3; j++) {
+                            comp[j] *= factor;
+                            comp[j] = Math.max(0f, comp[j]);
+                        }
+                        gr.setColor(new Color(comp[0], comp[1], comp[2]));
+                    } else {
+                        break;
+                    }
                 }
-                gr.drawString(String.valueOf(chs[i]), s.x, s.y + CHAR_H * i);
+
+                gr.drawString(String.valueOf(chs[i]), x, y + charHeight * i);
             }
         }
     }
+
+
 }
