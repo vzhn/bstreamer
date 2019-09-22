@@ -24,6 +24,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>${project.basedir}/src/deploy/conf</directory>
+            <outputDirectory>conf</outputDirectory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>${project.build.directory}${file.separator}appassembler</directory>
             <outputDirectory>${file.separator}</outputDirectory>
             <includes>
