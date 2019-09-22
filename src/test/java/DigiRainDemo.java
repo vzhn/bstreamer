@@ -7,11 +7,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class DigiRainDemo {
+public final class DigiRainDemo {
     private final int width;
     private final int height;
 
-    public DigiRainDemo(int width, int height) {
+    private DigiRainDemo(int width, int height) {
         this.width = width;
         this.height = height;
     }
