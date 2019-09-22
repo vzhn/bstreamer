@@ -36,6 +36,7 @@ public class ServerReporter {
             this.stat = stat;
             this.reporterWriter = new ReporterWriter(
                 new ReporterWriter.Column("time", 8),
+                new ReporterWriter.Column("group", 8),
                 new ReporterWriter.Column("client connections", 20),
                 new ReporterWriter.Column("lag", 11),
                 new ReporterWriter.Column("throughput", 11)
@@ -57,8 +58,9 @@ public class ServerReporter {
 
             String time = String.format("%02d:%02d:%02d", now.getHour(), now.getMinute(), now.getSecond());
             String connections = String.format("%d [+%d:-%d]", c, op, cl);
+            String groups = "todo";
             String lag = String.format("%d [+%d]", lagTotal, lagSecond);
-            reporterWriter.writeLine(System.out, time, connections, lag, sBytes);
+            reporterWriter.writeLine(System.out, time, groups, connections, lag, sBytes);
         }
     }
 }
