@@ -35,10 +35,11 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         HttpMethod method = request.method();
         HttpResponse response;
+        HttpHeaders headers = request.headers();
         switch (method.name()) {
             case "OPTIONS":
                 response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
-                response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
+                response.headers().set(RtspHeaderNames.CSEQ, headers.get(RtspHeaderNames.CSEQ));
                 response.headers().set(RtspHeaderNames.PUBLIC, "DESCRIBE, SETUP, TEARDOWN, PLAY, PAUSE");
                 ctx.writeAndFlush(response);
                 break;
@@ -46,18 +47,18 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
                 RtspUriParser uri = new RtspUriParser(request.uri());
                 if (uri.pathItems() < 1) {
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
-                    response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
+                    response.headers().set(RtspHeaderNames.CSEQ, headers.get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 } else {
                     response = description(uri, getStreamerForUrl(ctx.channel().eventLoop(), uri).describe());
-                    response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
+                    response.headers().set(RtspHeaderNames.CSEQ, headers.get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 }
                 break;
             }
             case "SETUP": {
                 response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
-                response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
+                response.headers().set(RtspHeaderNames.CSEQ, headers.get(RtspHeaderNames.CSEQ));
                 response.headers().set(RtspHeaderNames.SESSION, "1234");
                 response.headers().set(RtspHeaderNames.TRANSPORT, "RTP/AVP/TCP;unicast;interleaved=0-1");
                 ctx.writeAndFlush(response);
@@ -67,14 +68,14 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
                 RtspUriParser uri = new RtspUriParser(request.uri());
                 if (uri.pathItems() < 1) {
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
-                    response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
+                    response.headers().set(RtspHeaderNames.CSEQ, headers.get(RtspHeaderNames.CSEQ));
                     ctx.writeAndFlush(response);
                 } else {
                     getStreamerForUrl(ctx.channel().eventLoop(), uri).attachContext(ctx);
 
                     response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
-                    response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
-                    response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
+                    response.headers().set(RtspHeaderNames.CSEQ, headers.get(RtspHeaderNames.CSEQ));
+                    response.headers().set(RtspHeaderNames.SESSION, headers.get(RtspHeaderNames.SESSION));
                     ctx.writeAndFlush(response);
                 }
 
@@ -82,28 +83,20 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
             }
         case "GET_PARAMETER": {
             response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.OK);
-            response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
-            response.headers().set(RtspHeaderNames.SESSION, request.headers().get(RtspHeaderNames.SESSION));
+            response.headers().set(RtspHeaderNames.CSEQ, headers.get(RtspHeaderNames.CSEQ));
+            response.headers().set(RtspHeaderNames.SESSION, headers.get(RtspHeaderNames.SESSION));
             response.headers().set(RtspHeaderNames.TRANSPORT, "RTP/AVP/TCP;unicast;interleaved=0-1");
             ctx.writeAndFlush(response);
             break;
         }
         default:
             response = new DefaultFullHttpResponse(RtspVersions.RTSP_1_0, HttpResponseStatus.BAD_REQUEST);
-            response.headers().set(RtspHeaderNames.CSEQ, request.headers().get(RtspHeaderNames.CSEQ));
+            if (headers.contains(RtspHeaderNames.CSEQ)) {
+                response.headers().set(RtspHeaderNames.CSEQ, headers.get(RtspHeaderNames.CSEQ));
+            }
+
             ctx.writeAndFlush(response);
         }
-    }
-
-    private GroupStreamer getStreamerForUrl(EventLoop loop, RtspUriParser uri) {
-        String url = uri.pathItem(0);
-
-        PropertyMap mpsc = config.getStreamingConfig(url);
-        PropertyMap conf = mpsc.getMap("conf");
-        conf.putAll(uri.allParameters());
-        String clazz = mpsc.getString("class");
-
-        return context.getStreamer(loop, url, clazz, conf);
     }
 
     private FullHttpResponse description(RtspUriParser uri, SourceDescription description) {
@@ -130,6 +123,17 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
         response.headers().add(HttpHeaderNames.CONTENT_BASE, uri.getUri());
         response.headers().add(HttpHeaderNames.CONTENT_TYPE, "application/sdp");
         return response;
+    }
+
+    private GroupStreamer getStreamerForUrl(EventLoop loop, RtspUriParser uri) {
+        String url = uri.pathItem(0);
+
+        PropertyMap mpsc = config.getStreamingConfig(url);
+        PropertyMap conf = mpsc.getMap("conf");
+        conf.putAll(uri.allParameters());
+        String clazz = mpsc.getString("class");
+
+        return context.getStreamer(loop, url, clazz, conf);
     }
 
     @Override
