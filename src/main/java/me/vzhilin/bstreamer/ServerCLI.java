@@ -16,7 +16,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.management.ManagementFactory;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,8 +25,6 @@ public class ServerCLI {
     private final Options options;
 
     public static void main(String... argv) throws IOException, ParseException {
-        System.err.println("pid = " + ManagementFactory.getRuntimeMXBean().getName());
-
         BasicConfigurator.configure();
         ServerCLI mediaserver = new ServerCLI(argv);
         mediaserver.start();
