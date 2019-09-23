@@ -82,12 +82,12 @@ network:
     time: 200
 streaming:
   file:
-    class: Generated
+    class: Filesystem
     conf:
-      basedir: video_samples
+      basedir: video
       file: jellyfish-5-mbps-hd-h264.mkv
   picture:
-    class: SimplePictureSource
+    class: Generated
     conf:
       picture:
         width: 640
