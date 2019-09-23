@@ -22,6 +22,9 @@ import static org.bytedeco.javacpp.avcodec.*;
 import static org.bytedeco.javacpp.avformat.*;
 
 public class FileMediaPacketSource implements PullSource {
+    private static final String WORKDIR_VIDEO = "video";
+    private static final String WORKDIR_SRC_DEPLOY_VIDEO = "src/deploy/video";
+
     private boolean wasClosed;
     private SourceDescription desc;
     private Queue<MediaPacket> packetQueue = new LinkedList<>();
@@ -30,16 +33,31 @@ public class FileMediaPacketSource implements PullSource {
 
     public FileMediaPacketSource(ServerContext context, PropertyMap sourceProperties) throws IOException {
         String dirPath = sourceProperties.getString(FileSourceAttributes.DIR);
-        File dir = new File(dirPath);
-        if (!dir.isAbsolute()) {
-            dir = new File(AppRuntime.APP_PATH, dirPath);
-        }
+        File dir = probeDirectories(dirPath);
+
         File videoFile = new File(dir, sourceProperties.getString(FileSourceAttributes.FILE));
         if (videoFile.exists()) {
             open(videoFile);
         } else {
             throw new FileNotFoundException(videoFile.getAbsolutePath());
         }
+    }
+
+    private File probeDirectories(String dirPath) {
+        File dir = new File(dirPath);
+        if (!dir.isAbsolute()) {
+            dir = new File(AppRuntime.APP_PATH, dirPath);
+        }
+
+        if (!dir.exists()) {
+            dir = new File(WORKDIR_VIDEO);
+        }
+
+        if (!dir.exists()) {
+            dir = new File(WORKDIR_SRC_DEPLOY_VIDEO);
+        }
+
+        return dir;
     }
 
     private void open(File file) throws IOException {

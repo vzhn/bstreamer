@@ -1,7 +1,16 @@
 
-# bserver
-Is an ip camera emulator. It is capable to serve 10k connections with 40 gbps total bandwidth.
-It can stream h264 video files stored in matroska format and procedural-generated pictures.
+![bee](site/bee_256.png#)
+ 
+ *\*logo by [Mushroomova](https://www.instagram.com/mushroomova/)*
+
+**bstreamer** is a collection of tools intended to help load testing video streaming applications.
+
+
+## bserver
+Is an ip camera emulator. It can stream h264 video files stored in matroska format and live-generated pictures. It is capable to serve 10k connections with up to 40 gbps total bandwidth.
+
+
+Videofiles must be placed to the ```video``` application directory. You can find some nice sample files on this website: http://jell.yfish.us/ 
 
 #### Usage:
 Install software and start server:
@@ -13,7 +22,7 @@ time      | client connections | errors       | throughput
 16:13:00  | 4000 [+0; -0]      | 0            | 17.6 GiB   
 ```
 
-Now server is ready to stream video. Launching *ffplay* to view video: 
+Now server is ready to stream video.  
 
 ```shell script
 ffplay -rtsp_transport tcp  rtsp://localhost:5000/picture
@@ -34,7 +43,7 @@ Value in a column ```errors``` increments when server is unable to send data chu
 
 
 ##### Settings:
-| Parameter | Description | default value|
+| Parameter | Description | Default |
 | ---|----|----|
 | network.bind | socket addresses on which the server is listening  | 0.0.0.0:5000 |
 | network.sndbuf | Specifies the total per-socket buffer space reserved for sends | 131072 |
@@ -42,12 +51,12 @@ Value in a column ```errors``` increments when server is unable to send data chu
 | network.watermarks.high | See Netty's [WriteBufferWaterMark](https://netty.io/4.1/api/io/netty/channel/WriteBufferWaterMark.html) | 131072 |
 | network.watermarks.low |   | 65536 |
 | network.limits  | Limiting amount of data that can be written when socket is available for write|  |
-| network.limits.packets | do not send more than X packets| 10 packets |
-| network.limits.size | do not send more than X bytes | 131072 bytes|
-| network.limits.time | do not send more than X milliseconds | 200 ms |
-| streaming | Streaming source configuration | 2 sources: from filesystem (*.mkv) and from generated video |
-| streaming.file.class | Streaming source java class | FileMediaPacketSource |
-| streaming.file.conf.basedir | default directory | ${application.directory}\video_samples |
+| network.limits.packets | packet limit | 10 packets |
+| network.limits.size | bytes limit | 131072 bytes|
+| network.limits.time | chunk length limit | 200 ms |
+| streaming | stream  configuration | 2 sources: from filesystem (*.mkv) and from generated video |
+| streaming.file.class | filesystem source java class | FileMediaPacketSource |
+| streaming.file.conf.basedir | default directory | ${application.directory}\video |
 | streaming.file.conf.file | default video file | jellyfish-5-mbps-hd-h264.mkv 
 | streaming.picture.class | Streaming source java class | SimplePictureSource |
 | streaming.picture.conf.picture.width | picture width| 640 
@@ -90,7 +99,7 @@ streaming:
         max_b_frames: 1
 ```
 
-Any streaming source configuration parameter can be overriden with URI parameter, like this:
+Any streaming source configuration parameter can be overridden by URI parameter, like this:
 
 | URL                                                                | Description                                                      |
 | -------------------------------------------------------------------|------------------------------------------------------------------|
@@ -101,17 +110,28 @@ Any streaming source configuration parameter can be overriden with URI parameter
 | rtsp://localhost:5000/file?file=simpsons.mkv                       | streaming specific file ```video_samples\simpsons.mkv```                   |
 
 
-# bclient
+## bclient
 RTSP client aimed to receive video from multiple connections with maximum possible throughput
 
 #### Usage:
 
-$ bclient -c client.yaml
 ```
+$ bclient -c client.yaml
+
 time      | server connections | errors       | throughput 
 =========================================================
 16:13:00  | 4000 [+0; -0]      | 0            | 17.6 GiB 
 ```
+
+##### Settings:
+| Parameter | Description | Default |
+| ---|----|----|
+| network.threads | number of network-working threads | 4 |
+| rcvbuf | socket receive buffer size | 131072 |
+| connectTimeout | connect timeout | 5 seconds |
+| idleTimeout | maximum connection idle timeout | 5 seconds |
+| connections.url | rtsp url | rtsp://localhost:5000/file?file=jellyfish-5-mbps-hd-h264.mkv |
+| connections.n | number of connections | 2000 |
 
 ##### client.yaml:
 ```
