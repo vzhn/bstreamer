@@ -13,7 +13,7 @@ streaming:
   file:
     class: FileMediaPacketSource
     conf:
-      basedir: /home/vzhilin/misc/video_samples/
+      basedir: video
       file: jellyfish-5-mbps-hd-h264.mkv
   picture:
     class: SimplePictureSource
