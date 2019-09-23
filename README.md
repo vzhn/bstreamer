@@ -55,7 +55,7 @@ Value in a column ```errors``` increments when server is unable to send data chu
 | network.limits.size | bytes limit | 131072 bytes|
 | network.limits.time | chunk length limit | 200 ms |
 | streaming | stream  configuration | 2 sources: from filesystem (*.mkv) and from generated video |
-| streaming.file.class | filesystem source java class | FileMediaPacketSource |
+| streaming.file.class | filesystem source java class | Generated |
 | streaming.file.conf.basedir | default directory | ${application.directory}\video |
 | streaming.file.conf.file | default video file | jellyfish-5-mbps-hd-h264.mkv 
 | streaming.picture.class | Streaming source java class | SimplePictureSource |
@@ -82,7 +82,7 @@ network:
     time: 200
 streaming:
   file:
-    class: FileMediaPacketSource
+    class: Generated
     conf:
       basedir: video_samples
       file: jellyfish-5-mbps-hd-h264.mkv

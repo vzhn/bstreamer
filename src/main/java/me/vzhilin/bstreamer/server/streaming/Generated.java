@@ -21,7 +21,7 @@ import java.util.Queue;
 import static org.bytedeco.javacpp.avcodec.*;
 import static org.bytedeco.javacpp.avformat.*;
 
-public class FileMediaPacketSource implements PullSource {
+public class Generated implements PullSource {
     private static final String WORKDIR_VIDEO = "video";
     private static final String WORKDIR_SRC_DEPLOY_VIDEO = "src/deploy/video";
 
@@ -31,7 +31,7 @@ public class FileMediaPacketSource implements PullSource {
     private AVPacket pk;
     private AVFormatContext pAvfmtCtx;
 
-    public FileMediaPacketSource(ServerContext context, PropertyMap sourceProperties) throws IOException {
+    public Generated(ServerContext context, PropertyMap sourceProperties) throws IOException {
         String dirPath = sourceProperties.getString(FileSourceAttributes.DIR);
         File dir = probeDirectories(dirPath);
 

@@ -14,14 +14,14 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.util.Date;
 
-public class SimplePictureSource extends AbstractPictureSource {
+public class Filesystem extends AbstractPictureSource {
     private final GroupStatistics groupStat;
     private final GroupStatistics totalStat;
     private final int width;
     private final int height;
     private final DigiRain dr;
 
-    public SimplePictureSource(ServerContext context, PropertyMap properties) {
+    public Filesystem(ServerContext context, PropertyMap properties) {
         super(context, properties);
 
         width = properties.getInt(PictureSourceAttributes.PICTURE_WIDTH);

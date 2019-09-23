@@ -11,7 +11,7 @@ network:
     time: 200
 streaming:
   file:
-    class: FileMediaPacketSource
+    class: Generated
     conf:
       basedir: video
       file: jellyfish-5-mbps-hd-h264.mkv
