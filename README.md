@@ -1,5 +1,5 @@
 
-![bee](site/bee_256.png#)
+![bee](site/bee_256.png)
  
  *\*logo by [Mushroomova](https://www.instagram.com/mushroomova/)*
 
@@ -25,7 +25,7 @@ time      | client connections | errors       | throughput
 Now server is ready to stream video.  
 
 ```shell script
-ffplay -rtsp_transport tcp  rtsp://localhost:5000/picture
+ffplay -rtsp_transport tcp  rtsp://localhost:8554/picture
 ```
 
 When new client is connected you'll see ```+1``` here, in connections column:
@@ -45,7 +45,7 @@ Value in a column ```errors``` increments when server is unable to send data chu
 ##### Settings:
 | Parameter | Description | Default |
 | ---|----|----|
-| network.bind | socket addresses on which the server is listening  | 0.0.0.0:5000 |
+| network.bind | socket addresses on which the server is listening  | 0.0.0.0:8554 |
 | network.sndbuf | Specifies the total per-socket buffer space reserved for sends | 131072 |
 | network.threads | number of network-working threads | 1 |
 | network.watermarks.high | See Netty's [WriteBufferWaterMark](https://netty.io/4.1/api/io/netty/channel/WriteBufferWaterMark.html) | 131072 |
@@ -70,7 +70,7 @@ Value in a column ```errors``` increments when server is unable to send data chu
 
 ```
 network:
-  bind: ["0.0.0.0:5000"]
+  bind: ["0.0.0.0:8554"]
   sndbuf: 131072
   threads: 1
   watermarks:
@@ -103,11 +103,11 @@ Any streaming source configuration parameter can be overridden by URI parameter,
 
 | URL                                                                | Description                                                      |
 | -------------------------------------------------------------------|------------------------------------------------------------------|
-| rtsp://localhost:5000/picture                                      | procedural-generated picture with default parameters              |
-| rtsp://localhost:5000/picture?picture.width=320&picture.height=240 | same with specific dimensions                                     |
-| rtsp://localhost:5000/picture?encoder.fps=60                       | same with specific fps                                                     |
-| rtsp://localhost:5000/file                                         | streaming default file: ```video_samples\jellyfish-5-mbps-hd-h264.mkv```  |
-| rtsp://localhost:5000/file?file=simpsons.mkv                       | streaming specific file ```video_samples\simpsons.mkv```                   |
+| rtsp://localhost:8554/picture                                      | procedural-generated picture with default parameters              |
+| rtsp://localhost:8554/picture?picture.width=320&picture.height=240 | same with specific dimensions                                     |
+| rtsp://localhost:8554/picture?encoder.fps=60                       | same with specific fps                                                     |
+| rtsp://localhost:8554/file                                         | streaming default file: ```video_samples\jellyfish-5-mbps-hd-h264.mkv```  |
+| rtsp://localhost:8554/file?file=simpsons.mkv                       | streaming specific file ```video_samples\simpsons.mkv```                   |
 
 
 ## bclient
@@ -130,7 +130,7 @@ time      | server connections | errors       | throughput
 | rcvbuf | socket receive buffer size | 131072 |
 | connectTimeout | connect timeout | 5 seconds |
 | idleTimeout | maximum connection idle timeout | 5 seconds |
-| connections.url | rtsp url | rtsp://localhost:5000/file?file=jellyfish-5-mbps-hd-h264.mkv |
+| connections.url | rtsp url | rtsp://localhost:8554/file?file=jellyfish-5-mbps-hd-h264.mkv |
 | connections.n | number of connections | 2000 |
 
 ##### client.yaml:
@@ -141,6 +141,6 @@ network:
   connectTimeout: 5000
   idleTimeout: 5000
 connections:
- - url: rtsp://localhost:5000/file?file=jellyfish-5-mbps-hd-h264.mkv
+ - url: rtsp://localhost:8554/file?file=jellyfish-5-mbps-hd-h264.mkv
    n: 2000
 ```

@@ -1,5 +1,5 @@
 network:
-  bind: ["0.0.0.0:5000"]
+  bind: ["0.0.0.0:8554"]
   sndbuf: 131072
   threads: 1
   watermarks:
