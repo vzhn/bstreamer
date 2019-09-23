@@ -58,7 +58,7 @@ Value in a column ```errors``` increments when server is unable to send data chu
 | streaming.file.class | filesystem source java class | Generated |
 | streaming.file.conf.basedir | default directory | ${application.directory}\video |
 | streaming.file.conf.file | default video file | jellyfish-5-mbps-hd-h264.mkv 
-| streaming.picture.class | Streaming source java class | SimplePictureSource |
+| streaming.picture.class | Streaming source java class | Generated |
 | streaming.picture.conf.picture.width | picture width| 640 
 | streaming.picture.conf.picture.height | picture height | 480
 | streaming.picture.conf.encoder.bitrate | h264 encoder bitrate | 400000
