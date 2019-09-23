@@ -1,7 +1,7 @@
 
 ![bee](site/bee_256.png)
  
- *\*logo by [Mushroomova](https://www.instagram.com/mushroomova/)*
+ *\*logo by [Mushroomova](https://www.instagram.com/mushroomova_comics/)*
 
 **bstreamer** is a collection of tools intended to help load testing video streaming applications.
 
