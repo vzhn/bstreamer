@@ -214,12 +214,43 @@ public abstract class AbstractPictureSource implements PullSource {
             av_packet_rescale_ts(pkt, c.time_base(), timebaseMillis);
             byte[] data = new byte[pkt.size()];
             pkt.data().get(data);
-
             boolean isKey = (pkt.flags() & AV_PKT_FLAG_KEY) != 0;
-            MediaPacket e = new MediaPacket(pkt.pts(), pkt.dts(), isKey, Unpooled.wrappedBuffer(data));
-            queue.offer(e); // FIXME Unpooled
+            parsePackets(pkt, data, isKey);
             av_packet_unref(pkt);
         }
+    }
+
+    private void parsePackets(AVPacket pkt, byte[] data, boolean isKey) {
+        int c = 0;
+        int start = 0;
+        int end = 0;
+
+        for (int i = 0; i < data.length; i++) {
+            byte b = data[i];
+            if (b == 0) {
+                ++c;
+            } else
+            if (b == 1) {
+                if (c == 2 || c == 3) {
+                    end = i - c;
+                    if (end > 0) {
+                        MediaPacket e = new MediaPacket(pkt.pts(), pkt.dts(), isKey, Unpooled.wrappedBuffer(data, start, (end - start)));
+                        queue.offer(e);
+                    }
+
+                    start = i + 1;
+                }
+                c = 0;
+            } else {
+                c = 0;
+            }
+        }
+
+        if (start < data.length) {
+            MediaPacket e = new MediaPacket(pkt.pts(), pkt.dts(), isKey, Unpooled.wrappedBuffer(data, start, data.length - start));
+            queue.offer(e); // FIXME Unpooled
+        }
+
     }
 
     @Override
