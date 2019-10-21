@@ -56,6 +56,7 @@ public abstract class AbstractPictureSource implements PullSource {
         int fps = properties.getInt(PictureSourceAttributes.PICTURE_ENCODER_FPS);
         int gopSize = properties.getInt(PictureSourceAttributes.PICTURE_ENCODER_GOP_SIZE);
         int maxBFrames = properties.getInt(PictureSourceAttributes.PICTURE_ENCODER_MAX_B_FRAMES);
+        String profile = properties.getString(PictureSourceAttributes.PICTURE_ENCODER_PROFILE);
         H264CodecParameters parameters = new H264CodecParameters();
         parameters.setWidth(width);
         parameters.setHeight(height);
@@ -64,6 +65,7 @@ public abstract class AbstractPictureSource implements PullSource {
         parameters.setTimebase(1, fps);
         parameters.setGopSize(gopSize);
         parameters.setMaxBFrames(maxBFrames);
+        parameters.setProfile(profile);
         return parameters;
     }
 

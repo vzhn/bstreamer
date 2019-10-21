@@ -1,5 +1,7 @@
 package me.vzhilin.bstreamer.server.streaming.picture;
 
+import static org.bytedeco.javacpp.avutil.av_opt_set;
+
 import org.bytedeco.javacpp.avcodec;
 import org.bytedeco.javacpp.avutil;
 
@@ -11,6 +13,7 @@ public class H264CodecParameters {
     private int gopSize = 10;
     private int maxBFrames = 1;
     private int fps;
+    private String profile;
 
     public H264CodecParameters() {
         timebase = new avutil.AVRational();
@@ -74,6 +77,9 @@ public class H264CodecParameters {
         c.time_base(timebase);
         c.gop_size(gopSize);
         c.max_b_frames(maxBFrames);
+        if (profile != null && !"".equals(profile)) {
+            av_opt_set(c.priv_data(), "profile", profile, 0);
+        }
     }
 
     public void setFps(int fps) {
@@ -82,5 +88,9 @@ public class H264CodecParameters {
 
     public int getFps() {
         return fps;
+    }
+
+    public void setProfile(String profile) {
+        this.profile = profile;
     }
 }

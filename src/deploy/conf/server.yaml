@@ -22,6 +22,7 @@ streaming:
         width: 640
         height: 480
       encoder:
+        profile: "baseline"
         bitrate: 400000
         fps: 25
         gop_size: 10
