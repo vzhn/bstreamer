@@ -26,6 +26,7 @@ public abstract class AbstractPictureSource implements PullSource {
     private final H264CodecParameters codecParameters;
     private final ServerContext context;
     private final PropertyMap properties;
+    private final int fps;
     private SourceDescription desc;
     private AVPacket pkt;
     private AVCodecContext c;
@@ -45,6 +46,7 @@ public abstract class AbstractPictureSource implements PullSource {
         this.context = context;
         this.properties = properties;
         this.codecParameters = extractH264Parameters(properties);
+        this.fps = codecParameters.getFps();
     }
 
     private static H264CodecParameters extractH264Parameters(PropertyMap properties) {
@@ -59,6 +61,7 @@ public abstract class AbstractPictureSource implements PullSource {
         parameters.setHeight(height);
         parameters.setBitrate(bitrate);
         parameters.setFps(fps);
+        parameters.setTimebase(1, fps);
         parameters.setGopSize(gopSize);
         parameters.setMaxBFrames(maxBFrames);
         return parameters;
@@ -71,7 +74,7 @@ public abstract class AbstractPictureSource implements PullSource {
     private void initEncoder() {
         avutil.AVRational timebase = new avutil.AVRational();
         timebase.num(1);
-        timebase.den(25);
+        timebase.den(fps);
         avutil.AVRational framerate = new avutil.AVRational();
         framerate.num(timebase.den());
         framerate.den(timebase.num());
