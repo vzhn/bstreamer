@@ -10,11 +10,10 @@ public class RtpEncoder {
     public void encode(ByteBuf buffer, MediaPacket pkt, long rtpTimestamp) {
         int sz = pkt.getPayload().readableBytes();
         if (sz + 16 > MTU) {
-            writeFuA(buffer, pkt, seqNo, rtpTimestamp);
+            writeFuA(buffer, pkt, rtpTimestamp);
         } else {
-            writeNalu(buffer, pkt, seqNo, rtpTimestamp);
+            writeNalu(buffer, pkt, rtpTimestamp);
         }
-        ++seqNo;
     }
 
 
@@ -25,28 +24,28 @@ public class RtpEncoder {
         header.writeShort(dataLen);
     }
 
-    private void writeRtpHeader(ByteBuf header, boolean isKey, long seqNo, long pts) {
+    private void writeRtpHeader(ByteBuf header, boolean isKey, long pts) {
         final int version = 2;
         final int payloadType = 98;
         header.writeByte((version & 0x03) << 6);
         header.writeByte(((isKey ? 1 : 0) << 7) | payloadType);
-        header.writeShort((int) seqNo);
+        header.writeShort((int) nextSeqNo());
         header.writeInt((int) (pts));
         header.writeInt(0);
     }
 
-    private void writeNalu(ByteBuf buffer, MediaPacket pkt, long seqNo, long rtpTimestamp) {
+    private void writeNalu(ByteBuf buffer, MediaPacket pkt, long rtpTimestamp) {
         ByteBuf payload = pkt.getPayload().duplicate();
 
         // interleaved header
         writeInterleavedHeader(buffer, payload.readableBytes() + 12);
 
         // RTP header
-        writeRtpHeader(buffer, pkt.isKey(), seqNo, rtpTimestamp);
+        writeRtpHeader(buffer, pkt.isKey(), rtpTimestamp);
         buffer.writeBytes(payload);
     }
 
-    private void writeFuA(ByteBuf buffer, MediaPacket pkt, long seqNo, long rtpTimestamp) {
+    private void writeFuA(ByteBuf buffer, MediaPacket pkt, long rtpTimestamp) {
         ByteBuf payload = pkt.getPayload().duplicate();
 
         int sz = payload.readableBytes();
@@ -77,7 +76,7 @@ public class RtpEncoder {
 
             int dataLen = Math.min(MTU - 18, sz - offset);
             writeInterleavedHeader(buffer, dataLen + 12 + 2);
-            writeRtpHeader(buffer, pkt.isKey(), seqNo, rtpTimestamp);
+            writeRtpHeader(buffer, pkt.isKey(), rtpTimestamp);
 
             buffer.writeByte(fuIndicator);
             buffer.writeByte(fuHeader);
@@ -94,5 +93,9 @@ public class RtpEncoder {
         } else {
             return payloadSize + 16;
         }
+    }
+
+    private long nextSeqNo() {
+        return seqNo++;
     }
 }

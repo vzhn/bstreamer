@@ -9,10 +9,13 @@ public class TotalStatistics {
     private long totalBytes;
     private long totalConnections;
     private long totalErrors;
+    private long totalLost;
 
     private long time = System.currentTimeMillis();
     private long bytes;
     private long errors;
+
+    private long lostPacket;
     private int connected;
     private int disconnected;
 
@@ -39,6 +42,7 @@ public class TotalStatistics {
         this.errors = 0;
         this.connected = 0;
         this.disconnected = 0;
+        this.lostPacket = 0;
         this.time = now;
         return snapshot;
     }
@@ -58,6 +62,11 @@ public class TotalStatistics {
         ++totalErrors;
     }
 
+    public synchronized void onLostPacket() {
+        ++lostPacket;
+        ++totalLost;
+    }
+
     public final static class Snapshot {
         public final long totalBytes;
         public final long totalErrors;
@@ -68,6 +77,8 @@ public class TotalStatistics {
         public final Date time;
         public final long deltaTime;
         public final long errors;
+        public final long totalLost;
+        public final long lostPackets;
 
         public Snapshot(TotalStatistics totalStatistics, long deltaTime) {
             this.totalBytes = totalStatistics.totalBytes;
@@ -75,6 +86,8 @@ public class TotalStatistics {
             this.connections = totalStatistics.totalConnections;
             this.bytes = totalStatistics.bytes;
             this.errors = totalStatistics.errors;
+            this.totalLost = totalStatistics.totalLost;
+            this.lostPackets = totalStatistics.lostPacket;
             this.connected = totalStatistics.connected;
             this.disconnected = totalStatistics.disconnected;
             this.deltaTime = deltaTime;

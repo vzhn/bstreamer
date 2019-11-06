@@ -1,12 +1,12 @@
 package me.vzhilin.bstreamer.client;
 
-import me.vzhilin.bstreamer.util.HumanReadable;
-import me.vzhilin.bstreamer.util.ReporterWriter;
-
 import java.time.LocalDateTime;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import me.vzhilin.bstreamer.util.HumanReadable;
+import me.vzhilin.bstreamer.util.ReporterWriter;
 
 public final class ClientReporter {
     private final TotalStatistics stat;
@@ -19,6 +19,7 @@ public final class ClientReporter {
                 new ReporterWriter.Column("time", 8),
                 new ReporterWriter.Column("server connections", 20),
                 new ReporterWriter.Column("errors", 11),
+                new ReporterWriter.Column("lost packets", 11),
                 new ReporterWriter.Column("throughput", 11)
         );
         reporterWriter.writeHeader(System.out);
@@ -45,7 +46,8 @@ public final class ClientReporter {
             String time = String.format("%02d:%02d:%02d", now.getHour(), now.getMinute(), now.getSecond());
             String connections = String.format("%d [+%d:-%d]", s.connections, s.connected, s.disconnected);
             String errors = String.format("%d [+%d]", s.totalErrors, s.errors);
-            reporterWriter.writeLine(System.out, time, connections, errors, bandwidth);
+            String lost = String.format("%d [+%d]", s.totalLost, s.lostPackets);
+            reporterWriter.writeLine(System.out, time, connections, errors, lost, bandwidth);
         }
     }
 }

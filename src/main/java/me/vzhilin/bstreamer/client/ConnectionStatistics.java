@@ -29,4 +29,8 @@ public class ConnectionStatistics {
     public void onIdleError() {
         ss.onIdleError();
     }
+
+    public void onLostPacket() {
+        ss.onLostPacket();
+    }
 }
