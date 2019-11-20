@@ -19,10 +19,11 @@ public final class PushSource {
     public PushSource(Supplier<PullSource> pullSourceSupplier,
                       PropertyMap props,
                       ScheduledExecutorService pullExecutor,
-                      BufferingLimits limits) {
+                      BufferingLimits bufferingLimits) {
         this.pullExecutor = pullExecutor;
         this.props = props;
-        task = new PushTask(pullSourceSupplier, limits, pullExecutor);
+        int maxRtpSize = props.getInt("max_rtp_size", 65536);
+        task = new PushTask(pullSourceSupplier, bufferingLimits, maxRtpSize, pullExecutor);
     }
 
     public SourceDescription describe() {

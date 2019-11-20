@@ -13,12 +13,14 @@ streaming:
   file:
     class: Filesystem
     conf:
+      max_rtp_size: 65536
       # path to video folder (/opt/video_samples for example)
       basedir: video
       file: jellyfish-5-mbps-hd-h264.mkv
   picture:
     class: Generated
     conf:
+      max_rtp_size: 65536
       picture:
         width: 640
         height: 480

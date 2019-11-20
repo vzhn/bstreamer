@@ -26,7 +26,7 @@ final class PushTask implements Runnable {
     private boolean finished;
     private long startTimeMillis;
     private long startDtsMillis;
-    private final RtpEncoder interleavedEncoder = new RtpEncoder();
+    private final RtpEncoder interleavedEncoder;
     private ScheduledFuture<?> advanceFuture = null;
 
     private long lastDts;
@@ -36,7 +36,9 @@ final class PushTask implements Runnable {
 
     PushTask(Supplier<PullSource> pullSource,
              BufferingLimits limits,
+             int maxRtpSize,
              ScheduledExecutorService executor) {
+        this.interleavedEncoder = new RtpEncoder(maxRtpSize);
         this.limits = limits;
         this.sourceSupplier = pullSource;
         this.executor = executor;

@@ -4,12 +4,19 @@ import io.netty.buffer.ByteBuf;
 import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
 
 public class RtpEncoder {
-    private static final int MTU = 65536;
+    private final int maxRtpSize;
     private long seqNo = 0;
+
+    public RtpEncoder(int maxRtpSize) {
+        this.maxRtpSize = maxRtpSize;
+        if (this.maxRtpSize > 65536 || this.maxRtpSize <= 18) {
+            throw new RuntimeException("incorrect maxRtpSize");
+        }
+    }
 
     public void encode(ByteBuf buffer, MediaPacket pkt, long rtpTimestamp) {
         int sz = pkt.getPayload().readableBytes();
-        if (sz + 16 > MTU) {
+        if (sz + 16 > maxRtpSize) {
             writeFuA(buffer, pkt, rtpTimestamp);
         } else {
             writeNalu(buffer, pkt, rtpTimestamp);
@@ -54,7 +61,7 @@ public class RtpEncoder {
         //      12 (RTP header)
         //       1 (FU header)
         //       1 (FU indicator)
-        int numberOfPackets = (sz - 2) / (MTU - 18) + 1;
+        int numberOfPackets = (sz - 2) / (maxRtpSize - 18) + 1;
 
         byte firstByte = payload.readByte();
         int fuIndicator = firstByte & 0b11100000 | 28;
@@ -74,7 +81,7 @@ public class RtpEncoder {
 
             fuHeader |= (r & 1) << 5;
 
-            int dataLen = Math.min(MTU - 18, sz - offset);
+            int dataLen = Math.min(maxRtpSize - 18, sz - offset);
             writeInterleavedHeader(buffer, dataLen + 12 + 2);
             writeRtpHeader(buffer, pkt.isKey(), rtpTimestamp);
 
@@ -87,8 +94,8 @@ public class RtpEncoder {
     }
 
     public int estimateSize(int payloadSize) {
-        if (payloadSize + 16 > MTU) {
-            int numberOfPackets = (payloadSize - 2) / (MTU - 18) + 1;
+        if (payloadSize + 16 > maxRtpSize) {
+            int numberOfPackets = (payloadSize - 2) / (maxRtpSize - 18) + 1;
             return numberOfPackets * (12 + 2 + 4) + payloadSize;
         } else {
             return payloadSize + 16;

@@ -108,7 +108,7 @@ public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHtt
         String profileLevelId = String.format("%02x%02x%02x", sps[0], sps[1], sps[2]);
         String sdpMessage = "v=0\r\n" +
                 "o=RTSP 50539017935697 1 IN IP4 0.0.0.0\r\n" +
-                "s=1234\r\n" +
+                "s=bserver\r\n" +
                 "a=control:*\r\n" +
                 "m=video 0 RTP/AVP 98\r\n" +
                 "a=fmtp:98 sprop-parameter-sets=" +
