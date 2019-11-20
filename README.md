@@ -61,6 +61,7 @@ Value in a column ```errors``` increments when server is unable to send data chu
 | streaming.picture.class | Streaming source java class | Generated |
 | streaming.picture.conf.picture.width | picture width| 640 
 | streaming.picture.conf.picture.height | picture height | 480
+| streaming.picture.conf.encoder.profile | h264 encoder profile | 
 | streaming.picture.conf.encoder.bitrate | h264 encoder bitrate | 400000
 | streaming.picture.conf.encoder.fps | frames per second | 25
 | streaming.picture.conf.encoder.gop_size | GOP size | 10
@@ -93,6 +94,7 @@ streaming:
         width: 640
         height: 480
       encoder:
+        profile: "baseline"
         bitrate: 400000
         fps: 25
         gop_size: 10
@@ -118,9 +120,9 @@ RTSP client aimed to receive video from multiple connections with maximum possib
 ```
 $ bclient -c client.yaml
 
-time      | server connections | errors       | throughput 
-=========================================================
-16:13:00  | 4000 [+0; -0]      | 0            | 17.6 GiB 
+time     | server connections   | errors      | lost packets | throughput 
+=========================================================================
+12:58:28 | 4000 [+0:-0]         | 0 [+0]      | 0 [+0]      | 1.4 GiB    
 ```
 
 ##### Settings:
@@ -141,6 +143,10 @@ network:
   connectTimeout: 5000
   idleTimeout: 5000
 connections:
+ # 2000 connections to video from a file
  - url: rtsp://localhost:8554/file?file=jellyfish-5-mbps-hd-h264.mkv
+   n: 2000
+# 2000 connections to live generated picture
+ - url: rtsp://localhost:8554/picture
    n: 2000
 ```

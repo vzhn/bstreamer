@@ -13,6 +13,7 @@ streaming:
   file:
     class: Filesystem
     conf:
+      # path to video folder (/opt/video_samples for example)
       basedir: video
       file: jellyfish-5-mbps-hd-h264.mkv
   picture:
