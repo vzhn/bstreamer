@@ -56,7 +56,7 @@ Value in a column ```errors``` increments when server is unable to send data chu
 | network.limits.time | chunk length limit | 200 ms |
 | streaming | stream  configuration | 2 sources: from filesystem (*.mkv) and from generated video |
 | streaming.file.repeat | true if repeat video | true |
-| streaming.file.class | filesystem source java class | Generated |
+| streaming.file.class | filesystem source java class | Filesystem |
 | streaming.file.conf.basedir | default directory | ${application.directory}\video |
 | streaming.file.conf.file | default video file | jellyfish-5-mbps-hd-h264.mkv 
 | streaming.picture.class | Streaming source java class | Generated |
