@@ -7,6 +7,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -47,6 +49,10 @@ public class RtspServer {
             bossGroup = new NioEventLoopGroup(1);
             workerGroup = new NioEventLoopGroup(nThreads);
             channelClazz = NioServerSocketChannel.class;
+        } else if (AppRuntime.IS_MAC) {
+            bossGroup = new KQueueEventLoopGroup(1);
+            workerGroup = new KQueueEventLoopGroup(nThreads);
+            channelClazz = KQueueServerSocketChannel.class;
         } else {
             bossGroup = new EpollEventLoopGroup(1);
             workerGroup = new EpollEventLoopGroup(nThreads);

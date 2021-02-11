@@ -6,6 +6,7 @@ import java.security.CodeSource;
 
 public final class AppRuntime {
     public final static boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
+    public final static boolean IS_MAC = System.getProperty("os.name").toLowerCase().contains("mac");
     public final static File APP_PATH = getApplcatonPath();
 
     private AppRuntime() { }
