@@ -79,6 +79,10 @@ public final class PropertyMap {
         return (String) getObject(key);
     }
 
+    public Boolean getBoolean(String key) {
+        return Boolean.valueOf(getString(key, "false"));
+    }
+
     public List<String> getStringArray(String key) {
         return (List<String>) getObject(key);
     }

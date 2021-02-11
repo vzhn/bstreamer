@@ -4,6 +4,7 @@ import me.vzhilin.bstreamer.server.ServerContext;
 import me.vzhilin.bstreamer.server.SourceKey;
 import me.vzhilin.bstreamer.server.scheduler.BufferingLimits;
 import me.vzhilin.bstreamer.server.scheduler.PushSource;
+import me.vzhilin.bstreamer.server.streaming.RepeatedSource;
 import me.vzhilin.bstreamer.server.streaming.base.PullSource;
 import me.vzhilin.bstreamer.util.PropertyMap;
 
@@ -34,13 +35,19 @@ public final class PullSourceRegistry {
         try {
             Class<PullSource> pullSource = (Class<PullSource>) Class.forName(DEFAULT_PACKAGE + key.clazz);
             Constructor<PullSource> constructor = pullSource.getDeclaredConstructor(ServerContext.class, PropertyMap.class);
-            return () -> {
+            Supplier<PullSource> pullSourceSupplier = () -> {
                 try {
                     return constructor.newInstance(serverContext, key.cfg);
                 } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }
             };
+
+            if (key.cfg.getBoolean("repeat")) {
+                return () -> new RepeatedSource(pullSourceSupplier);
+            } else {
+                return pullSourceSupplier;
+            }
         } catch (ClassNotFoundException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
