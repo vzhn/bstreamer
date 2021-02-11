@@ -13,6 +13,7 @@ streaming:
   file:
     class: Filesystem
     conf:
+      repeat: true
       max_rtp_size: 65536
       # path to video folder (/opt/video_samples for example)
       basedir: video
