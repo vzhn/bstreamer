@@ -25,7 +25,6 @@ public class RtpEncoder {
 
 
     private void writeInterleavedHeader(ByteBuf header, int dataLen) {
-        // interleaved header
         header.writeByte('$');
         header.writeByte(0);
         header.writeShort(dataLen);
@@ -44,10 +43,7 @@ public class RtpEncoder {
     private void writeNalu(ByteBuf buffer, MediaPacket pkt, long rtpTimestamp) {
         ByteBuf payload = pkt.getPayload().duplicate();
 
-        // interleaved header
         writeInterleavedHeader(buffer, payload.readableBytes() + 12);
-
-        // RTP header
         writeRtpHeader(buffer, pkt.isKey(), rtpTimestamp);
         buffer.writeBytes(payload);
     }
