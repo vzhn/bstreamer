@@ -56,19 +56,14 @@ public class MediaPacketEncoder {
     }
 
     private void writeNalu(List<InterleavedFrame> rtpPackets, boolean isKey, long pts, ByteBuf payload) {
-
-        // interleaved header
         ByteBuf bb = PooledByteBufAllocator.DEFAULT.buffer(payload.readableBytes() + 12 + 4);
         writeInterleavedHeader(bb, payload.readableBytes() + 12);
-
-        // RTP header
         writeRtpHeader(bb, isKey, pts);
         bb.writeBytes(payload);
         rtpPackets.add(new InterleavedFrame(bb));
     }
 
     private void writeInterleavedHeader(ByteBuf header, int dataLen) {
-        // interleaved header
         header.writeByte('$');
         header.writeByte(0);
         header.writeShort(dataLen);
