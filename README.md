@@ -152,3 +152,6 @@ connections:
  - url: rtsp://localhost:8554/picture
    n: 2000
 ```
+
+##### Building
+`mvn clean package assembly:single`
