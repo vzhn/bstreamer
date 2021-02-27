@@ -40,7 +40,7 @@ public class ServerCLI {
     }
 
     private void start() throws IOException {
-        if (cmd.getOptions().length == 0 || cmd.hasOption("help")) {
+        if (cmd.hasOption("help")) {
             HelpFormatter helpFormatter = new HelpFormatter();
             helpFormatter.printHelp("bserver [options]", options);
         } else {
