@@ -5,6 +5,7 @@
 
 **bstreamer** is a collection of tools intended to help load testing video streaming applications.
 
+Note to Windows users: unfortunately performance on Windows is not great as on linux hosts.
 
 ## bserver
 Is an ip camera emulator. It can stream h264 video files stored in matroska format and live-generated pictures. It is capable to serve 10k connections with up to 40 gbps total bandwidth.
