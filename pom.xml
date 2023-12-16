@@ -370,11 +370,11 @@
     <distributionManagement>
         <snapshotRepository>
             <id>nexus-snapshots</id>
-            <url>http://vzhilin-ci.local:8081/repository/maven-snapshots/</url>
+            <url>https://vzhilin-ci.local:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
         <repository>
             <id>nexus-releases</id>
-            <url>http://vzhilin-ci.local:8081/repository/maven-releases/</url>
+            <url>https://vzhilin-ci.local:8081/repository/maven-releases/</url>
         </repository>
     </distributionManagement>
 </project>
