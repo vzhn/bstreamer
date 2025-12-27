@@ -42,6 +42,17 @@ jobs:
           src\deploy\wix\build_msi.bat
         shell: cmd
 
+      # List target folder absolute path and contents
+      - name: Show target folder path and contents
+        run: |
+          echo "Target folder absolute path:"
+          cd target
+          echo %CD%
+          echo.
+          echo "Target folder contents:"
+          dir
+        shell: cmd
+
       # 7. Upload MSI to GitHub Release
       - name: Publish Release
         uses: softprops/action-gh-release@v2
