@@ -36,7 +36,6 @@ public class ServerReporter {
             this.stat = stat;
             this.reporterWriter = new ReporterWriter(
                 new ReporterWriter.Column("time", 8),
-                new ReporterWriter.Column("group", 8),
                 new ReporterWriter.Column("client connections", 20),
                 new ReporterWriter.Column("lag", 11),
                 new ReporterWriter.Column("throughput", 11)

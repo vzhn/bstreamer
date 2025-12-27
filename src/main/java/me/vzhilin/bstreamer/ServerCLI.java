@@ -50,7 +50,6 @@ public class ServerCLI {
             }
             Optional<File> configPath = new ConfigLocator("server.yaml").locate(cmd.getOptionValue("config"));
             if (!configPath.isPresent()) {
-                System.err.println("could not find config file");
                 System.exit(1);
             }
             InputStream is = Files.newInputStream(configPath.get().toPath());

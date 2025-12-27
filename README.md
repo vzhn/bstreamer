@@ -158,4 +158,4 @@ connections:
 ```
 
 ##### Building
-`mvn clean package assembly:single`
+`mvn clean verify appassembler:assemble assembly:single`

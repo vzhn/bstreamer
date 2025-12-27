@@ -37,6 +37,7 @@ public class ConfigLocator {
                 return Optional.of(file);
             }
         }
+        LOG.error("config file was not found at probed paths");
         return Optional.empty();
     }
 }

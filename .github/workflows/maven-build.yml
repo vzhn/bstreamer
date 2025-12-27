@@ -29,20 +29,14 @@ jobs:
 
       # 4. Run Appassembler
       - name: Run Appassembler
-        run: mvn appassembler:assemble
+        run: mvn appassembler:assemble assembly:single
 
-      # 5. Create tar.gz
-      - name: Package tar.gz
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          mkdir -p dist
-          mv target/appassembler target/bstreamer-${VERSION}
-          tar -czf dist/bstreamer-${VERSION}-linux-mac.tar.gz -C target bstreamer-${VERSION}
-
-      # 6. Upload tar.gz to GitHub Release
+      # 5. Upload tar.gz and zip to GitHub Release
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.tar.gz
+          files: |
+            target/*.tar.gz
+            target/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
