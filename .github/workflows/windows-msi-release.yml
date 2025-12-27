@@ -42,21 +42,18 @@ jobs:
           src\deploy\wix\build_msi.bat
         shell: cmd
 
-      # List target folder absolute path and contents
-      - name: Show target folder path and contents
+      # 7. Extract version from tag and rename MSI
+      - name: Extract version and rename MSI
         run: |
-          echo "Target folder absolute path:"
-          cd target
-          echo %CD%
-          echo.
-          echo "Target folder contents:"
-          dir
-        shell: cmd
+          $tag = "${{ github.ref }}" -replace 'refs/tags/', ''
+          Rename-Item -Path "target\bstreamer.msi" -NewName "bstreamer-$tag.msi"
+          echo "Renamed to: bstreamer-$tag.msi"
+        shell: powershell
 
-      # 7. Upload MSI to GitHub Release
+      # 8. Upload MSI to GitHub Release
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          files: target/*.msi   # adjust to your MSI path
+          files: target/bstreamer-*.msi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
