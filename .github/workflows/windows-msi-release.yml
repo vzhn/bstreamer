@@ -46,8 +46,9 @@ jobs:
       - name: Extract version and rename MSI
         run: |
           $tag = "${{ github.ref }}" -replace 'refs/tags/', ''
-          Rename-Item -Path "target\bstreamer.msi" -NewName "bstreamer-$tag.msi"
-          echo "Renamed to: bstreamer-$tag.msi"
+          $version = $tag -replace '^v', ''
+          Rename-Item -Path "target\bstreamer.msi" -NewName "bstreamer-$version.msi"
+          echo "Renamed to: bstreamer-$version.msi"
         shell: powershell
 
       # 8. Upload MSI to GitHub Release

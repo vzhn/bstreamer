@@ -34,9 +34,9 @@ jobs:
       # 5. Create tar.gz
       - name: Package tar.gz
         run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          VERSION=${GITHUB_REF#refs/tags/v}
           mkdir -p dist
-          tar -czf dist/appassembler-${VERSION}.tar.gz -C target appassembler
+          tar -czf dist/bstreamer-${VERSION}.tar.gz -C target appassembler
 
       # 6. Upload tar.gz to GitHub Release
       - name: Publish Release
