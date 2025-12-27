@@ -18,9 +18,8 @@ import me.vzhilin.bstreamer.client.handler.ClientChannelInitializer;
 import me.vzhilin.bstreamer.util.AppRuntime;
 import me.vzhilin.bstreamer.util.ConfigLocator;
 import org.apache.commons.cli.*;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,9 +28,6 @@ import java.util.List;
 import java.util.Optional;
 
 public class ClientCLI {
-    static {
-        BasicConfigurator.configure();
-    }
     private final Bootstrap bootstrap;
     private final ClientConfig conf;
     private final TotalStatistics ss;
@@ -52,9 +48,9 @@ public class ClientCLI {
         } else {
             if (cmd.hasOption('l')) {
                 String loglevel = cmd.getOptionValue('l');
-                Logger.getRootLogger().setLevel(Level.toLevel(loglevel));
+                Configurator.setRootLevel(Level.toLevel(loglevel));
             } else {
-                Logger.getRootLogger().setLevel(Level.INFO);
+                Configurator.setRootLevel(Level.INFO);
             }
             Optional<File> configPath = new ConfigLocator("client.yaml").locate(cmd.getOptionValue("config"));
             if (!configPath.isPresent()) {

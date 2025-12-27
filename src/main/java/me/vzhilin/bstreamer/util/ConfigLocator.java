@@ -1,6 +1,7 @@
 package me.vzhilin.bstreamer.util;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -8,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class ConfigLocator {
-    private final static Logger LOG = Logger.getLogger(ConfigLocator.class);
+    private final static Logger LOG = LogManager.getLogger(ConfigLocator.class);
     private final List<File> defaults = new ArrayList<>();
 
     public ConfigLocator(String configFile) {

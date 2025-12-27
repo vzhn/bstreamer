@@ -8,9 +8,8 @@ import me.vzhilin.bstreamer.server.stat.ServerStatistics;
 import me.vzhilin.bstreamer.util.ConfigLocator;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.apache.commons.cli.*;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,7 +24,6 @@ public class ServerCLI {
     private final Options options;
 
     public static void main(String... argv) throws IOException, ParseException {
-        BasicConfigurator.configure();
         ServerCLI mediaserver = new ServerCLI(argv);
         mediaserver.start();
     }
@@ -46,9 +44,9 @@ public class ServerCLI {
         } else {
             if (cmd.hasOption('l')) {
                 String loglevel = cmd.getOptionValue('l');
-                Logger.getRootLogger().setLevel(Level.toLevel(loglevel));
+                Configurator.setRootLevel(Level.toLevel(loglevel));
             } else {
-                Logger.getRootLogger().setLevel(Level.INFO);
+                Configurator.setRootLevel(Level.INFO);
             }
             Optional<File> configPath = new ConfigLocator("server.yaml").locate(cmd.getOptionValue("config"));
             if (!configPath.isPresent()) {

@@ -14,12 +14,13 @@ import me.vzhilin.bstreamer.server.conf.Config;
 import me.vzhilin.bstreamer.server.strategy.sync.GroupStreamer;
 import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 import me.vzhilin.bstreamer.util.PropertyMap;
-import org.apache.log4j.Logger;
 
 import java.util.Base64;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class RtspServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-    private static final Logger LOG = Logger.getLogger(RtspServerHandler.class);
+    private static final Logger LOG = LogManager.getLogger(RtspServerHandler.class);
 
     private Config config;
     private ServerContext context;
