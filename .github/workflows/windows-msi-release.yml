@@ -29,7 +29,7 @@ jobs:
 
       # 4. Run Appassembler
       - name: Run Appassembler
-        run: mvn appassembler:assemble
+        run: mvn -B appassembler:assemble
 
       # 5. Verify Java folder & Appassembler output (optional)
       - name: List Appassembler folder
