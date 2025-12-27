@@ -30,4 +30,4 @@ streaming:
         bitrate: 400000
         fps: 25
         gop_size: 10
-        max_b_frames: 1
+        max_b_frames: 5

@@ -28,6 +28,9 @@ Now server is ready to stream video.
 ```shell script
 ffplay -rtsp_transport tcp  rtsp://localhost:8554/picture
 ```
+ffplay shoud show following picture:
+![picture](site/ffplay.png)
+
 
 When new client is connected you'll see ```+1``` here, in connections column:
 ```
