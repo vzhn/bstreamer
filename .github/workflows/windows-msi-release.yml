@@ -57,6 +57,6 @@ jobs:
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          files: target\*.msi   # adjust to your MSI path
+          files: target/*.msi   # adjust to your MSI path
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
