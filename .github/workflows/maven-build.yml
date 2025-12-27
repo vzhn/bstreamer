@@ -1,25 +1,46 @@
-name: Build Java (Maven)
+name: Release Maven Appassembler on Tag
 
 on:
   push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+    tags:
+      - 'v*'   # triggers only on tags like v1.0.0, v2.3.4
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source code
+      # 1. Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK
+      # 2. Set up Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '8'
           cache: 'maven'
 
-      - name: Build with Maven
+      # 3. Build & Test
+      - name: Build & Test
         run: mvn -B clean verify
+
+      # 4. Run Appassembler
+      - name: Run Appassembler
+        run: mvn appassembler:assemble
+
+      # 5. Create tar.gz
+      - name: Package tar.gz
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          mkdir -p dist
+          tar -czf dist/appassembler-${VERSION}.tar.gz -C target appassembler
+
+      # 6. Upload tar.gz to GitHub Release
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
