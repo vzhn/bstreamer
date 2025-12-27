@@ -1,6 +1,7 @@
 name: Release Maven Appassembler on Tag
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'   # triggers only on tags like v1.0.0, v2.3.4
