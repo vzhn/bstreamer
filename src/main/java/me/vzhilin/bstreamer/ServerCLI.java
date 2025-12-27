@@ -12,9 +12,9 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,8 +24,8 @@ public class ServerCLI {
     private final Options options;
 
     public static void main(String... argv) throws IOException, ParseException {
-        ServerCLI mediaserver = new ServerCLI(argv);
-        mediaserver.start();
+        ServerCLI server = new ServerCLI(argv);
+        server.start();
     }
 
     private ServerCLI(String[] argv) throws ParseException {
@@ -53,7 +53,7 @@ public class ServerCLI {
                 System.err.println("could not find config file");
                 System.exit(1);
             }
-            InputStream is = new FileInputStream(configPath.get());
+            InputStream is = Files.newInputStream(configPath.get().toPath());
             PropertyMap yaml = PropertyMap.parseYaml(is);
             Config config = new Config(yaml);
             RtspServer server = new RtspServer(config);

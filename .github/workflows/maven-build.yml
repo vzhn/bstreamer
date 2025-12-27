@@ -36,7 +36,8 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           mkdir -p dist
-          tar -czf dist/bstreamer-${VERSION}.tar.gz -C target appassembler
+          mv target/appassembler target/bstreamer-${VERSION}
+          tar -czf dist/bstreamer-${VERSION}-linux-mac.tar.gz -C target bstreamer-${VERSION}
 
       # 6. Upload tar.gz to GitHub Release
       - name: Publish Release
