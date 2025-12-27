@@ -11,6 +11,9 @@ import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.uring.IoUring;
+import io.netty.channel.uring.IoUringIoHandler;
+import io.netty.channel.uring.IoUringSocketChannel;
 import me.vzhilin.bstreamer.client.ClientAttributes;
 import me.vzhilin.bstreamer.client.ClientReporter;
 import me.vzhilin.bstreamer.client.ConnectionStatistics;
@@ -79,7 +82,11 @@ public class ClientCLI {
         EventLoopGroup workers;
         Class<? extends SocketChannel> channelClazz;
         final IoHandlerFactory factory;
-        if (AppRuntime.IS_LINUX && Epoll.isAvailable()) {
+        if (AppRuntime.IS_LINUX && IoUring.isAvailable()) {
+            factory = IoUringIoHandler.newFactory();
+            channelClazz = IoUringSocketChannel.class;
+            LOG.info("choosing io_uring for i/o");
+        } else if (AppRuntime.IS_LINUX && Epoll.isAvailable()) {
             factory = EpollIoHandler.newFactory();
             channelClazz = EpollSocketChannel.class;
             LOG.info("choosing epoll for i/o");

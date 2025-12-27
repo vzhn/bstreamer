@@ -11,6 +11,10 @@ import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.uring.IoUring;
+import io.netty.channel.uring.IoUringIoHandler;
+import io.netty.channel.uring.IoUringIoHandlerConfig;
+import io.netty.channel.uring.IoUringServerSocketChannel;
 import me.vzhilin.bstreamer.server.conf.Config;
 import me.vzhilin.bstreamer.server.conf.NetworkAttributes;
 import me.vzhilin.bstreamer.util.AppRuntime;
@@ -45,7 +49,12 @@ public class RtspServer {
 
         int nThreads = serverConfig.getNetwork().getInt("threads");
         final IoHandlerFactory factory;
-        if (AppRuntime.IS_LINUX && Epoll.isAvailable()) {
+        if (AppRuntime.IS_LINUX && IoUring.isAvailable()) {
+            IoUringIoHandlerConfig config = new IoUringIoHandlerConfig().setCqSize(4 * 4096);
+            factory = IoUringIoHandler.newFactory(config);
+            channelClazz = IoUringServerSocketChannel.class;
+            LOG.info("choosing io_uring for i/o");
+        } else if (AppRuntime.IS_LINUX && Epoll.isAvailable()) {
             factory = EpollIoHandler.newFactory();
             channelClazz = EpollServerSocketChannel.class;
             LOG.info("choosing epoll for i/o");
