@@ -39,13 +39,13 @@ jobs:
       - name: Build MSI using WiX
         run: |
           echo "Launching MSI build script..."
-          src\deploy\wix\build-msi.bat
+          src\deploy\wix\build_msi.bat
         shell: cmd
 
       # 7. Upload MSI to GitHub Release
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build\output\*.msi   # adjust to your MSI path
+          files: target\*.msi   # adjust to your MSI path
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
