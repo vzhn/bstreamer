@@ -10,6 +10,8 @@ import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
 import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 import me.vzhilin.bstreamer.util.AppRuntime;
 import me.vzhilin.bstreamer.util.PropertyMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
@@ -30,6 +32,7 @@ import static org.bytedeco.ffmpeg.global.avformat.*;
 public class Filesystem implements PullSource {
     private static final String WORKDIR_VIDEO = "video";
     private static final String WORKDIR_SRC_DEPLOY_VIDEO = "src/deploy/video";
+    private static final Logger LOG = LogManager.getLogger(Filesystem.class);
 
     private boolean wasClosed;
     private SourceDescription desc;
@@ -45,7 +48,8 @@ public class Filesystem implements PullSource {
         if (videoFile.exists()) {
             open(videoFile);
         } else {
-            throw new FileNotFoundException(videoFile.getAbsolutePath());
+            LOG.fatal("file not found: {}", videoFile.getAbsolutePath());
+            System.exit(1);
         }
     }
 

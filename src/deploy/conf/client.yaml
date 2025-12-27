@@ -4,7 +4,5 @@ network:
   connectTimeout: 5000
   idleTimeout: 5000
 connections:
-  - url: rtsp://localhost:8554/file?file=jellyfish-5-mbps-hd-h264.mkv
-    n: 2000
   - url: rtsp://localhost:8554/picture
     n: 2000
