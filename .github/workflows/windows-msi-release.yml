@@ -1,0 +1,51 @@
+name: Build Java + MSI Release
+
+on:
+  push:
+    tags:
+      - 'v*'   # trigger on version tags like v1.0.0
+  workflow_dispatch: # optional manual trigger
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up Java (Java 8 or 17)
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'   # change if needed
+          cache: 'maven'
+
+      # 3. Build Maven project
+      - name: Build & Test
+        run: mvn -B clean verify
+
+      # 4. Run Appassembler
+      - name: Run Appassembler
+        run: mvn appassembler:assemble
+
+      # 5. Verify Java folder & Appassembler output (optional)
+      - name: List Appassembler folder
+        run: dir target\appassembler
+
+      # 6. Run your BAT script to build MSI
+      - name: Build MSI using WiX
+        run: |
+          echo "Launching MSI build script..."
+          src\deploy\wix\build-msi.bat
+        shell: cmd
+
+      # 7. Upload MSI to GitHub Release
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build\output\*.msi   # adjust to your MSI path
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -296,7 +296,7 @@
         <profile>
             <id>windows-x86_64</id>
             <properties>
-                <bstreamer.home>C:\opt\mediaserver</bstreamer.home>
+                <bstreamer.home>C:\opt\bstreamer</bstreamer.home>
             </properties>
             <activation>
                 <os>
