@@ -23,24 +23,66 @@ jobs:
           java-version: '17'
           cache: 'maven'
 
-      # 3. Build & Test
-      - name: Build & Test
-        run: mvn -B clean verify
-
-      # 4. Run Appassembler
-      - name: Run Appassembler
-        run: mvn -B appassembler:assemble
-
-      # 4. Run Assembly
-      - name: Run Assembly
-        run: mvn -B assembly:single
-
-      # 5. Upload tar.gz and zip to GitHub Release
-      - name: Publish Release
+      - name: Build, Test, Assembly (linux-x86_64)
+        run: |
+          mvn -B clean verify appassembler:assemble assembly:single -Plinux-x86_64
+          ZIP_FILE=$(ls target/*.zip)
+          BASENAME=$(basename "$ZIP_FILE" .zip)
+          NEW_NAME="${BASENAME}-linux-x86_64.tar.gz"
+          mv "$ZIP_FILE" "$NEW_NAME"
+      - name: Publish Release (linux-x86_64)
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            target/*.tar.gz
-            target/*.zip
+          files: target/*.tar.gz
+
+      - name: Publish Release (linux-x86_64)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build, Test, Assembly (macosx-arm64)
+        run: |
+          mvn -B clean verify appassembler:assemble assembly:single -Pmacosx-arm64 -P!linux-x86_64
+          ZIP_FILE=$(ls target/*.tar.gz)
+          BASENAME=$(basename "$ZIP_FILE" tar.gz)
+          NEW_NAME="${BASENAME}-macosx-arm64.tar.gz"
+          mv "$ZIP_FILE" "$NEW_NAME"
+
+      - name: Publish Release (macosx-arm64)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build, Test, Assembly (macosx-x86_64)
+        run: |
+          mvn -B clean verify appassembler:assemble assembly:single -Pmacosx-x86_64 -P!linux-x86_64
+          ZIP_FILE=$(ls target/*.tar.gz)
+          BASENAME=$(basename "$ZIP_FILE" tar.gz)
+          NEW_NAME="${BASENAME}-macosx-x86_64.tar.gz"
+          mv "$ZIP_FILE" "$NEW_NAME"
+
+      - name: Publish Release (macosx-x86_64)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build, Test, Assembly (windows-x86_64)
+        run: |
+          mvn -B clean verify appassembler:assemble assembly:single -Pwindows-x86_64 -P!linux-x86_64
+          ZIP_FILE=$(ls target/*.zip)
+          BASENAME=$(basename "$ZIP_FILE" .zip)
+          NEW_NAME="${BASENAME}-windows-x86_64.zip"
+          mv "$ZIP_FILE" "$NEW_NAME"
+
+      - name: Publish Release (windows-x86_64)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

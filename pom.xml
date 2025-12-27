@@ -14,6 +14,7 @@
         <ffmpeg.arch>linux-x86_64</ffmpeg.arch>
         <video.location>src/deploy/video</video.location>
         <jackson.version>3.0.3</jackson.version>
+        <netty.version>4.2.9.Final</netty.version>
     </properties>
     <build>
         <plugins>
@@ -84,8 +85,33 @@
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>4.2.9.Final</version>
+            <artifactId>netty-transport</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport-classes-epoll</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport-classes-io_uring</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport-classes-kqueue</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-handler</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-http</artifactId>
+            <version>${netty.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -131,6 +157,7 @@
             <activation>
                 <os>
                     <family>unix</family>
+                    <name>Linux</name>
                 </os>
             </activation>
             <dependencies>
@@ -139,6 +166,64 @@
                     <artifactId>ffmpeg</artifactId>
                     <version>${javacpp.version}</version>
                     <classifier>linux-x86_64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                    <version>${netty.version}</version>
+                    <classifier>linux-x86_64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-io_uring</artifactId>
+                    <version>${netty.version}</version>
+                    <classifier>linux-x86_64</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>macosx-x86_64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>x86_64</arch>
+                </os>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>ffmpeg</artifactId>
+                    <version>${javacpp.version}</version>
+                    <classifier>macosx-x86_64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-kqueue</artifactId>
+                    <version>${netty.version}</version>
+                    <classifier>osx-x86_64</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>macosx-arm64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>ffmpeg</artifactId>
+                    <version>${javacpp.version}</version>
+                    <classifier>macosx-arm64</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-kqueue</artifactId>
+                    <version>${netty.version}</version>
+                    <classifier>osx-arm64</classifier>
                 </dependency>
             </dependencies>
         </profile>
@@ -149,11 +234,6 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>appassembler-maven-plugin</artifactId>
-                        <configuration>
-                            <platforms>
-                                <platform>unix</platform>
-                            </platforms>
-                        </configuration>
                     </plugin>
                     <plugin>
                         <artifactId>jdeb</artifactId>
