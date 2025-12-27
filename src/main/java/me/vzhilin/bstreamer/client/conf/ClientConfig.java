@@ -36,7 +36,7 @@ public class ClientConfig {
 
     public static ClientConfig read(File file) throws IOException {
         ClientConfig clientConfig = new ObjectMapper(new YAMLFactory()).readValue(file, ClientConfig.class);
-        LOG.info("config loaded: " + file.getAbsolutePath());
+        LOG.info("config loaded: {}", file.getAbsolutePath());
         return clientConfig;
     }
 }

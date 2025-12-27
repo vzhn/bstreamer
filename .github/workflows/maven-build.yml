@@ -28,11 +28,11 @@ jobs:
         run: mvn -B clean verify
 
       # 4. Run Appassembler
-      - name: Assemble
+      - name: Run Appassembler
         run: mvn -B appassembler:assemble
 
       # 4. Run Assembly
-      - name: Run Appassembler
+      - name: Run Assembly
         run: mvn -B assembly:single
 
       # 5. Upload tar.gz and zip to GitHub Release

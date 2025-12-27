@@ -9,17 +9,22 @@ import me.vzhilin.bstreamer.util.ConfigLocator;
 import me.vzhilin.bstreamer.util.PropertyMap;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ServerCLI {
+    private final static Logger LOG = LogManager.getLogger(ServerCLI.class);
+
     private final CommandLine cmd;
     private final Options options;
 
@@ -48,11 +53,14 @@ public class ServerCLI {
             } else {
                 Configurator.setRootLevel(Level.INFO);
             }
+
             Optional<File> configPath = new ConfigLocator("server.yaml").locate(cmd.getOptionValue("config"));
             if (!configPath.isPresent()) {
                 System.exit(1);
             }
-            InputStream is = Files.newInputStream(configPath.get().toPath());
+            Path path = configPath.get().toPath();
+            LOG.info("config loaded: {}", path);
+            InputStream is = Files.newInputStream(path);
             PropertyMap yaml = PropertyMap.parseYaml(is);
             Config config = new Config(yaml);
             RtspServer server = new RtspServer(config);
