@@ -31,7 +31,7 @@ public final class NettyRtspChannelHandler extends SimpleChannelInboundHandler<F
     private ChannelHandlerContext ctx;
 
     private int cseq = 1;
-    private Map<Integer, ReplyHandler> cseqToReplyHandler = new HashMap<>();
+    private final Map<Integer, ReplyHandler> cseqToReplyHandler = new HashMap<>();
 
     public NettyRtspChannelHandler(RtspConnectionHandler connectionHandler) {
         this.connectionHandler = connectionHandler;
