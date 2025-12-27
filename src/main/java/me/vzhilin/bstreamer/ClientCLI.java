@@ -2,8 +2,10 @@ package me.vzhilin.bstreamer;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
+import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollIoHandler;
 import io.netty.channel.epoll.EpollSocketChannel;
+import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueIoHandler;
 import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.nio.NioIoHandler;
@@ -77,7 +79,7 @@ public class ClientCLI {
         EventLoopGroup workers;
         Class<? extends SocketChannel> channelClazz;
         final IoHandlerFactory factory;
-        if (AppRuntime.IS_LINUX) {
+        if (AppRuntime.IS_LINUX && Epoll.isAvailable()) {
             factory = EpollIoHandler.newFactory();
             channelClazz = EpollSocketChannel.class;
             LOG.info("choosing epoll for i/o");
@@ -85,7 +87,7 @@ public class ClientCLI {
             factory = NioIoHandler.newFactory();
             channelClazz = NioSocketChannel.class;
             LOG.info("choosing NIO for i/o");
-        } else if (AppRuntime.IS_MAC) {
+        } else if (AppRuntime.IS_MAC && KQueue.isAvailable()) {
             factory = KQueueIoHandler.newFactory();
             channelClazz = KQueueSocketChannel.class;
             LOG.info("choosing KQueue for i/o");

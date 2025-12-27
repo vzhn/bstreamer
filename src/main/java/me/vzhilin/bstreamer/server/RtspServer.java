@@ -2,13 +2,12 @@ package me.vzhilin.bstreamer.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
-import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollIoHandler;
 import io.netty.channel.epoll.EpollServerSocketChannel;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueIoHandler;
 import io.netty.channel.kqueue.KQueueServerSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -46,7 +45,7 @@ public class RtspServer {
 
         int nThreads = serverConfig.getNetwork().getInt("threads");
         final IoHandlerFactory factory;
-        if (AppRuntime.IS_LINUX) {
+        if (AppRuntime.IS_LINUX && Epoll.isAvailable()) {
             factory = EpollIoHandler.newFactory();
             channelClazz = EpollServerSocketChannel.class;
             LOG.info("choosing epoll for i/o");
@@ -54,7 +53,7 @@ public class RtspServer {
             factory = NioIoHandler.newFactory();
             channelClazz = NioServerSocketChannel.class;
             LOG.info("choosing NIO for i/o");
-        } else if (AppRuntime.IS_MAC) {
+        } else if (AppRuntime.IS_MAC && KQueue.isAvailable()) {
             factory = KQueueIoHandler.newFactory();
             channelClazz = KQueueServerSocketChannel.class;
             LOG.info("choosing KQueue for i/o");
