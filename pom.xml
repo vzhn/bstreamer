@@ -13,6 +13,7 @@
         <javacpp.version>7.1.1-1.5.12</javacpp.version>
         <ffmpeg.arch>linux-x86_64</ffmpeg.arch>
         <video.location>src/deploy/video</video.location>
+        <jackson.version>3.0.3</jackson.version>
     </properties>
     <build>
         <plugins>
@@ -97,19 +98,19 @@
             <version>2.25.3</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <groupId>tools.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.10.0</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.10.0</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.13.4.2</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>

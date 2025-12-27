@@ -1,8 +1,8 @@
 package me.vzhilin.bstreamer.util;
 
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLParser;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -119,7 +119,7 @@ public final class PropertyMap {
 
     public static PropertyMap parseYaml(InputStream is) throws IOException {
         YAMLFactory factory = new YAMLFactory();
-        YAMLParser parser = factory.createParser(is);
+        JsonParser parser = factory.createParser(is);
         Deque<Object> stack = new LinkedList<>();
         String label = "";
         JsonToken token;
@@ -146,7 +146,7 @@ public final class PropertyMap {
                     }
                     break;
                 }
-                case FIELD_NAME:
+                case PROPERTY_NAME:
                     label = parser.getText();
                     break;
                 case VALUE_STRING:
