@@ -10,6 +10,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <bstreamer.home>/usr/local/bstreamer</bstreamer.home>
+        <javacpp.version>7.1.1-1.5.12</javacpp.version>
         <ffmpeg.arch>linux-x86_64</ffmpeg.arch>
         <video.location>src/deploy/video</video.location>
     </properties>
@@ -76,9 +77,9 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>ffmpeg</artifactId>
-            <version>4.1-1.4.4</version>
+            <version>${javacpp.version}</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -138,9 +139,9 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <groupId>org.bytedeco</groupId>
                     <artifactId>ffmpeg</artifactId>
-                    <version>4.1-1.4.4</version>
+                    <version>${javacpp.version}</version>
                     <classifier>linux-x86_64</classifier>
                 </dependency>
             </dependencies>
@@ -161,7 +162,7 @@
                     <plugin>
                         <artifactId>jdeb</artifactId>
                         <groupId>org.vafer</groupId>
-                        <version>1.7</version>
+                        <version>1.14</version>
                         <executions>
                             <execution>
                                 <phase>package</phase>
@@ -308,9 +309,9 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <groupId>org.bytedeco</groupId>
                     <artifactId>ffmpeg</artifactId>
-                    <version>4.1-1.4.4</version>
+                    <version>${javacpp.version}</version>
                     <classifier>windows-x86_64</classifier>
                 </dependency>
             </dependencies>

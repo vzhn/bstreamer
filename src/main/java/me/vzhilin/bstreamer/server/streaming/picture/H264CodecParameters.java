@@ -1,22 +1,22 @@
 package me.vzhilin.bstreamer.server.streaming.picture;
 
-import static org.bytedeco.javacpp.avutil.av_opt_set;
+import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
+import org.bytedeco.ffmpeg.avutil.AVRational;
 
-import org.bytedeco.javacpp.avcodec;
-import org.bytedeco.javacpp.avutil;
+import static org.bytedeco.ffmpeg.global.avutil.av_opt_set;
 
 public class H264CodecParameters {
     private int bitrate = 400000;
     private int width = 640;
     private int height = 480;
-    private avutil.AVRational timebase;
+    private AVRational timebase;
     private int gopSize = 10;
     private int maxBFrames = 1;
     private int fps;
     private String profile;
 
     public H264CodecParameters() {
-        timebase = new avutil.AVRational();
+        timebase = new AVRational();
         timebase.num(1);
         timebase.den(25);
     }
@@ -45,7 +45,7 @@ public class H264CodecParameters {
         this.height = height;
     }
 
-    public avutil.AVRational getTimebase() {
+    public AVRational getTimebase() {
         return timebase;
     }
 
@@ -70,7 +70,7 @@ public class H264CodecParameters {
         this.maxBFrames = maxBFrames;
     }
 
-    public void setParameters(avcodec.AVCodecContext c) {
+    public void setParameters(AVCodecContext c) {
         c.bit_rate(bitrate);
         c.width(width);
         c.height(height);

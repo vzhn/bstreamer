@@ -1,13 +1,13 @@
 package me.vzhilin.bstreamer.server.streaming.file;
 
 
-import org.bytedeco.javacpp.avutil;
+import org.bytedeco.ffmpeg.avutil.AVRational;
 
 public class SourceDescription {
     private byte[] sps;
     private byte[] pps;
-    private avutil.AVRational timebase;
-    private avutil.AVRational avgFrameRate;
+    private AVRational timebase;
+    private AVRational avgFrameRate;
     private int videoStreamId;
 
     public void setSps(byte[] sps) {
@@ -26,19 +26,19 @@ public class SourceDescription {
         return pps;
     }
 
-    public void setTimebase(avutil.AVRational timebase) {
+    public void setTimebase(AVRational timebase) {
         this.timebase = timebase;
     }
 
-    public avutil.AVRational getTimebase() {
+    public AVRational getTimebase() {
         return timebase;
     }
 
-    public void setAvgFrameRate(avutil.AVRational avgFrameRate) {
+    public void setAvgFrameRate(AVRational avgFrameRate) {
         this.avgFrameRate = avgFrameRate;
     }
 
-    public avutil.AVRational getAvgFrameRate() {
+    public AVRational getAvgFrameRate() {
         return avgFrameRate;
     }
 

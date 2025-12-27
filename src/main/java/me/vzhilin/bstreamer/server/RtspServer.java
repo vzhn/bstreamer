@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.bytedeco.javacpp.avutil.AV_LOG_ERROR;
-import static org.bytedeco.javacpp.avutil.av_log_set_level;
+import static org.bytedeco.ffmpeg.global.avutil.AV_LOG_ERROR;
+import static org.bytedeco.ffmpeg.global.avutil.av_log_set_level;
 
 public class RtspServer {
     private final static Logger LOG = LoggerFactory.getLogger(RtspServer.class);

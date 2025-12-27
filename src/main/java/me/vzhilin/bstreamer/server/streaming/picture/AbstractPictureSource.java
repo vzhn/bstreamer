@@ -6,10 +6,15 @@ import me.vzhilin.bstreamer.server.streaming.base.PullSource;
 import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
 import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 import me.vzhilin.bstreamer.util.PropertyMap;
+import org.bytedeco.ffmpeg.avcodec.AVCodec;
+import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
+import org.bytedeco.ffmpeg.avcodec.AVPacket;
+import org.bytedeco.ffmpeg.avutil.AVDictionary;
+import org.bytedeco.ffmpeg.avutil.AVFrame;
+import org.bytedeco.ffmpeg.avutil.AVRational;
+import org.bytedeco.ffmpeg.swscale.SwsContext;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.PointerPointer;
-import org.bytedeco.javacpp.avcodec;
-import org.bytedeco.javacpp.avutil;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
@@ -18,9 +23,9 @@ import java.util.Deque;
 import java.util.LinkedList;
 
 import static java.lang.System.exit;
-import static org.bytedeco.javacpp.avcodec.*;
-import static org.bytedeco.javacpp.avutil.*;
-import static org.bytedeco.javacpp.swscale.*;
+import static org.bytedeco.ffmpeg.global.avcodec.*;
+import static org.bytedeco.ffmpeg.global.avutil.*;
+import static org.bytedeco.ffmpeg.global.swscale.*;
 
 public abstract class AbstractPictureSource implements PullSource {
     private final H264CodecParameters codecParameters;
@@ -74,22 +79,22 @@ public abstract class AbstractPictureSource implements PullSource {
     }
 
     private void initEncoder() {
-        avutil.AVRational timebase = new avutil.AVRational();
+        AVRational timebase = new AVRational();
         timebase.num(1);
         timebase.den(fps);
-        avutil.AVRational framerate = new avutil.AVRational();
+        AVRational framerate = new AVRational();
         framerate.num(timebase.den());
         framerate.den(timebase.num());
         timebaseMillis = new AVRational();
         timebaseMillis.num(1);
         timebaseMillis.den(1000);
-        avcodec.AVCodec codec;
+        AVCodec codec;
         codec = avcodec_find_encoder(AV_CODEC_ID_H264);
         c = avcodec_alloc_context3(codec);
         codecParameters.setParameters(c);
-        c.pix_fmt(avutil.AV_PIX_FMT_YUV420P);
+        c.pix_fmt(AV_PIX_FMT_YUV420P);
         c.flags(c.flags() | AV_CODEC_FLAG_GLOBAL_HEADER);
-        if (avcodec_open2(c, codec, (avutil.AVDictionary) null) < 0) {
+        if (avcodec_open2(c, codec, (AVDictionary) null) < 0) {
             System.err.println("could not open codec");
             exit(1);
         }

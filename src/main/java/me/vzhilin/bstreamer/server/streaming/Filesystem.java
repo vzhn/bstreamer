@@ -10,6 +10,11 @@ import me.vzhilin.bstreamer.server.streaming.file.MediaPacket;
 import me.vzhilin.bstreamer.server.streaming.file.SourceDescription;
 import me.vzhilin.bstreamer.util.AppRuntime;
 import me.vzhilin.bstreamer.util.PropertyMap;
+import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
+import org.bytedeco.ffmpeg.avcodec.AVPacket;
+import org.bytedeco.ffmpeg.avformat.AVFormatContext;
+import org.bytedeco.ffmpeg.avformat.AVStream;
+import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.javacpp.*;
 
 import java.io.File;
@@ -18,8 +23,9 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import static org.bytedeco.javacpp.avcodec.*;
-import static org.bytedeco.javacpp.avformat.*;
+import static org.bytedeco.ffmpeg.global.avcodec.*;
+import static org.bytedeco.ffmpeg.global.avformat.*;
+
 
 public class Filesystem implements PullSource {
     private static final String WORKDIR_VIDEO = "video";
@@ -61,7 +67,7 @@ public class Filesystem implements PullSource {
     }
 
     private void open(File file) throws IOException {
-        pAvfmtCtx = new avformat.AVFormatContext(null);
+        pAvfmtCtx = new AVFormatContext(null);
         int r = avformat_open_input(pAvfmtCtx, new BytePointer(file.getAbsolutePath()), null, null);
         if (r < 0) {
             pAvfmtCtx.close();
@@ -75,16 +81,16 @@ public class Filesystem implements PullSource {
             pAvfmtCtx.close();
             throw new IOException("error: " + r);
         }
-        pk = new avcodec.AVPacket();
+        pk = new AVPacket();
         AVStream avStream = getVideoStream();
         if (avStream == null) {
             close();
             throw new IOException("h264 stream not found");
         }
         int videoStreamId = avStream.index();
-        avutil.AVRational streamTimebase = avStream.time_base();
-        avutil.AVRational avgFrameRate = avStream.avg_frame_rate();
-        avcodec.AVCodecParameters cp = avStream.codecpar();
+        AVRational streamTimebase = avStream.time_base();
+        AVRational avgFrameRate = avStream.avg_frame_rate();
+        AVCodecParameters cp = avStream.codecpar();
         byte[] extradataBytes = new byte[cp.extradata_size()];
         cp.extradata().get(extradataBytes);
         AVCCExtradataParser extradata = new AVCCExtradataParser(extradataBytes);
@@ -103,7 +109,7 @@ public class Filesystem implements PullSource {
         int ns = pAvfmtCtx.nb_streams();
         for (int i = 0; i < ns; i++) {
             AVStream pstream = pAvfmtCtx.streams(i);
-            avcodec.AVCodecParameters cp = pstream.codecpar();
+            AVCodecParameters cp = pstream.codecpar();
             if (cp.codec_id() == AV_CODEC_ID_H264) {
                 return pstream;
             }
