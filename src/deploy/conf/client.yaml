@@ -6,3 +6,6 @@ network:
 connections:
   - url: rtsp://localhost:8554/picture
     n: 2000
+# you can also add custom path here
+# - url: rtsp://localhost:8554/file?file=<path-to-video-file>.mkv
+#  n: 2000
