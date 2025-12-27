@@ -26,10 +26,10 @@ jobs:
       - name: Build, Test, Assembly (linux-x86_64)
         run: |
           mvn -B clean verify appassembler:assemble assembly:single -Plinux-x86_64
-          ZIP_FILE=$(ls target/*.zip)
+          ZIP_FILE=$(ls target/*.tar.gz)
           BASENAME=$(basename "$ZIP_FILE" .tar.gz)
           NEW_NAME="${BASENAME}-linux-x86_64.tar.gz"
-          mv "$ZIP_FILE" "$NEW_NAME"
+          mv "$ZIP_FILE" "target/$NEW_NAME"
 
       - name: Publish Release (linux-x86_64)
         uses: softprops/action-gh-release@v2
@@ -44,7 +44,7 @@ jobs:
           ZIP_FILE=$(ls target/*.tar.gz)
           BASENAME=$(basename "$ZIP_FILE" .tar.gz)
           NEW_NAME="${BASENAME}-macosx-arm64.tar.gz"
-          mv "$ZIP_FILE" "$NEW_NAME"
+          mv "$ZIP_FILE" "target/$NEW_NAME"
 
       - name: Publish Release (macosx-arm64)
         uses: softprops/action-gh-release@v2
@@ -59,7 +59,7 @@ jobs:
           ZIP_FILE=$(ls target/*.tar.gz)
           BASENAME=$(basename "$ZIP_FILE" .tar.gz)
           NEW_NAME="${BASENAME}-macosx-x86_64.tar.gz"
-          mv "$ZIP_FILE" "$NEW_NAME"
+          mv "$ZIP_FILE" "target/$NEW_NAME"
 
       - name: Publish Release (macosx-x86_64)
         uses: softprops/action-gh-release@v2
@@ -74,7 +74,7 @@ jobs:
           ZIP_FILE=$(ls target/*.zip)
           BASENAME=$(basename "$ZIP_FILE" .zip)
           NEW_NAME="${BASENAME}-windows-x86_64.zip"
-          mv "$ZIP_FILE" "$NEW_NAME"
+          mv "$ZIP_FILE" "target/$NEW_NAME"
 
       - name: Publish Release (windows-x86_64)
         uses: softprops/action-gh-release@v2
