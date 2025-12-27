@@ -12,4 +12,4 @@ heat dir %VIDEODIR% -dr VideoDir -cg VideoGroup -gg -sfrag -template fragment -o
 
 candle src\deploy\wix\bstreamer.wxs repo.wxs bin.wxs conf.wxs video.wxs
 light -b %BINDIR% -b %REPODIR% -b %CONFDIR% -b %VIDEODIR% ^
-  conf.wixobj repo.wixobj bin.wixobj video.wixobj bstreamer.wixobj -o target/bstreamer.msi
+  conf.wixobj repo.wixobj bin.wixobj video.wixobj bstreamer.wixobj -o target\bstreamer.msi
