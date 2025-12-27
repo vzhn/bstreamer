@@ -20,7 +20,6 @@ import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.javacpp.*;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;

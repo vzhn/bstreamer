@@ -2,9 +2,11 @@ package me.vzhilin.bstreamer;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollIoHandler;
 import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueIoHandler;
+import io.netty.channel.kqueue.KQueueSocketChannel;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import me.vzhilin.bstreamer.client.ClientAttributes;
@@ -19,6 +21,8 @@ import me.vzhilin.bstreamer.util.AppRuntime;
 import me.vzhilin.bstreamer.util.ConfigLocator;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 
 import java.io.File;
@@ -28,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class ClientCLI {
+    private static final Logger LOG = LogManager.getLogger(ClientCLI.class);
     private final Bootstrap bootstrap;
     private final ClientConfig conf;
     private final TotalStatistics ss;
@@ -71,13 +76,25 @@ public class ClientCLI {
 
         EventLoopGroup workers;
         Class<? extends SocketChannel> channelClazz;
-        if (AppRuntime.IS_WINDOWS) {
-            workers = new NioEventLoopGroup(nThreads);
-            channelClazz = NioSocketChannel.class;
-        } else {
-            workers = new EpollEventLoopGroup(nThreads);
+        final IoHandlerFactory factory;
+        if (AppRuntime.IS_LINUX) {
+            factory = EpollIoHandler.newFactory();
             channelClazz = EpollSocketChannel.class;
+            LOG.info("choosing epoll for i/o");
+        } else if (AppRuntime.IS_WINDOWS) {
+            factory = NioIoHandler.newFactory();
+            channelClazz = NioSocketChannel.class;
+            LOG.info("choosing NIO for i/o");
+        } else if (AppRuntime.IS_MAC) {
+            factory = KQueueIoHandler.newFactory();
+            channelClazz = KQueueSocketChannel.class;
+            LOG.info("choosing KQueue for i/o");
+        } else {
+            factory = NioIoHandler.newFactory();
+            channelClazz = NioSocketChannel.class;
+            LOG.info("fallback: choosing NIO for i/o");
         }
+        workers = new MultiThreadIoEventLoopGroup(nThreads, factory);
         bootstrap = new Bootstrap()
             .group(workers)
             .channel(channelClazz);

@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerReporter {
     private final ScheduledExecutorService exec;
-    private Runnable reporter;
+    private final Runnable reporter;
     private ScheduledFuture<?> reporterFuture;
 
     public ServerReporter(ServerStatistics stat, ScheduledExecutorService exec) {

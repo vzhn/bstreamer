@@ -1,15 +1,15 @@
 package me.vzhilin.bstreamer.server;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.WriteBufferWaterMark;
+import io.netty.channel.*;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollIoHandler;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueIoHandler;
 import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import me.vzhilin.bstreamer.server.conf.Config;
@@ -45,19 +45,27 @@ public class RtspServer {
         this.serverBootstrap = new ServerBootstrap();
 
         int nThreads = serverConfig.getNetwork().getInt("threads");
-        if (AppRuntime.IS_WINDOWS) {
-            bossGroup = new NioEventLoopGroup(1);
-            workerGroup = new NioEventLoopGroup(nThreads);
-            channelClazz = NioServerSocketChannel.class;
-        } else if (AppRuntime.IS_MAC) {
-            bossGroup = new KQueueEventLoopGroup(1);
-            workerGroup = new KQueueEventLoopGroup(nThreads);
-            channelClazz = KQueueServerSocketChannel.class;
-        } else {
-            bossGroup = new EpollEventLoopGroup(1);
-            workerGroup = new EpollEventLoopGroup(nThreads);
+        final IoHandlerFactory factory;
+        if (AppRuntime.IS_LINUX) {
+            factory = EpollIoHandler.newFactory();
             channelClazz = EpollServerSocketChannel.class;
+            LOG.info("choosing epoll for i/o");
+        } else if (AppRuntime.IS_WINDOWS) {
+            factory = NioIoHandler.newFactory();
+            channelClazz = NioServerSocketChannel.class;
+            LOG.info("choosing NIO for i/o");
+        } else if (AppRuntime.IS_MAC) {
+            factory = KQueueIoHandler.newFactory();
+            channelClazz = KQueueServerSocketChannel.class;
+            LOG.info("choosing KQueue for i/o");
+        } else {
+            factory = NioIoHandler.newFactory();
+            channelClazz = NioServerSocketChannel.class;
+            LOG.info("fallback: choosing NIO for i/o");
         }
+
+        bossGroup = new MultiThreadIoEventLoopGroup(1, factory);
+        workerGroup = new MultiThreadIoEventLoopGroup(nThreads, factory);
 
         this.serverContext = new ServerContext(serverConfig);
     }
