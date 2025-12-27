@@ -58,9 +58,8 @@ public class ServerReporter {
 
             String time = String.format("%02d:%02d:%02d", now.getHour(), now.getMinute(), now.getSecond());
             String connections = String.format("%d [+%d:-%d]", c, op, cl);
-            String groups = "todo";
             String lag = String.format("%d [+%d]", lagTotal, lagSecond);
-            reporterWriter.writeLine(System.out, time, groups, connections, lag, sBytes);
+            reporterWriter.writeLine(System.out, time, connections, lag, sBytes);
         }
     }
 }
