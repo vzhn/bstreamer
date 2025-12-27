@@ -14,15 +14,24 @@ public class ClientConfig {
     private final static Logger LOG = LogManager.getLogger(ClientConfig.class);
 
     private NetworkOptions network;
-    private final List<ConnectionSettings> connections = new ArrayList<>();
+    private List<ConnectionSettings> connections = new ArrayList<>();
+
     public ClientConfig() { }
 
     public List<ConnectionSettings> getConnections() {
         return connections;
     }
 
+    public void setConnections(List<ConnectionSettings> connections) {
+        this.connections = connections;
+    }
+
     public NetworkOptions getNetwork() {
         return network;
+    }
+
+    public void setNetwork(NetworkOptions network) {
+        this.network = network;
     }
 
     public static ClientConfig read(File file) throws IOException {
