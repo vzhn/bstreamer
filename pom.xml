@@ -13,7 +13,7 @@
         <javacpp.version>7.1.1-1.5.12</javacpp.version>
         <ffmpeg.arch>linux-x86_64</ffmpeg.arch>
         <video.location>src/deploy/video</video.location>
-        <jackson.version>3.0.3</jackson.version>
+        <jackson.version>3.1.1</jackson.version>
         <netty.version>4.2.9.Final</netty.version>
     </properties>
     <build>
