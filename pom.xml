@@ -14,7 +14,7 @@
         <ffmpeg.arch>linux-x86_64</ffmpeg.arch>
         <video.location>src/deploy/video</video.location>
         <jackson.version>3.0.3</jackson.version>
-        <netty.version>4.2.9.Final</netty.version>
+        <netty.version>4.2.13.Final</netty.version>
     </properties>
     <build>
         <plugins>
